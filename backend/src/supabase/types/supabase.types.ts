@@ -16,39 +16,24 @@ export type Database = {
     Tables: {
       activity_logs: {
         Row: {
-          action: string;
-          created_at: string | null;
-          entity_id: string | null;
-          entity_type: string;
-          id: string;
-          ip_address: unknown | null;
-          location: string | null;
-          metadata: Json | null;
-          user_agent: string | null;
+          activity_type: string | null;
+          description: string | null;
+          id: number;
+          timestamp: string | null;
           user_id: string | null;
         };
         Insert: {
-          action: string;
-          created_at?: string | null;
-          entity_id?: string | null;
-          entity_type: string;
-          id?: string;
-          ip_address?: unknown | null;
-          location?: string | null;
-          metadata?: Json | null;
-          user_agent?: string | null;
+          activity_type?: string | null;
+          description?: string | null;
+          id?: number;
+          timestamp?: string | null;
           user_id?: string | null;
         };
         Update: {
-          action?: string;
-          created_at?: string | null;
-          entity_id?: string | null;
-          entity_type?: string;
-          id?: string;
-          ip_address?: unknown | null;
-          location?: string | null;
-          metadata?: Json | null;
-          user_agent?: string | null;
+          activity_type?: string | null;
+          description?: string | null;
+          id?: number;
+          timestamp?: string | null;
           user_id?: string | null;
         };
         Relationships: [
@@ -56,1096 +41,820 @@ export type Database = {
             foreignKeyName: 'activity_logs_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'users_details';
             referencedColumns: ['id'];
           },
         ];
       };
-      admin_profiles: {
+      admin_details: {
         Row: {
           created_at: string | null;
-          department: string | null;
-          first_name: string;
-          ic_number: string | null;
           id: string;
-          job_title: string | null;
-          last_name: string;
-          managed_universities: string[] | null;
-          permissions: Json | null;
-          phone_number: string | null;
-          updated_at: string | null;
-          user_id: string;
+          last_login: string | null;
+          position: string | null;
         };
         Insert: {
           created_at?: string | null;
-          department?: string | null;
-          first_name: string;
-          ic_number?: string | null;
-          id?: string;
-          job_title?: string | null;
-          last_name: string;
-          managed_universities?: string[] | null;
-          permissions?: Json | null;
-          phone_number?: string | null;
-          updated_at?: string | null;
-          user_id: string;
+          id: string;
+          last_login?: string | null;
+          position?: string | null;
         };
         Update: {
           created_at?: string | null;
-          department?: string | null;
-          first_name?: string;
-          ic_number?: string | null;
           id?: string;
-          job_title?: string | null;
-          last_name?: string;
-          managed_universities?: string[] | null;
-          permissions?: Json | null;
-          phone_number?: string | null;
-          updated_at?: string | null;
-          user_id?: string;
+          last_login?: string | null;
+          position?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: 'admin_profiles_user_id_fkey';
-            columns: ['user_id'];
+            foreignKeyName: 'admin_details_id_fkey';
+            columns: ['id'];
             isOneToOne: true;
-            referencedRelation: 'users';
+            referencedRelation: 'users_details';
             referencedColumns: ['id'];
           },
         ];
       };
-      applications: {
+      dashboard_metrics: {
         Row: {
-          additional_essays: Json | null;
-          admin_notes: string | null;
-          application_date: string | null;
-          application_number: string | null;
-          career_goals: string | null;
-          created_at: string | null;
-          deadline_date: string | null;
-          decision_date: string | null;
-          email_sent_date: string | null;
-          email_sent_to_university: boolean | null;
-          financial_documents_submitted: boolean | null;
-          ic_verified: boolean | null;
-          id: string;
-          interview_date: string | null;
-          notes: string | null;
-          personal_statement: string | null;
-          program_id: string;
-          reference_number: string | null;
-          reminder_sent: boolean | null;
-          spm_certificate_verified: boolean | null;
-          status: Database['public']['Enums']['application_status'] | null;
-          student_id: string;
-          submission_date: string | null;
-          university_response_received: boolean | null;
-          updated_at: string | null;
+          id: number;
+          last_updated: string | null;
+          metric_name: string | null;
+          metric_value: number | null;
         };
         Insert: {
-          additional_essays?: Json | null;
-          admin_notes?: string | null;
-          application_date?: string | null;
-          application_number?: string | null;
-          career_goals?: string | null;
-          created_at?: string | null;
-          deadline_date?: string | null;
-          decision_date?: string | null;
-          email_sent_date?: string | null;
-          email_sent_to_university?: boolean | null;
-          financial_documents_submitted?: boolean | null;
-          ic_verified?: boolean | null;
-          id?: string;
-          interview_date?: string | null;
-          notes?: string | null;
-          personal_statement?: string | null;
-          program_id: string;
-          reference_number?: string | null;
-          reminder_sent?: boolean | null;
-          spm_certificate_verified?: boolean | null;
-          status?: Database['public']['Enums']['application_status'] | null;
-          student_id: string;
-          submission_date?: string | null;
-          university_response_received?: boolean | null;
-          updated_at?: string | null;
+          id?: number;
+          last_updated?: string | null;
+          metric_name?: string | null;
+          metric_value?: number | null;
         };
         Update: {
-          additional_essays?: Json | null;
-          admin_notes?: string | null;
-          application_date?: string | null;
-          application_number?: string | null;
-          career_goals?: string | null;
-          created_at?: string | null;
-          deadline_date?: string | null;
-          decision_date?: string | null;
-          email_sent_date?: string | null;
-          email_sent_to_university?: boolean | null;
-          financial_documents_submitted?: boolean | null;
-          ic_verified?: boolean | null;
-          id?: string;
-          interview_date?: string | null;
-          notes?: string | null;
-          personal_statement?: string | null;
-          program_id?: string;
-          reference_number?: string | null;
-          reminder_sent?: boolean | null;
-          spm_certificate_verified?: boolean | null;
-          status?: Database['public']['Enums']['application_status'] | null;
-          student_id?: string;
-          submission_date?: string | null;
-          university_response_received?: boolean | null;
-          updated_at?: string | null;
+          id?: number;
+          last_updated?: string | null;
+          metric_name?: string | null;
+          metric_value?: number | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: 'applications_program_id_fkey';
-            columns: ['program_id'];
-            isOneToOne: false;
-            referencedRelation: 'programs';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'applications_student_id_fkey';
-            columns: ['student_id'];
-            isOneToOne: false;
-            referencedRelation: 'student_profiles';
-            referencedColumns: ['id'];
-          },
-        ];
+        Relationships: [];
       };
-      countries: {
+      field_of_interest: {
         Row: {
-          code: string;
-          continent: string | null;
           created_at: string | null;
-          currency: string | null;
-          id: string;
-          is_popular: boolean | null;
-          language: string[] | null;
+          description: string | null;
+          id: number;
           name: string;
         };
         Insert: {
-          code: string;
-          continent?: string | null;
           created_at?: string | null;
-          currency?: string | null;
-          id?: string;
-          is_popular?: boolean | null;
-          language?: string[] | null;
+          description?: string | null;
+          id?: number;
           name: string;
         };
         Update: {
-          code?: string;
-          continent?: string | null;
           created_at?: string | null;
-          currency?: string | null;
-          id?: string;
-          is_popular?: boolean | null;
-          language?: string[] | null;
+          description?: string | null;
+          id?: number;
           name?: string;
         };
         Relationships: [];
       };
-      documents: {
+      help_support: {
         Row: {
-          application_id: string | null;
+          category: Database['public']['Enums']['help_category'] | null;
+          content: string | null;
           created_at: string | null;
-          description: string | null;
-          document_type: Database['public']['Enums']['document_type'];
-          file_name: string;
-          file_size: number | null;
-          file_url: string;
-          id: string;
-          is_verified: boolean | null;
-          mime_type: string | null;
-          student_id: string | null;
-          title: string | null;
+          created_by: string | null;
+          id: number;
+          title: string;
           updated_at: string | null;
-          verification_notes: string | null;
-          verified_at: string | null;
-          verified_by: string | null;
         };
         Insert: {
-          application_id?: string | null;
+          category?: Database['public']['Enums']['help_category'] | null;
+          content?: string | null;
           created_at?: string | null;
-          description?: string | null;
-          document_type: Database['public']['Enums']['document_type'];
-          file_name: string;
-          file_size?: number | null;
-          file_url: string;
-          id?: string;
-          is_verified?: boolean | null;
-          mime_type?: string | null;
-          student_id?: string | null;
-          title?: string | null;
-          updated_at?: string | null;
-          verification_notes?: string | null;
-          verified_at?: string | null;
-          verified_by?: string | null;
-        };
-        Update: {
-          application_id?: string | null;
-          created_at?: string | null;
-          description?: string | null;
-          document_type?: Database['public']['Enums']['document_type'];
-          file_name?: string;
-          file_size?: number | null;
-          file_url?: string;
-          id?: string;
-          is_verified?: boolean | null;
-          mime_type?: string | null;
-          student_id?: string | null;
-          title?: string | null;
-          updated_at?: string | null;
-          verification_notes?: string | null;
-          verified_at?: string | null;
-          verified_by?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'documents_application_id_fkey';
-            columns: ['application_id'];
-            isOneToOne: false;
-            referencedRelation: 'applications';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'documents_student_id_fkey';
-            columns: ['student_id'];
-            isOneToOne: false;
-            referencedRelation: 'student_profiles';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'documents_verified_by_fkey';
-            columns: ['verified_by'];
-            isOneToOne: false;
-            referencedRelation: 'admin_profiles';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      kv_store_103a41a7: {
-        Row: {
-          key: string;
-          value: Json;
-        };
-        Insert: {
-          key: string;
-          value: Json;
-        };
-        Update: {
-          key?: string;
-          value?: Json;
-        };
-        Relationships: [];
-      };
-      messages: {
-        Row: {
-          application_id: string | null;
-          attachments: string[] | null;
-          content: string;
-          created_at: string | null;
-          id: string;
-          is_important: boolean | null;
-          is_read: boolean | null;
-          read_at: string | null;
-          recipient_id: string;
-          sender_id: string;
-          subject: string;
-        };
-        Insert: {
-          application_id?: string | null;
-          attachments?: string[] | null;
-          content: string;
-          created_at?: string | null;
-          id?: string;
-          is_important?: boolean | null;
-          is_read?: boolean | null;
-          read_at?: string | null;
-          recipient_id: string;
-          sender_id: string;
-          subject: string;
-        };
-        Update: {
-          application_id?: string | null;
-          attachments?: string[] | null;
-          content?: string;
-          created_at?: string | null;
-          id?: string;
-          is_important?: boolean | null;
-          is_read?: boolean | null;
-          read_at?: string | null;
-          recipient_id?: string;
-          sender_id?: string;
-          subject?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'messages_application_id_fkey';
-            columns: ['application_id'];
-            isOneToOne: false;
-            referencedRelation: 'applications';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'messages_recipient_id_fkey';
-            columns: ['recipient_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'messages_sender_id_fkey';
-            columns: ['sender_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      notifications: {
-        Row: {
-          application_id: string | null;
-          created_at: string | null;
-          email_sent: boolean | null;
-          id: string;
-          is_read: boolean | null;
-          message: string;
-          program_id: string | null;
-          read_at: string | null;
-          scheduled_for: string | null;
-          sent_at: string | null;
-          sms_sent: boolean | null;
+          created_by?: string | null;
+          id?: number;
           title: string;
-          type: Database['public']['Enums']['notification_type'];
-          university_id: string | null;
-          user_id: string;
-        };
-        Insert: {
-          application_id?: string | null;
-          created_at?: string | null;
-          email_sent?: boolean | null;
-          id?: string;
-          is_read?: boolean | null;
-          message: string;
-          program_id?: string | null;
-          read_at?: string | null;
-          scheduled_for?: string | null;
-          sent_at?: string | null;
-          sms_sent?: boolean | null;
-          title: string;
-          type: Database['public']['Enums']['notification_type'];
-          university_id?: string | null;
-          user_id: string;
+          updated_at?: string | null;
         };
         Update: {
-          application_id?: string | null;
+          category?: Database['public']['Enums']['help_category'] | null;
+          content?: string | null;
           created_at?: string | null;
-          email_sent?: boolean | null;
-          id?: string;
-          is_read?: boolean | null;
-          message?: string;
-          program_id?: string | null;
-          read_at?: string | null;
-          scheduled_for?: string | null;
-          sent_at?: string | null;
-          sms_sent?: boolean | null;
+          created_by?: string | null;
+          id?: number;
           title?: string;
-          type?: Database['public']['Enums']['notification_type'];
-          university_id?: string | null;
-          user_id?: string;
+          updated_at?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: 'notifications_application_id_fkey';
-            columns: ['application_id'];
+            foreignKeyName: 'help_support_created_by_fkey';
+            columns: ['created_by'];
             isOneToOne: false;
-            referencedRelation: 'applications';
+            referencedRelation: 'admin_details';
             referencedColumns: ['id'];
           },
+        ];
+      };
+      program_applications: {
+        Row: {
+          application_data: Json | null;
+          created_at: string | null;
+          id: string;
+          program_id: number | null;
+          status: Database['public']['Enums']['application_status'];
+          submitted_at: string | null;
+          updated_at: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          application_data?: Json | null;
+          created_at?: string | null;
+          id?: string;
+          program_id?: number | null;
+          status?: Database['public']['Enums']['application_status'];
+          submitted_at?: string | null;
+          updated_at?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          application_data?: Json | null;
+          created_at?: string | null;
+          id?: string;
+          program_id?: number | null;
+          status?: Database['public']['Enums']['application_status'];
+          submitted_at?: string | null;
+          updated_at?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
           {
-            foreignKeyName: 'notifications_program_id_fkey';
+            foreignKeyName: 'program_applications_program_id_fkey';
             columns: ['program_id'];
             isOneToOne: false;
             referencedRelation: 'programs';
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'notifications_university_id_fkey';
-            columns: ['university_id'];
+            foreignKeyName: 'program_applications_user_id_fkey';
+            columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'universities';
+            referencedRelation: 'users_details';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      program_comparison: {
+        Row: {
+          created_at: string | null;
+          id: number;
+          program_ids: Json | null;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: number;
+          program_ids?: Json | null;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: number;
+          program_ids?: Json | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'program_comparison_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users_details';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      program_reviews: {
+        Row: {
+          comment: string | null;
+          created_at: string | null;
+          id: string;
+          program_id: number | null;
+          rating: number | null;
+          updated_at: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          comment?: string | null;
+          created_at?: string | null;
+          id?: string;
+          program_id?: number | null;
+          rating?: number | null;
+          updated_at?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          comment?: string | null;
+          created_at?: string | null;
+          id?: string;
+          program_id?: number | null;
+          rating?: number | null;
+          updated_at?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'program_reviews_program_id_fkey';
+            columns: ['program_id'];
+            isOneToOne: false;
+            referencedRelation: 'programs';
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'notifications_user_id_fkey';
+            foreignKeyName: 'program_reviews_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'users';
+            referencedRelation: 'users_details';
             referencedColumns: ['id'];
           },
         ];
       };
       programs: {
         Row: {
-          acceptance_rate: number | null;
-          application_deadline: string | null;
-          application_fee_myr: number | null;
-          application_requirements: string[] | null;
-          average_starting_salary_myr: number | null;
+          average_salary: number | null;
           created_at: string | null;
-          credits_required: number | null;
-          degree_level: Database['public']['Enums']['degree_level'];
-          department: string | null;
+          deadline: string | null;
           description: string | null;
-          diploma_requirements: Json | null;
-          duration_months: number;
-          english_requirements: Json | null;
-          field_of_study: string;
-          financial_aid_available: boolean | null;
-          foundation_requirements: Json | null;
-          graduate_employment_rate: number | null;
-          id: string;
-          intake_months: number[] | null;
-          is_active: boolean | null;
-          is_popular: boolean | null;
-          min_spm_credits: number | null;
-          min_spm_grades: Json | null;
-          mode_of_study: string | null;
-          mqa_approved: boolean | null;
+          duration: string | null;
+          employment_rate: number | null;
+          entry_requirements: string | null;
+          field_id: number | null;
+          id: number;
+          level: Database['public']['Enums']['program_level'] | null;
           name: string;
-          other_fees_myr: Json | null;
-          other_test_requirements: Json | null;
-          professional_accreditation: string[] | null;
-          required_spm_subjects: string[] | null;
-          scholarship_details: Json | null;
-          scholarships_available: boolean | null;
-          start_date: string | null;
-          stpm_requirements: Json | null;
-          tuition_fee_myr: number | null;
-          university_id: string;
+          rating: number | null;
+          review_count: number | null;
+          satisfaction_rate: number | null;
+          start_month: string | null;
+          status: Database['public']['Enums']['program_status'] | null;
+          tags: Json | null;
+          tuition_fee: number | null;
+          university_id: number | null;
           updated_at: string | null;
         };
         Insert: {
-          acceptance_rate?: number | null;
-          application_deadline?: string | null;
-          application_fee_myr?: number | null;
-          application_requirements?: string[] | null;
-          average_starting_salary_myr?: number | null;
+          average_salary?: number | null;
           created_at?: string | null;
-          credits_required?: number | null;
-          degree_level: Database['public']['Enums']['degree_level'];
-          department?: string | null;
+          deadline?: string | null;
           description?: string | null;
-          diploma_requirements?: Json | null;
-          duration_months: number;
-          english_requirements?: Json | null;
-          field_of_study: string;
-          financial_aid_available?: boolean | null;
-          foundation_requirements?: Json | null;
-          graduate_employment_rate?: number | null;
-          id?: string;
-          intake_months?: number[] | null;
-          is_active?: boolean | null;
-          is_popular?: boolean | null;
-          min_spm_credits?: number | null;
-          min_spm_grades?: Json | null;
-          mode_of_study?: string | null;
-          mqa_approved?: boolean | null;
+          duration?: string | null;
+          employment_rate?: number | null;
+          entry_requirements?: string | null;
+          field_id?: number | null;
+          id?: number;
+          level?: Database['public']['Enums']['program_level'] | null;
           name: string;
-          other_fees_myr?: Json | null;
-          other_test_requirements?: Json | null;
-          professional_accreditation?: string[] | null;
-          required_spm_subjects?: string[] | null;
-          scholarship_details?: Json | null;
-          scholarships_available?: boolean | null;
-          start_date?: string | null;
-          stpm_requirements?: Json | null;
-          tuition_fee_myr?: number | null;
-          university_id: string;
+          rating?: number | null;
+          review_count?: number | null;
+          satisfaction_rate?: number | null;
+          start_month?: string | null;
+          status?: Database['public']['Enums']['program_status'] | null;
+          tags?: Json | null;
+          tuition_fee?: number | null;
+          university_id?: number | null;
           updated_at?: string | null;
         };
         Update: {
-          acceptance_rate?: number | null;
-          application_deadline?: string | null;
-          application_fee_myr?: number | null;
-          application_requirements?: string[] | null;
-          average_starting_salary_myr?: number | null;
+          average_salary?: number | null;
           created_at?: string | null;
-          credits_required?: number | null;
-          degree_level?: Database['public']['Enums']['degree_level'];
-          department?: string | null;
+          deadline?: string | null;
           description?: string | null;
-          diploma_requirements?: Json | null;
-          duration_months?: number;
-          english_requirements?: Json | null;
-          field_of_study?: string;
-          financial_aid_available?: boolean | null;
-          foundation_requirements?: Json | null;
-          graduate_employment_rate?: number | null;
-          id?: string;
-          intake_months?: number[] | null;
-          is_active?: boolean | null;
-          is_popular?: boolean | null;
-          min_spm_credits?: number | null;
-          min_spm_grades?: Json | null;
-          mode_of_study?: string | null;
-          mqa_approved?: boolean | null;
+          duration?: string | null;
+          employment_rate?: number | null;
+          entry_requirements?: string | null;
+          field_id?: number | null;
+          id?: number;
+          level?: Database['public']['Enums']['program_level'] | null;
           name?: string;
-          other_fees_myr?: Json | null;
-          other_test_requirements?: Json | null;
-          professional_accreditation?: string[] | null;
-          required_spm_subjects?: string[] | null;
-          scholarship_details?: Json | null;
-          scholarships_available?: boolean | null;
-          start_date?: string | null;
-          stpm_requirements?: Json | null;
-          tuition_fee_myr?: number | null;
-          university_id?: string;
+          rating?: number | null;
+          review_count?: number | null;
+          satisfaction_rate?: number | null;
+          start_month?: string | null;
+          status?: Database['public']['Enums']['program_status'] | null;
+          tags?: Json | null;
+          tuition_fee?: number | null;
+          university_id?: number | null;
           updated_at?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'programs_field_id_fkey';
+            columns: ['field_id'];
+            isOneToOne: false;
+            referencedRelation: 'field_of_interest';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'programs_university_id_fkey';
             columns: ['university_id'];
             isOneToOne: false;
-            referencedRelation: 'universities';
+            referencedRelation: 'university';
             referencedColumns: ['id'];
           },
         ];
       };
-      student_bookmarks: {
+      saved_items: {
         Row: {
-          bookmark_type: string | null;
-          created_at: string | null;
-          id: string;
-          notes: string | null;
-          program_id: string | null;
-          student_id: string;
-          university_id: string | null;
+          id: number;
+          item_id: number;
+          item_type: Database['public']['Enums']['item_type'];
+          saved_at: string | null;
+          user_id: string | null;
         };
         Insert: {
-          bookmark_type?: string | null;
-          created_at?: string | null;
-          id?: string;
-          notes?: string | null;
-          program_id?: string | null;
-          student_id: string;
-          university_id?: string | null;
+          id?: number;
+          item_id: number;
+          item_type: Database['public']['Enums']['item_type'];
+          saved_at?: string | null;
+          user_id?: string | null;
         };
         Update: {
-          bookmark_type?: string | null;
-          created_at?: string | null;
-          id?: string;
-          notes?: string | null;
-          program_id?: string | null;
-          student_id?: string;
-          university_id?: string | null;
+          id?: number;
+          item_id?: number;
+          item_type?: Database['public']['Enums']['item_type'];
+          saved_at?: string | null;
+          user_id?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: 'student_bookmarks_program_id_fkey';
-            columns: ['program_id'];
-            isOneToOne: false;
-            referencedRelation: 'programs';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'student_bookmarks_student_id_fkey';
-            columns: ['student_id'];
-            isOneToOne: false;
-            referencedRelation: 'student_profiles';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'student_bookmarks_university_id_fkey';
-            columns: ['university_id'];
-            isOneToOne: false;
-            referencedRelation: 'universities';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      student_comparisons: {
-        Row: {
-          comparison_criteria: Json | null;
-          comparison_name: string;
-          created_at: string | null;
-          id: string;
-          program_ids: string[];
-          student_id: string;
-          updated_at: string | null;
-        };
-        Insert: {
-          comparison_criteria?: Json | null;
-          comparison_name: string;
-          created_at?: string | null;
-          id?: string;
-          program_ids: string[];
-          student_id: string;
-          updated_at?: string | null;
-        };
-        Update: {
-          comparison_criteria?: Json | null;
-          comparison_name?: string;
-          created_at?: string | null;
-          id?: string;
-          program_ids?: string[];
-          student_id?: string;
-          updated_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'student_comparisons_student_id_fkey';
-            columns: ['student_id'];
-            isOneToOne: false;
-            referencedRelation: 'student_profiles';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      student_profiles: {
-        Row: {
-          address: Json | null;
-          alternative_phone: string | null;
-          budget_range: Json | null;
-          career_goals: string | null;
-          created_at: string | null;
-          current_cgpa: number | null;
-          current_education_level:
-            | Database['public']['Enums']['education_level']
-            | null;
-          current_institution: string | null;
-          date_of_birth: string | null;
-          diploma_results: Json | null;
-          emergency_contact: Json | null;
-          family_income_range: string | null;
-          field_of_study: string | null;
-          financial_aid_needed: boolean | null;
-          first_name: string;
-          foundation_results: Json | null;
-          gender: string | null;
-          graduation_year: number | null;
-          ic_number: string | null;
-          id: string;
-          interests: string[] | null;
-          last_name: string;
-          nationality: string | null;
-          phone_number: string | null;
-          preferred_fields: string[] | null;
-          preferred_states:
-            | Database['public']['Enums']['state_malaysia'][]
-            | null;
-          preferred_universities: string[] | null;
-          profile_completion_percentage: number | null;
-          race: string | null;
-          religion: string | null;
-          scholarship_eligibility: boolean | null;
-          spm_aggregate: number | null;
-          spm_results: Json | null;
-          spm_year: number | null;
-          stpm_results: Json | null;
-          test_scores: Json | null;
-          updated_at: string | null;
-          user_id: string;
-        };
-        Insert: {
-          address?: Json | null;
-          alternative_phone?: string | null;
-          budget_range?: Json | null;
-          career_goals?: string | null;
-          created_at?: string | null;
-          current_cgpa?: number | null;
-          current_education_level?:
-            | Database['public']['Enums']['education_level']
-            | null;
-          current_institution?: string | null;
-          date_of_birth?: string | null;
-          diploma_results?: Json | null;
-          emergency_contact?: Json | null;
-          family_income_range?: string | null;
-          field_of_study?: string | null;
-          financial_aid_needed?: boolean | null;
-          first_name: string;
-          foundation_results?: Json | null;
-          gender?: string | null;
-          graduation_year?: number | null;
-          ic_number?: string | null;
-          id?: string;
-          interests?: string[] | null;
-          last_name: string;
-          nationality?: string | null;
-          phone_number?: string | null;
-          preferred_fields?: string[] | null;
-          preferred_states?:
-            | Database['public']['Enums']['state_malaysia'][]
-            | null;
-          preferred_universities?: string[] | null;
-          profile_completion_percentage?: number | null;
-          race?: string | null;
-          religion?: string | null;
-          scholarship_eligibility?: boolean | null;
-          spm_aggregate?: number | null;
-          spm_results?: Json | null;
-          spm_year?: number | null;
-          stpm_results?: Json | null;
-          test_scores?: Json | null;
-          updated_at?: string | null;
-          user_id: string;
-        };
-        Update: {
-          address?: Json | null;
-          alternative_phone?: string | null;
-          budget_range?: Json | null;
-          career_goals?: string | null;
-          created_at?: string | null;
-          current_cgpa?: number | null;
-          current_education_level?:
-            | Database['public']['Enums']['education_level']
-            | null;
-          current_institution?: string | null;
-          date_of_birth?: string | null;
-          diploma_results?: Json | null;
-          emergency_contact?: Json | null;
-          family_income_range?: string | null;
-          field_of_study?: string | null;
-          financial_aid_needed?: boolean | null;
-          first_name?: string;
-          foundation_results?: Json | null;
-          gender?: string | null;
-          graduation_year?: number | null;
-          ic_number?: string | null;
-          id?: string;
-          interests?: string[] | null;
-          last_name?: string;
-          nationality?: string | null;
-          phone_number?: string | null;
-          preferred_fields?: string[] | null;
-          preferred_states?:
-            | Database['public']['Enums']['state_malaysia'][]
-            | null;
-          preferred_universities?: string[] | null;
-          profile_completion_percentage?: number | null;
-          race?: string | null;
-          religion?: string | null;
-          scholarship_eligibility?: boolean | null;
-          spm_aggregate?: number | null;
-          spm_results?: Json | null;
-          spm_year?: number | null;
-          stpm_results?: Json | null;
-          test_scores?: Json | null;
-          updated_at?: string | null;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'student_profiles_user_id_fkey';
+            foreignKeyName: 'saved_items_user_id_fkey';
             columns: ['user_id'];
-            isOneToOne: true;
-            referencedRelation: 'users';
+            isOneToOne: false;
+            referencedRelation: 'users_details';
             referencedColumns: ['id'];
           },
         ];
       };
-      student_search_history: {
+      scholarship_applications: {
         Row: {
+          application_data: Json | null;
           created_at: string | null;
           id: string;
-          results_count: number | null;
-          search_filters: Json | null;
-          search_query: string;
-          student_id: string;
+          scholarship_id: number | null;
+          status: Database['public']['Enums']['application_status'];
+          submitted_at: string | null;
+          updated_at: string | null;
+          user_id: string | null;
         };
         Insert: {
+          application_data?: Json | null;
           created_at?: string | null;
           id?: string;
-          results_count?: number | null;
-          search_filters?: Json | null;
-          search_query: string;
-          student_id: string;
+          scholarship_id?: number | null;
+          status?: Database['public']['Enums']['application_status'];
+          submitted_at?: string | null;
+          updated_at?: string | null;
+          user_id?: string | null;
         };
         Update: {
+          application_data?: Json | null;
           created_at?: string | null;
           id?: string;
-          results_count?: number | null;
-          search_filters?: Json | null;
-          search_query?: string;
-          student_id?: string;
+          scholarship_id?: number | null;
+          status?: Database['public']['Enums']['application_status'];
+          submitted_at?: string | null;
+          updated_at?: string | null;
+          user_id?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: 'student_search_history_student_id_fkey';
-            columns: ['student_id'];
+            foreignKeyName: 'scholarship_applications_scholarship_id_fkey';
+            columns: ['scholarship_id'];
             isOneToOne: false;
-            referencedRelation: 'student_profiles';
+            referencedRelation: 'scholarships';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'scholarship_applications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users_details';
             referencedColumns: ['id'];
           },
         ];
+      };
+      scholarships: {
+        Row: {
+          amount: number | null;
+          benefits: string | null;
+          contact_email: string | null;
+          contact_phone: string | null;
+          created_at: string | null;
+          deadline: string | null;
+          description: string | null;
+          field_id: number | null;
+          id: number;
+          level: string | null;
+          location: string | null;
+          name: string;
+          organization_name: string | null;
+          requirements: string | null;
+          status: Database['public']['Enums']['scholarship_status'] | null;
+          success_rate: number | null;
+          type: Database['public']['Enums']['scholarship_type'] | null;
+          updated_at: string | null;
+          website_url: string | null;
+        };
+        Insert: {
+          amount?: number | null;
+          benefits?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          created_at?: string | null;
+          deadline?: string | null;
+          description?: string | null;
+          field_id?: number | null;
+          id?: number;
+          level?: string | null;
+          location?: string | null;
+          name: string;
+          organization_name?: string | null;
+          requirements?: string | null;
+          status?: Database['public']['Enums']['scholarship_status'] | null;
+          success_rate?: number | null;
+          type?: Database['public']['Enums']['scholarship_type'] | null;
+          updated_at?: string | null;
+          website_url?: string | null;
+        };
+        Update: {
+          amount?: number | null;
+          benefits?: string | null;
+          contact_email?: string | null;
+          contact_phone?: string | null;
+          created_at?: string | null;
+          deadline?: string | null;
+          description?: string | null;
+          field_id?: number | null;
+          id?: number;
+          level?: string | null;
+          location?: string | null;
+          name?: string;
+          organization_name?: string | null;
+          requirements?: string | null;
+          status?: Database['public']['Enums']['scholarship_status'] | null;
+          success_rate?: number | null;
+          type?: Database['public']['Enums']['scholarship_type'] | null;
+          updated_at?: string | null;
+          website_url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'scholarships_field_id_fkey';
+            columns: ['field_id'];
+            isOneToOne: false;
+            referencedRelation: 'field_of_interest';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      students_details: {
+        Row: {
+          academic_result: string | null;
+          created_at: string | null;
+          education_level:
+            | Database['public']['Enums']['education_level']
+            | null;
+          field_of_interest_id: number | null;
+          id: string;
+          study_preferences: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          academic_result?: string | null;
+          created_at?: string | null;
+          education_level?:
+            | Database['public']['Enums']['education_level']
+            | null;
+          field_of_interest_id?: number | null;
+          id: string;
+          study_preferences?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          academic_result?: string | null;
+          created_at?: string | null;
+          education_level?:
+            | Database['public']['Enums']['education_level']
+            | null;
+          field_of_interest_id?: number | null;
+          id?: string;
+          study_preferences?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'students_details_field_of_interest_id_fkey';
+            columns: ['field_of_interest_id'];
+            isOneToOne: false;
+            referencedRelation: 'field_of_interest';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'students_details_id_fkey';
+            columns: ['id'];
+            isOneToOne: true;
+            referencedRelation: 'users_details';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      system_alerts: {
+        Row: {
+          created_at: string | null;
+          id: number;
+          message: string | null;
+          status: Database['public']['Enums']['alert_status'] | null;
+          type: Database['public']['Enums']['alert_type'] | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: number;
+          message?: string | null;
+          status?: Database['public']['Enums']['alert_status'] | null;
+          type?: Database['public']['Enums']['alert_type'] | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: number;
+          message?: string | null;
+          status?: Database['public']['Enums']['alert_status'] | null;
+          type?: Database['public']['Enums']['alert_type'] | null;
+        };
+        Relationships: [];
       };
       system_settings: {
         Row: {
-          created_at: string | null;
           description: string | null;
-          id: string;
-          is_public: boolean | null;
           key: string;
           updated_at: string | null;
           value: Json;
         };
         Insert: {
-          created_at?: string | null;
           description?: string | null;
-          id?: string;
-          is_public?: boolean | null;
           key: string;
           updated_at?: string | null;
           value: Json;
         };
         Update: {
-          created_at?: string | null;
           description?: string | null;
-          id?: string;
-          is_public?: boolean | null;
           key?: string;
           updated_at?: string | null;
           value?: Json;
         };
         Relationships: [];
       };
-      universities: {
+      university: {
         Row: {
-          acceptance_rate: number | null;
-          accommodation_fee_myr: number | null;
-          accreditations: string[] | null;
-          address: Json | null;
-          average_tuition_fee_myr: number | null;
-          city: string;
-          country_id: string | null;
+          address: string | null;
+          average_fee: number | null;
+          based_in: string | null;
+          city: string | null;
           created_at: string | null;
           description: string | null;
           email: string | null;
-          facilities: string[] | null;
-          id: string;
-          images: string[] | null;
-          international_student_percentage: number | null;
-          is_active: boolean | null;
-          is_featured: boolean | null;
-          is_verified: boolean | null;
-          living_cost_estimate_myr: number | null;
+          id: number;
+          image_urls: Json | null;
           logo_url: string | null;
-          ministry_approved: boolean | null;
-          mqa_approved: boolean | null;
           name: string;
-          national_ranking: number | null;
-          phone: string | null;
-          setara_rating: number | null;
-          state: Database['public']['Enums']['state_malaysia'] | null;
-          student_population: number | null;
-          university_type: string | null;
+          phone_number: string | null;
+          state: string | null;
+          university_type: Database['public']['Enums']['university_type'];
           updated_at: string | null;
-          virtual_tour_url: string | null;
           website_url: string | null;
-          world_ranking: number | null;
         };
         Insert: {
-          acceptance_rate?: number | null;
-          accommodation_fee_myr?: number | null;
-          accreditations?: string[] | null;
-          address?: Json | null;
-          average_tuition_fee_myr?: number | null;
-          city: string;
-          country_id?: string | null;
+          address?: string | null;
+          average_fee?: number | null;
+          based_in?: string | null;
+          city?: string | null;
           created_at?: string | null;
           description?: string | null;
           email?: string | null;
-          facilities?: string[] | null;
-          id?: string;
-          images?: string[] | null;
-          international_student_percentage?: number | null;
-          is_active?: boolean | null;
-          is_featured?: boolean | null;
-          is_verified?: boolean | null;
-          living_cost_estimate_myr?: number | null;
+          id?: number;
+          image_urls?: Json | null;
           logo_url?: string | null;
-          ministry_approved?: boolean | null;
-          mqa_approved?: boolean | null;
           name: string;
-          national_ranking?: number | null;
-          phone?: string | null;
-          setara_rating?: number | null;
-          state?: Database['public']['Enums']['state_malaysia'] | null;
-          student_population?: number | null;
-          university_type?: string | null;
+          phone_number?: string | null;
+          state?: string | null;
+          university_type: Database['public']['Enums']['university_type'];
           updated_at?: string | null;
-          virtual_tour_url?: string | null;
           website_url?: string | null;
-          world_ranking?: number | null;
         };
         Update: {
-          acceptance_rate?: number | null;
-          accommodation_fee_myr?: number | null;
-          accreditations?: string[] | null;
-          address?: Json | null;
-          average_tuition_fee_myr?: number | null;
-          city?: string;
-          country_id?: string | null;
+          address?: string | null;
+          average_fee?: number | null;
+          based_in?: string | null;
+          city?: string | null;
           created_at?: string | null;
           description?: string | null;
           email?: string | null;
-          facilities?: string[] | null;
-          id?: string;
-          images?: string[] | null;
-          international_student_percentage?: number | null;
-          is_active?: boolean | null;
-          is_featured?: boolean | null;
-          is_verified?: boolean | null;
-          living_cost_estimate_myr?: number | null;
+          id?: number;
+          image_urls?: Json | null;
           logo_url?: string | null;
-          ministry_approved?: boolean | null;
-          mqa_approved?: boolean | null;
           name?: string;
-          national_ranking?: number | null;
-          phone?: string | null;
-          setara_rating?: number | null;
-          state?: Database['public']['Enums']['state_malaysia'] | null;
-          student_population?: number | null;
-          university_type?: string | null;
+          phone_number?: string | null;
+          state?: string | null;
+          university_type?: Database['public']['Enums']['university_type'];
           updated_at?: string | null;
-          virtual_tour_url?: string | null;
           website_url?: string | null;
-          world_ranking?: number | null;
+        };
+        Relationships: [];
+      };
+      university_scholarship: {
+        Row: {
+          created_at: string | null;
+          id: number;
+          scholarship_id: number | null;
+          university_id: number | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: number;
+          scholarship_id?: number | null;
+          university_id?: number | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: number;
+          scholarship_id?: number | null;
+          university_id?: number | null;
         };
         Relationships: [
           {
-            foreignKeyName: 'universities_country_id_fkey';
-            columns: ['country_id'];
+            foreignKeyName: 'university_scholarship_scholarship_id_fkey';
+            columns: ['scholarship_id'];
             isOneToOne: false;
-            referencedRelation: 'countries';
+            referencedRelation: 'scholarships';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'university_scholarship_university_id_fkey';
+            columns: ['university_id'];
+            isOneToOne: false;
+            referencedRelation: 'university';
             referencedColumns: ['id'];
           },
         ];
       };
-      users: {
+      users_details: {
         Row: {
+          avatar_url: string | null;
+          career_goal: string | null;
           created_at: string | null;
+          current_institution_id: number | null;
+          current_location: string | null;
+          dob: string | null;
           email: string;
           email_verified: boolean | null;
+          first_name: string | null;
+          ic_number: string | null;
           id: string;
-          is_active: boolean | null;
-          last_login: string | null;
+          language: Json | null;
+          last_name: string | null;
+          nationality: string | null;
+          passport_number: string | null;
+          password: string | null;
+          phone_number: string | null;
           role: Database['public']['Enums']['user_role'];
           updated_at: string | null;
+          user_status: Database['public']['Enums']['user_status'];
         };
         Insert: {
+          avatar_url?: string | null;
+          career_goal?: string | null;
           created_at?: string | null;
+          current_institution_id?: number | null;
+          current_location?: string | null;
+          dob?: string | null;
           email: string;
           email_verified?: boolean | null;
+          first_name?: string | null;
+          ic_number?: string | null;
           id: string;
-          is_active?: boolean | null;
-          last_login?: string | null;
+          language?: Json | null;
+          last_name?: string | null;
+          nationality?: string | null;
+          passport_number?: string | null;
+          password?: string | null;
+          phone_number?: string | null;
           role?: Database['public']['Enums']['user_role'];
           updated_at?: string | null;
+          user_status?: Database['public']['Enums']['user_status'];
         };
         Update: {
+          avatar_url?: string | null;
+          career_goal?: string | null;
           created_at?: string | null;
+          current_institution_id?: number | null;
+          current_location?: string | null;
+          dob?: string | null;
           email?: string;
           email_verified?: boolean | null;
+          first_name?: string | null;
+          ic_number?: string | null;
           id?: string;
-          is_active?: boolean | null;
-          last_login?: string | null;
+          language?: Json | null;
+          last_name?: string | null;
+          nationality?: string | null;
+          passport_number?: string | null;
+          password?: string | null;
+          phone_number?: string | null;
           role?: Database['public']['Enums']['user_role'];
           updated_at?: string | null;
+          user_status?: Database['public']['Enums']['user_status'];
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'users_details_current_institution_id_fkey';
+            columns: ['current_institution_id'];
+            isOneToOne: false;
+            referencedRelation: 'university';
+            referencedColumns: ['id'];
+          },
+        ];
       };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      validate_malaysian_ic: {
-        Args: { ic_text: string };
+      current_is_admin: {
+        Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
-      validate_malaysian_phone: {
-        Args: { phone_text: string };
+      gtrgm_compress: {
+        Args: { '': unknown };
+        Returns: unknown;
+      };
+      gtrgm_decompress: {
+        Args: { '': unknown };
+        Returns: unknown;
+      };
+      gtrgm_in: {
+        Args: { '': unknown };
+        Returns: unknown;
+      };
+      gtrgm_options: {
+        Args: { '': unknown };
+        Returns: undefined;
+      };
+      gtrgm_out: {
+        Args: { '': unknown };
+        Returns: unknown;
+      };
+      is_admin: {
+        Args: { uid: string };
         Returns: boolean;
+      };
+      set_limit: {
+        Args: { '': number };
+        Returns: number;
+      };
+      show_limit: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      show_trgm: {
+        Args: { '': string };
+        Returns: string[];
       };
     };
     Enums: {
+      alert_status: 'open' | 'resolved';
+      alert_type: 'info' | 'warning' | 'error';
       application_status:
         | 'draft'
         | 'submitted'
         | 'under_review'
         | 'accepted'
-        | 'rejected';
-      degree_level:
-        | 'foundation'
-        | 'diploma'
-        | 'bachelor'
-        | 'master'
-        | 'phd'
-        | 'professional';
-      document_type:
-        | 'spm_certificate'
-        | 'stpm_certificate'
-        | 'diploma_certificate'
-        | 'degree_certificate'
-        | 'transcript'
-        | 'recommendation_letter'
-        | 'personal_statement'
-        | 'cv'
-        | 'portfolio'
-        | 'ic_copy'
-        | 'passport_copy'
-        | 'other';
+        | 'rejected'
+        | 'withdrawn';
       education_level:
-        | 'spm'
-        | 'stpm'
-        | 'foundation'
-        | 'diploma'
-        | 'bachelor'
-        | 'master'
-        | 'phd';
-      notification_type:
-        | 'application_update'
-        | 'deadline_reminder'
-        | 'system_announcement'
-        | 'message'
-        | 'interview_invitation';
-      program_type: 'Bachelor' | 'Master' | 'PhD' | 'Diploma';
-      spm_grade:
-        | 'A+'
-        | 'A'
-        | 'A-'
-        | 'B+'
-        | 'B'
-        | 'C+'
-        | 'C'
-        | 'D'
-        | 'E'
-        | 'F'
-        | 'G';
-      state_malaysia:
-        | 'Johor'
-        | 'Kedah'
-        | 'Kelantan'
-        | 'Kuala Lumpur'
-        | 'Labuan'
-        | 'Melaka'
-        | 'Negeri Sembilan'
-        | 'Pahang'
-        | 'Penang'
-        | 'Perak'
-        | 'Perlis'
-        | 'Putrajaya'
-        | 'Sabah'
-        | 'Sarawak'
-        | 'Selangor'
-        | 'Terengganu';
+        | 'SPM'
+        | 'STPM'
+        | 'A-Levels'
+        | 'Foundation'
+        | 'Diploma'
+        | 'Bachelor'
+        | 'Master'
+        | 'Other';
+      help_category: 'FAQ' | 'System Message' | 'Policy';
+      item_type: 'program' | 'scholarship';
+      program_level: 'Foundation' | 'Diploma' | 'Bachelor' | 'Master' | 'PhD';
+      program_status: 'active' | 'draft' | 'archived';
+      scholarship_status: 'active' | 'expired' | 'draft';
+      scholarship_type: 'Merit-based' | 'Need-based' | 'Academic' | 'Other';
+      university_type: 'public' | 'private';
       user_role: 'student' | 'admin';
-      user_status: 'active' | 'inactive' | 'pending';
+      user_status: 'active' | 'inactive' | 'banned';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1276,73 +985,35 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alert_status: ['open', 'resolved'],
+      alert_type: ['info', 'warning', 'error'],
       application_status: [
         'draft',
         'submitted',
         'under_review',
         'accepted',
         'rejected',
-      ],
-      degree_level: [
-        'foundation',
-        'diploma',
-        'bachelor',
-        'master',
-        'phd',
-        'professional',
-      ],
-      document_type: [
-        'spm_certificate',
-        'stpm_certificate',
-        'diploma_certificate',
-        'degree_certificate',
-        'transcript',
-        'recommendation_letter',
-        'personal_statement',
-        'cv',
-        'portfolio',
-        'ic_copy',
-        'passport_copy',
-        'other',
+        'withdrawn',
       ],
       education_level: [
-        'spm',
-        'stpm',
-        'foundation',
-        'diploma',
-        'bachelor',
-        'master',
-        'phd',
+        'SPM',
+        'STPM',
+        'A-Levels',
+        'Foundation',
+        'Diploma',
+        'Bachelor',
+        'Master',
+        'Other',
       ],
-      notification_type: [
-        'application_update',
-        'deadline_reminder',
-        'system_announcement',
-        'message',
-        'interview_invitation',
-      ],
-      program_type: ['Bachelor', 'Master', 'PhD', 'Diploma'],
-      spm_grade: ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'F', 'G'],
-      state_malaysia: [
-        'Johor',
-        'Kedah',
-        'Kelantan',
-        'Kuala Lumpur',
-        'Labuan',
-        'Melaka',
-        'Negeri Sembilan',
-        'Pahang',
-        'Penang',
-        'Perak',
-        'Perlis',
-        'Putrajaya',
-        'Sabah',
-        'Sarawak',
-        'Selangor',
-        'Terengganu',
-      ],
+      help_category: ['FAQ', 'System Message', 'Policy'],
+      item_type: ['program', 'scholarship'],
+      program_level: ['Foundation', 'Diploma', 'Bachelor', 'Master', 'PhD'],
+      program_status: ['active', 'draft', 'archived'],
+      scholarship_status: ['active', 'expired', 'draft'],
+      scholarship_type: ['Merit-based', 'Need-based', 'Academic', 'Other'],
+      university_type: ['public', 'private'],
       user_role: ['student', 'admin'],
-      user_status: ['active', 'inactive', 'pending'],
+      user_status: ['active', 'inactive', 'banned'],
     },
   },
 } as const;
