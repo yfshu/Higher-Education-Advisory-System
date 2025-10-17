@@ -155,54 +155,6 @@ export type Database = {
           },
         ];
       };
-      program_applications: {
-        Row: {
-          application_data: Json | null;
-          created_at: string | null;
-          id: string;
-          program_id: number | null;
-          status: Database['public']['Enums']['application_status'];
-          submitted_at: string | null;
-          updated_at: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          application_data?: Json | null;
-          created_at?: string | null;
-          id?: string;
-          program_id?: number | null;
-          status?: Database['public']['Enums']['application_status'];
-          submitted_at?: string | null;
-          updated_at?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          application_data?: Json | null;
-          created_at?: string | null;
-          id?: string;
-          program_id?: number | null;
-          status?: Database['public']['Enums']['application_status'];
-          submitted_at?: string | null;
-          updated_at?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'program_applications_program_id_fkey';
-            columns: ['program_id'];
-            isOneToOne: false;
-            referencedRelation: 'programs';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'program_applications_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users_details';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       program_comparison: {
         Row: {
           created_at: string | null;
@@ -386,54 +338,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'saved_items_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users_details';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      scholarship_applications: {
-        Row: {
-          application_data: Json | null;
-          created_at: string | null;
-          id: string;
-          scholarship_id: number | null;
-          status: Database['public']['Enums']['application_status'];
-          submitted_at: string | null;
-          updated_at: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          application_data?: Json | null;
-          created_at?: string | null;
-          id?: string;
-          scholarship_id?: number | null;
-          status?: Database['public']['Enums']['application_status'];
-          submitted_at?: string | null;
-          updated_at?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          application_data?: Json | null;
-          created_at?: string | null;
-          id?: string;
-          scholarship_id?: number | null;
-          status?: Database['public']['Enums']['application_status'];
-          submitted_at?: string | null;
-          updated_at?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'scholarship_applications_scholarship_id_fkey';
-            columns: ['scholarship_id'];
-            isOneToOne: false;
-            referencedRelation: 'scholarships';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'scholarship_applications_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'users_details';
@@ -668,42 +572,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      university_scholarship: {
-        Row: {
-          created_at: string | null;
-          id: number;
-          scholarship_id: number | null;
-          university_id: number | null;
-        };
-        Insert: {
-          created_at?: string | null;
-          id?: number;
-          scholarship_id?: number | null;
-          university_id?: number | null;
-        };
-        Update: {
-          created_at?: string | null;
-          id?: number;
-          scholarship_id?: number | null;
-          university_id?: number | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'university_scholarship_scholarship_id_fkey';
-            columns: ['scholarship_id'];
-            isOneToOne: false;
-            referencedRelation: 'scholarships';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'university_scholarship_university_id_fkey';
-            columns: ['university_id'];
-            isOneToOne: false;
-            referencedRelation: 'university';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       users_details: {
         Row: {
           avatar_url: string | null;
@@ -830,13 +698,6 @@ export type Database = {
     Enums: {
       alert_status: 'open' | 'resolved';
       alert_type: 'info' | 'warning' | 'error';
-      application_status:
-        | 'draft'
-        | 'submitted'
-        | 'under_review'
-        | 'accepted'
-        | 'rejected'
-        | 'withdrawn';
       education_level:
         | 'SPM'
         | 'STPM'
@@ -987,14 +848,6 @@ export const Constants = {
     Enums: {
       alert_status: ['open', 'resolved'],
       alert_type: ['info', 'warning', 'error'],
-      application_status: [
-        'draft',
-        'submitted',
-        'under_review',
-        'accepted',
-        'rejected',
-        'withdrawn',
-      ],
       education_level: [
         'SPM',
         'STPM',
