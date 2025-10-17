@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import AdminLayout from '../../layout/AdminLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../ui/dialog';
+"use client";
+
+import { useState } from "react";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   FileText,
   Plus,
@@ -15,7 +17,7 @@ import {
   HelpCircle,
   Settings,
   AlertTriangle
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ContentManagement() {
   const [isAddFAQOpen, setIsAddFAQOpen] = useState(false);

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import StudentLayout from '../../layout/StudentLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Progress } from '../../ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
-import { Link } from 'react-router-dom';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Heart,
   MapPin,
@@ -14,8 +15,6 @@ import {
   GraduationCap,
   ExternalLink,
   Trash2,
-  Bookmark,
-  BookmarkCheck,
   Star,
   DollarSign,
   Building2,
@@ -23,10 +22,9 @@ import {
   Filter,
   SortAsc,
   AlertCircle,
-  CheckCircle,
   Search,
   Award
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function SavedItems() {
   const [programSortBy, setProgramSortBy] = useState('deadline');
@@ -219,18 +217,18 @@ export default function SavedItems() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Link to="/student/search">
-                  <Button variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+                <Button asChild variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+                  <Link href="/student/search">
                     <Search className="w-4 h-4 mr-2" />
                     Find Programs
-                  </Button>
-                </Link>
-                <Link to="/student/scholarships">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  </Link>
+                </Button>
+                <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Link href="/student/scholarships">
                     <Award className="w-4 h-4 mr-2" />
                     Find Scholarships
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </div>
           </div>
@@ -343,14 +341,14 @@ export default function SavedItems() {
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No programs saved yet</h3>
                     <p className="text-gray-600 mb-4">
-                      Start exploring Malaysian university programs and save the ones you're interested in.
+                      Start exploring Malaysian university programs and save the ones you are interested in.
                     </p>
-                    <Link to="/student/search">
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Link href="/student/search">
                         <Search className="w-4 h-4 mr-2" />
                         Browse Programs
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </div>
                 </Card>
               ) : (
@@ -384,12 +382,12 @@ export default function SavedItems() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Link to={`/student/program/${program.id}`}>
-                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+                            <Link href={`/student/program/${program.id}`}>
                               <ExternalLink className="w-4 h-4 mr-1" />
                               View
-                            </Button>
-                          </Link>
+                            </Link>
+                          </Button>
                           <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -467,12 +465,12 @@ export default function SavedItems() {
                         : `No scholarships match the current filter: ${scholarshipFilterBy}`
                       }
                     </p>
-                    <Link to="/student/scholarships">
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Link href="/student/scholarships">
                         <Award className="w-4 h-4 mr-2" />
                         Browse Scholarships
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </div>
                 </Card>
               ) : (
@@ -556,12 +554,12 @@ export default function SavedItems() {
                                 Saved on {new Date(scholarship.savedDate).toLocaleDateString()}
                               </span>
                             </div>
-                            <Link to={`/student/scholarship/${scholarship.id}`}>
-                              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                              <Link href={`/student/scholarship/${scholarship.id}`}>
                                 View Details
                                 <ExternalLink className="w-4 h-4 ml-2" />
-                              </Button>
-                            </Link>
+                              </Link>
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -581,23 +579,23 @@ export default function SavedItems() {
               Continue discovering programs and scholarships that match your goals and interests.
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Link to="/student/search">
-                <Button variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+              <Button asChild variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+                <Link href="/student/search">
                   <Search className="w-4 h-4 mr-2" />
                   Find More Programs
-                </Button>
-              </Link>
-              <Link to="/student/scholarships">
-                <Button variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+                <Link href="/student/scholarships">
                   <Award className="w-4 h-4 mr-2" />
                   Find More Scholarships
-                </Button>
-              </Link>
-              <Link to="/student/help">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                </Link>
+              </Button>
+              <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Link href="/student/help">
                   Get Help
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
         </Card>

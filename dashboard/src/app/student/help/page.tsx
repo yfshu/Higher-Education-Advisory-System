@@ -1,10 +1,14 @@
-import React from 'react';
-import StudentLayout from '../../layout/StudentLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../ui/accordion';
-import { HelpCircle, Search, MessageCircle, Phone, Mail } from 'lucide-react';
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { HelpCircle, Search, MessageCircle, Phone, Mail } from "lucide-react";
 
 export default function StudentHelp() {
   const faqs = [

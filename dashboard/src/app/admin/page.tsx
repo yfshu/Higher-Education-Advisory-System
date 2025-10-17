@@ -1,17 +1,6 @@
-import React from 'react';
-import {
-  Users,
-  BookOpen,
-  Award,
-  TrendingUp,
-  AlertTriangle,
-  Calendar,
-  BarChart3,
-  Plus,
-  Eye,
-  Settings,
-  Link
-} from 'lucide-react';
+import Link from "next/link";
+
+import { Users, BookOpen, Award, TrendingUp, AlertTriangle, BarChart3, Plus, Eye, Settings } from "lucide-react";
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,25 +38,25 @@ export default function AdminDashboard() {
           <p className="text-gray-600 mb-6">
             Monitor and manage the Malaysian Higher Education Advisory System. Track student registrations, university programs, and recommendation analytics across 150+ Malaysian institutions.
           </p>
-          <div className="flex gap-4">
-            <Link to="/admin/programs">
-              <Button className="bg-slate-700 hover:bg-slate-800 text-white">
+        <div className="flex gap-4 flex-wrap">
+            <Button asChild className="bg-slate-700 hover:bg-slate-800 text-white">
+              <Link href="/admin/programs">
                 <Plus className="w-4 h-4 mr-2" />
                 Add New Program
-              </Button>
-            </Link>
-            <Link to="/admin/scholarships">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              </Link>
+            </Button>
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Link href="/admin/scholarships">
                 <Award className="w-4 h-4 mr-2" />
                 Add Scholarship
-              </Button>
-            </Link>
-            <Link to="/admin/users">
-              <Button variant="outline" className="backdrop-blur-sm bg-white/50">
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="backdrop-blur-sm bg-white/50">
+              <Link href="/admin/users">
                 <Eye className="w-4 h-4 mr-2" />
                 View Users
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
 
@@ -157,11 +146,11 @@ export default function AdminDashboard() {
             <div className="p-6 border-b border-white/20">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900">Recent User Registrations</h3>
-                <Link to="/admin/users">
-                  <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-700">
+                <Button asChild variant="ghost" size="sm" className="text-slate-600 hover:text-slate-700">
+                  <Link href="/admin/users">
                     View All
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </div>
             <div className="p-6">
@@ -193,11 +182,11 @@ export default function AdminDashboard() {
             <div className="p-6 border-b border-white/20">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900">Recently Added Programs</h3>
-                <Link to="/admin/programs">
-                  <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-700">
+                <Button asChild variant="ghost" size="sm" className="text-slate-600 hover:text-slate-700">
+                  <Link href="/admin/programs">
                     Manage Programs
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             </div>
             <div className="p-6">
@@ -264,30 +253,30 @@ export default function AdminDashboard() {
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid md:grid-cols-5 gap-4">
-            <Link to="/admin/programs">
-              <Button variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+            <Button asChild variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+              <Link href="/admin/programs">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Manage Programs
-              </Button>
-            </Link>
-            <Link to="/admin/scholarships">
-              <Button variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+              <Link href="/admin/scholarships">
                 <Award className="w-4 h-4 mr-2" />
                 Manage Scholarships
-              </Button>
-            </Link>
-            <Link to="/admin/users">
-              <Button variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+              <Link href="/admin/users">
                 <Users className="w-4 h-4 mr-2" />
                 User Management
-              </Button>
-            </Link>
-            <Link to="/admin/content">
-              <Button variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
+              <Link href="/admin/content">
                 <Settings className="w-4 h-4 mr-2" />
                 Content Settings
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <Button variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
               <BarChart3 className="w-4 h-4 mr-2" />
               Analytics Report

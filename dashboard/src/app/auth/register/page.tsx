@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation";
 
 import { useAuthModals } from "@/components/auth/AuthModalProvider";
 
-export default function LoginRoute() {
+export default function RegisterRoute() {
   const router = useRouter();
-  const { openLogin, closeLogin, isLoginOpen } = useAuthModals();
+  const { openRegister, closeRegister, isRegisterOpen } = useAuthModals();
 
   useEffect(() => {
-    openLogin();
-  }, [openLogin]);
+    openRegister();
+  }, [openRegister]);
 
   useEffect(() => {
-    if (!isLoginOpen) {
+    if (!isRegisterOpen) {
       if (window.history.length > 1) {
         router.back();
       } else {
@@ -22,9 +22,9 @@ export default function LoginRoute() {
       }
     }
     return () => {
-      closeLogin();
+      closeRegister();
     };
-  }, [isLoginOpen, closeLogin, router]);
+  }, [isRegisterOpen, closeRegister, router]);
 
   return null;
 }

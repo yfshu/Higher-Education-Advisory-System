@@ -1,28 +1,26 @@
-import React, { useState } from 'react';
-import StudentLayout from '../../layout/StudentLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Badge } from '../../ui/badge';
-import { Separator } from '../../ui/separator';
-import { Link } from 'react-router-dom';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Search,
-  Filter,
   Star,
-  StarIcon,
   Calendar,
   MapPin,
   Users,
   DollarSign,
   GraduationCap,
   Building2,
-  Heart,
   ExternalLink,
   Bookmark,
   BookmarkCheck
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ScholarshipSearch() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -252,12 +250,12 @@ export default function ScholarshipSearch() {
             Showing {filteredScholarships.length} scholarship{filteredScholarships.length !== 1 ? 's' : ''}
             {searchQuery && ` for "${searchQuery}"`}
           </p>
-          <Link to="/student/saved">
-            <Button variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+          <Button asChild variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
+            <Link href="/student/saved">
               <Bookmark className="w-4 h-4 mr-2" />
               Saved ({savedScholarships.length})
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         {/* Scholarship Cards */}
@@ -336,12 +334,12 @@ export default function ScholarshipSearch() {
                       <span className="text-sm text-gray-500">{scholarship.applicants} applicants</span>
                     </div>
                   </div>
-                  <Link to={`/student/scholarship/${scholarship.id}`}>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Link href={`/student/scholarship/${scholarship.id}`}>
                       View Details
                       <ExternalLink className="w-4 h-4 ml-2" />
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </Card>

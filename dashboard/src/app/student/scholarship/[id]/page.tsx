@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import StudentLayout from '../../layout/StudentLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Progress } from '../../ui/progress';
-import { Separator } from '../../ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Star,
@@ -28,15 +31,16 @@ import {
   Phone,
   Mail,
   Globe
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function ScholarshipDetail() {
-  const { id } = useParams();
+  const params = useParams<{ id: string }>();
+  const scholarshipId = params?.id ?? "1";
   const [isSaved, setIsSaved] = useState(false);
 
   // Mock scholarship data - in real app, fetch based on id
   const scholarship = {
-    id: id || '1',
+    id: scholarshipId,
     title: 'MARA Excellence Scholarship',
     organization: 'Majlis Amanah Rakyat (MARA)',
     type: 'Merit-based',
@@ -138,9 +142,9 @@ export default function ScholarshipDetail() {
     <StudentLayout title="Scholarship Details">
       <div className="space-y-6">
         {/* Back Navigation */}
-        <Link 
-          to="/student/scholarships" 
-          className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+        <Link
+          href="/student/scholarships"
+          className="inline-flex items-center text-gray-600 transition-colors hover:text-gray-800"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Scholarship Search
@@ -239,7 +243,7 @@ export default function ScholarshipDetail() {
                   <div>
                     <p className="font-medium text-orange-900">Application Deadline Approaching</p>
                     <p className="text-sm text-orange-700">
-                      Only {daysUntilDeadline} days left to submit your application. Don't miss this opportunity!
+                      Only {daysUntilDeadline} days left to submit your application. Do not miss this opportunity!
                     </p>
                   </div>
                 </div>

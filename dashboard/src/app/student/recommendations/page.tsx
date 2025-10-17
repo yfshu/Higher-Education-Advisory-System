@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
-import StudentLayout from '../../layout/StudentLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
-import { Input } from '../../ui/input';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Star,
   MapPin,
   Calendar,
   GraduationCap,
   Clock,
-  Filter,
   Search,
   Bookmark,
   ExternalLink,
   Heart,
   TrendingUp
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
+} from "lucide-react";
 
 export default function ProgramRecommendations() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,11 +183,11 @@ export default function ProgramRecommendations() {
               All Programs
             </Button>
             <Button
-              variant={selectedFilter === 'bachelor' ? 'default' : 'outline'}
-              onClick={() => setSelectedFilter('bachelor')}
+              variant={selectedFilter === "bachelor" ? "default" : "outline"}
+              onClick={() => setSelectedFilter("bachelor")}
               size="sm"
             >
-              Bachelor's
+              Bachelors
             </Button>
             <Button
               variant={selectedFilter === 'diploma' ? 'default' : 'outline'}
@@ -276,12 +277,12 @@ export default function ProgramRecommendations() {
 
                 {/* Actions */}
                 <div className="flex gap-3">
-                  <Link to={`/student/program/${program.id}`}>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Link href={`/student/program/${program.id}`}>
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View Details
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <Button variant="outline" className="backdrop-blur-sm bg-white/50">
                     <Bookmark className="w-4 h-4 mr-2" />
                     Save Program

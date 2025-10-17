@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import StudentLayout from '../../layout/StudentLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Badge } from '../../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Slider } from '../../ui/slider';
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import {
   Search,
-  Filter,
   MapPin,
   GraduationCap,
   Clock,
@@ -18,9 +20,8 @@ import {
   Calendar,
   BookOpen,
   ExternalLink,
-  SlidersHorizontal
-} from 'lucide-react';
-import { Link } from 'react-router-dom';
+  SlidersHorizontal,
+} from "lucide-react";
 
 export default function SearchPrograms() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -419,7 +420,7 @@ export default function SearchPrograms() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <Link to={`/student/program/${program.id}`} className="flex-1">
+                  <Link href={`/student/program/${program.id}`} className="flex-1">
                     <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View Details

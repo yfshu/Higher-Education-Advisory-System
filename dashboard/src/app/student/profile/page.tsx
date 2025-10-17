@@ -1,19 +1,25 @@
-import React, { useState } from 'react';
-import StudentLayout from '../../layout/StudentLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Textarea } from '../../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Badge } from '../../ui/badge';
-import { Progress } from '../../ui/progress';
-import { Switch } from '../../ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+"use client";
+
+import { useState } from "react";
+import StudentLayout from "@/components/layout/StudentLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   User,
-  Mail,
-  Phone,
   GraduationCap,
   Target,
   MapPin,
@@ -27,8 +33,7 @@ import {
   Eye,
   Trash2,
   History,
-  TrendingUp
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function StudentProfile() {
   const [isEditing, setIsEditing] = useState(false);

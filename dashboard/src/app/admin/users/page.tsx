@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import AdminLayout from '../../layout/AdminLayout';
-import { Card } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Badge } from '../../ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
+"use client";
+
+import { useState } from "react";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Users,
   Search,
-  Filter,
   Eye,
   Edit,
   Trash2,
@@ -16,7 +17,7 @@ import {
   Calendar,
   UserCheck,
   UserX
-} from 'lucide-react';
+} from "lucide-react";
 
 export default function UserManagement() {
   const [searchTerm, setSearchTerm] = useState('');
