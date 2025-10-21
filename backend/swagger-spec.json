@@ -30,10 +30,21 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "Login successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password."
           }
         },
+        "summary": "Sign in with email and password",
         "tags": [
           "Auth"
         ]
@@ -55,9 +66,20 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Account created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid registration payload."
           }
         },
+        "summary": "Create a new student account",
         "tags": [
           "Auth"
         ]
@@ -84,11 +106,203 @@
     "schemas": {
       "LoginRequestDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address associated with the BackToSchool account.",
+            "example": "student@demo.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "Account password. Minimum 8 characters.",
+            "example": "demo1234",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "LoginUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier of the authenticated user.",
+            "example": "a9f0c2d9-3c8b-4f0d-9ef2-1234567890ab"
+          },
+          "email": {
+            "type": "string",
+            "description": "Email address of the authenticated user.",
+            "example": "student@demo.com"
+          }
+        },
+        "required": [
+          "id",
+          "email"
+        ]
+      },
+      "LoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Friendly message describing the login result.",
+            "example": "Login successful."
+          },
+          "user": {
+            "$ref": "#/components/schemas/LoginUserDto"
+          }
+        },
+        "required": [
+          "message",
+          "user"
+        ]
       },
       "RegisterRequestDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "description": "Student first name.",
+            "example": "Ahmad"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Student last name.",
+            "example": "Rahman"
+          },
+          "email": {
+            "type": "string",
+            "description": "Student email address.",
+            "example": "ahmad.rahman@email.com"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "description": "Contact number with country code.",
+            "example": "+60 12-345-6789"
+          },
+          "identityType": {
+            "type": "string",
+            "description": "Identity document type.",
+            "example": "ic",
+            "enum": [
+              "ic",
+              "passport"
+            ]
+          },
+          "identityNumber": {
+            "type": "string",
+            "description": "Identity document number. Accepts IC or passport number based on the selected type.",
+            "example": "000515-12-1234"
+          },
+          "dob": {
+            "type": "string",
+            "description": "Date of birth (ISO 8601).",
+            "example": "2000-05-15"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Nationality.",
+            "example": "Malaysian"
+          },
+          "currentLocation": {
+            "type": "string",
+            "description": "Current residence location.",
+            "example": "Kuala Lumpur, Malaysia"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "Avatar image URL.",
+            "example": "https://example.com/avatar.png"
+          },
+          "password": {
+            "type": "string",
+            "description": "Account password. Minimum 8 characters.",
+            "example": "StrongPass123!",
+            "minLength": 8
+          },
+          "confirmPassword": {
+            "type": "string",
+            "description": "Confirm password. Must match password.",
+            "example": "StrongPass123!"
+          },
+          "educationLevel": {
+            "type": "string",
+            "description": "Highest education level attained.",
+            "enum": [
+              "SPM",
+              "STPM",
+              "A-Levels",
+              "Foundation",
+              "Diploma",
+              "Bachelor",
+              "Master",
+              "Other"
+            ],
+            "example": "SPM"
+          },
+          "currentInstitution": {
+            "type": "string",
+            "description": "Name of the current institution.",
+            "example": "SMK Kuala Lumpur"
+          },
+          "fieldOfInterestId": {
+            "type": "number",
+            "description": "Selected field of interest identifier.",
+            "example": 3
+          },
+          "academicResult": {
+            "type": "string",
+            "description": "Academic results summary.",
+            "example": "CGPA 3.75, 8A+ in SPM"
+          },
+          "studyPreferences": {
+            "type": "string",
+            "description": "Preferred study preferences such as location, study mode, or university type.",
+            "example": "Prefer Klang Valley universities with strong internship programmes."
+          },
+          "careerGoal": {
+            "type": "string",
+            "description": "Student career goal.",
+            "example": "Software developer in a Malaysian tech company"
+          }
+        },
+        "required": [
+          "firstName",
+          "lastName",
+          "email",
+          "identityType",
+          "identityNumber",
+          "password",
+          "confirmPassword"
+        ]
+      },
+      "RegisterResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "Identifier of the newly created user.",
+            "example": "a9f0c2d9-3c8b-4f0d-9ef2-1234567890ab"
+          },
+          "email": {
+            "type": "string",
+            "description": "Registered email address.",
+            "example": "ahmad.rahman@email.com"
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message returned after registration.",
+            "example": "Account created successfully. Please verify your email."
+          }
+        },
+        "required": [
+          "userId",
+          "email",
+          "message"
+        ]
       }
     }
   }

@@ -5,11 +5,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
+import { Database } from '../../supabase/types/supabase.types';
 import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RegisterRequestDto } from './dto/requests/register-request.dto';
 import { LoginResponseDto } from './dto/responses/login-response.dto';
 import { RegisterResponseDto } from './dto/responses/register-response.dto';
-import { Database } from 'src/supabase/types/supabase.types';
 
 @Injectable()
 export class AuthService {
@@ -23,20 +23,18 @@ export class AuthService {
       password: dto.password,
     });
 
-    if (error || !data.session || !data.user) {
+    if (error || !data.user) {
       throw new UnauthorizedException(
         error?.message ?? 'Invalid email or password.',
       );
     }
 
     return {
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
       user: {
         id: data.user.id,
-        email: data.user.email ?? null,
-        role: (data.user.user_metadata?.role as string | undefined) ?? null,
+        email: data.user.email ?? '',
       },
+      message: 'Login successful.',
     };
   }
 
@@ -47,14 +45,14 @@ export class AuthService {
 
     const supabase = this.supabaseService.getClient();
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.admin.createUser({
       email: dto.email,
       password: dto.password,
-      options: {
-        data: {
-          first_name: dto.firstName,
-          last_name: dto.lastName,
-        },
+      email_confirm: true,
+      user_metadata: {
+        first_name: dto.firstName,
+        last_name: dto.lastName,
+        role: 'student',
       },
     });
 
@@ -102,11 +100,8 @@ export class AuthService {
     ];
 
     const educationLevel =
-      dto.educationLevel &&
-      educationLevels.includes(
-        dto.educationLevel as Database['public']['Enums']['education_level'],
-      )
-        ? (dto.educationLevel as Database['public']['Enums']['education_level'])
+      dto.educationLevel && educationLevels.includes(dto.educationLevel)
+        ? dto.educationLevel
         : null;
 
     const fieldId =
