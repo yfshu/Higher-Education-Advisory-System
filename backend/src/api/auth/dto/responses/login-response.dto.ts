@@ -12,6 +12,12 @@ export class LoginUserDto {
     example: 'student@demo.com',
   })
   email!: string;
+
+  @ApiProperty({
+    description: 'Role of the authenticated user.',
+    example: 'student',
+  })
+  role!: string;
 }
 
 export class LoginResponseDto {

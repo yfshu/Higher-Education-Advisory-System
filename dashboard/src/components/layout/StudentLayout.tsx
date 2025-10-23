@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Home,
@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/lib/supabaseClient";
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -42,6 +43,28 @@ const navigationItems = [
 
 export default function StudentLayout({ children, title }: StudentLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    const ensureStudent = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) {
+        router.push("/auth/login");
+        return;
+      }
+      const { data: details } = await supabase
+        .from("users_details")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      const role = details?.role ?? "student";
+      if (role === "admin") {
+        router.push("/admin");
+      }
+    };
+    void ensureStudent();
+  }, [router]);
 
   const userName = "Ahmad";
 
@@ -138,8 +161,10 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onSelect={(event) => {
+                  onSelect={async (event) => {
                     event.preventDefault();
+                    await supabase.auth.signOut();
+                    router.push("/");
                   }}
                   className="flex items-center gap-2 text-red-600 focus:text-red-600"
                 >

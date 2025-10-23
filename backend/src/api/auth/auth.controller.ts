@@ -12,6 +12,10 @@ import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RegisterRequestDto } from './dto/requests/register-request.dto';
 import { LoginResponseDto } from './dto/responses/login-response.dto';
 import { RegisterResponseDto } from './dto/responses/register-response.dto';
+import { Req } from '@nestjs/common';
+import { Request } from 'express';
+import { LogoutResponseDto } from './dto/responses/logout-response.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Auth')
 @Controller('api/auth')
@@ -36,5 +40,19 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Invalid registration payload.' })
   register(@Body() body: RegisterRequestDto): Promise<RegisterResponseDto> {
     return this.authService.register(body);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout current session (global)' })
+  @ApiOkResponse({ description: 'Logout successful.', type: LogoutResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token.' })
+  @ApiBearerAuth('supabase-auth')
+  logout(@Req() req: Request): Promise<LogoutResponseDto> {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring('Bearer '.length)
+      : undefined;
+    return this.authService.logout(token);
   }
 }

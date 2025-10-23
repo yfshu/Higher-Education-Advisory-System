@@ -84,6 +84,36 @@
           "Auth"
         ]
       }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Logout successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Logout current session (global)",
+        "tags": [
+          "Auth"
+        ]
+      }
     }
   },
   "info": {
@@ -136,11 +166,17 @@
             "type": "string",
             "description": "Email address of the authenticated user.",
             "example": "student@demo.com"
+          },
+          "role": {
+            "type": "string",
+            "description": "Role of the authenticated user.",
+            "example": "student"
           }
         },
         "required": [
           "id",
-          "email"
+          "email",
+          "role"
         ]
       },
       "LoginResponseDto": {
@@ -301,6 +337,19 @@
         "required": [
           "userId",
           "email",
+          "message"
+        ]
+      },
+      "LogoutResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Status message returned after logout.",
+            "example": "Logout successful."
+          }
+        },
+        "required": [
           "message"
         ]
       }

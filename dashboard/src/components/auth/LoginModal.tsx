@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GraduationCap, Eye, EyeOff, Mail, Lock, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface LoginFormState {
 
 export default function LoginModal() {
   const { isLoginOpen, closeLogin, switchToRegister } = useAuthModals();
+  const router = useRouter();
   const [formData, setFormData] = useState<LoginFormState>({
     email: "",
     password: "",
@@ -44,12 +46,41 @@ export default function LoginModal() {
     setLoading(true);
 
     const { email, password } = formData;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // Determine role and redirect accordingly
+    const userId = data.user?.id ?? (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      setError("Failed to determine authenticated user.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: details, error: detailsError } = await supabase
+      .from("users_details")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (detailsError) {
+      // If role fetch fails, default to student
+      console.warn("Failed to fetch user role:", detailsError.message);
+    }
+
+    const role = details?.role ?? "student";
+
+    setStatus("Signed in successfully.");
+    closeLogin();
+
+    if (role === "admin") {
+      router.push("/admin");
     } else {
-      setStatus("Signed in successfully.");
-      closeLogin();
+      router.push("/student");
     }
 
     setLoading(false);

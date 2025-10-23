@@ -10,6 +10,7 @@ import { LoginRequestDto } from './dto/requests/login-request.dto';
 import { RegisterRequestDto } from './dto/requests/register-request.dto';
 import { LoginResponseDto } from './dto/responses/login-response.dto';
 import { RegisterResponseDto } from './dto/responses/register-response.dto';
+import { LogoutResponseDto } from './dto/responses/logout-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -29,10 +30,25 @@ export class AuthService {
       );
     }
 
+    // Fetch role from users_details
+    const { data: userDetails, error: roleError } = await supabase
+      .from('users_details')
+      .select('role')
+      .eq('id', data.user.id)
+      .maybeSingle();
+
+    if (roleError) {
+      // Not fatal for login, but surface a useful message if needed
+      // You may choose to log this in a real app
+    }
+
+    const role = userDetails?.role ?? 'student';
+
     return {
       user: {
         id: data.user.id,
         email: data.user.email ?? '',
+        role,
       },
       message: 'Login successful.',
     };
@@ -85,55 +101,51 @@ export class AuthService {
       .insert(userInsert);
 
     if (userDetailsResult.error) {
-      throw new InternalServerErrorException('Failed to persist user details.');
+      throw new InternalServerErrorException(
+        userDetailsResult.error.message ?? 'Failed to create user details.',
+      );
     }
 
-    const educationLevels: Database['public']['Enums']['education_level'][] = [
-      'SPM',
-      'STPM',
-      'A-Levels',
-      'Foundation',
-      'Diploma',
-      'Bachelor',
-      'Master',
-      'Other',
-    ];
+    const studentInsert: Database['public']['Tables']['students_details']['Insert'] =
+      {
+        id: userId,
+        education_level: null,
+        field_of_interest_id: null,
+        academic_result: null,
+        study_preferences: null,
+      };
 
-    const educationLevel =
-      dto.educationLevel && educationLevels.includes(dto.educationLevel)
-        ? dto.educationLevel
-        : null;
-
-    const fieldId =
-      typeof dto.fieldOfInterestId === 'number'
-        ? dto.fieldOfInterestId
-        : dto.fieldOfInterestId
-          ? Number(dto.fieldOfInterestId)
-          : undefined;
-
-    const studentInsert = {
-      id: userId,
-      education_level: educationLevel,
-      field_of_interest_id: fieldId,
-      academic_result: dto.academicResult ?? null,
-      study_preferences: dto.studyPreferences ?? null,
-    } satisfies Database['public']['Tables']['students_details']['Insert'];
-
-    const studentInsertResult = await supabase
+    const studentResult = await supabase
       .from('students_details')
       .insert(studentInsert);
 
-    if (studentInsertResult.error) {
+    if (studentResult.error) {
       throw new InternalServerErrorException(
-        'Failed to persist student details.',
+        studentResult.error.message ?? 'Failed to create student details.',
       );
     }
 
     return {
       userId,
       email: dto.email,
-      message:
-        'Account created successfully. Please check your email for a verification link before signing in.',
+      message: 'Account created successfully.',
     };
+  }
+
+  async logout(accessToken?: string): Promise<LogoutResponseDto> {
+    if (!accessToken) {
+      throw new UnauthorizedException('Missing access token.');
+    }
+
+    const supabase = this.supabaseService.createClientWithToken(accessToken);
+    const { error } = await supabase.auth.signOut({ scope: 'global' });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message ?? 'Failed to logout.',
+      );
+    }
+
+    return { message: 'Logout successful.' };
   }
 }

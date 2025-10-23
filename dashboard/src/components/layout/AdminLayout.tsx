@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -31,7 +32,29 @@ const navigationItems = [
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const adminName = "Administrator";
+
+  useEffect(() => {
+    const ensureAdmin = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) {
+        router.push("/auth/login");
+        return;
+      }
+      const { data: details } = await supabase
+        .from("users_details")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      const role = details?.role ?? "student";
+      if (role !== "admin") {
+        router.push("/student");
+      }
+    };
+    void ensureAdmin();
+  }, [router]);
 
   const renderNavItem = (href: string, Icon: LucideIcon, label: string) => {
     const isActive = pathname === href;
@@ -80,8 +103,9 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
           </div>
           <Button
             variant="ghost"
-            onClick={(event) => {
-              event.preventDefault();
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push("/");
             }}
             className="w-full justify-start text-gray-700 hover:bg-white/20 hover:text-gray-800 hover:backdrop-blur-sm hover:shadow-md"
           >
