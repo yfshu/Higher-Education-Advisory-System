@@ -114,6 +114,81 @@
           "Auth"
         ]
       }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reset email sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForgotPasswordResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email."
+          }
+        },
+        "summary": "Send a password reset email",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/update-password": {
+      "post": {
+        "operationId": "AuthController_updatePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePasswordRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatePasswordResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Update password using current session",
+        "tags": [
+          "Auth"
+        ]
+      }
     }
   },
   "info": {
@@ -365,6 +440,62 @@
             "type": "string",
             "description": "Status message returned after logout.",
             "example": "Logout successful."
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "ForgotPasswordRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address to receive the reset link."
+          },
+          "redirectTo": {
+            "type": "string",
+            "description": "Redirect URL after clicking the email reset link.",
+            "example": "http://localhost:3000/"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ForgotPasswordResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Status message.",
+            "example": "Password reset email sent."
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "UpdatePasswordRequestDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "New password to set.",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "password"
+        ]
+      },
+      "UpdatePasswordResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Status message.",
+            "example": "Password updated successfully."
           }
         },
         "required": [

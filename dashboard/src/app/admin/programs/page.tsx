@@ -107,7 +107,7 @@ export default function ProgramManagement() {
   });
 
   const handleAddProgram = () => {
-    console.log('Adding new program:', newProgram);
+    // Add program functionality would be implemented here
     setIsAddDialogOpen(false);
     setNewProgram({
       title: '',

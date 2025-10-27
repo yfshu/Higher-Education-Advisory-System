@@ -72,8 +72,8 @@ export default function StudentProfile() {
   const completionPercentage = 85;
 
   const handleSave = () => {
+    // Save profile functionality would be implemented here
     setIsEditing(false);
-    console.log('Saving profile:', profile);
   };
 
   const formatICNumber = (value: string) => {
@@ -252,7 +252,7 @@ export default function StudentProfile() {
                                 <SelectContent>
                                   {field.options?.map((option, index) => (
                                     <SelectItem key={option} value={option}>
-                                      {field.labels?.[index] || option}
+                                      {field.label?.[index] || option}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

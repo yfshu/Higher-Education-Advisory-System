@@ -11,6 +11,10 @@ import { RegisterRequestDto } from './dto/requests/register-request.dto';
 import { LoginResponseDto } from './dto/responses/login-response.dto';
 import { RegisterResponseDto } from './dto/responses/register-response.dto';
 import { LogoutResponseDto } from './dto/responses/logout-response.dto';
+import { ForgotPasswordRequestDto } from './dto/requests/forgot-password-request.dto';
+import { ForgotPasswordResponseDto } from './dto/responses/forgot-password-response.dto';
+import { UpdatePasswordRequestDto } from './dto/requests/update-password-request.dto';
+import { UpdatePasswordResponseDto } from './dto/responses/update-password-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -150,5 +154,47 @@ export class AuthService {
     }
 
     return { message: 'Logout successful.' };
+  }
+
+  async forgotPassword(
+    dto: ForgotPasswordRequestDto,
+  ): Promise<ForgotPasswordResponseDto> {
+    const supabase = this.supabaseService.getClient();
+    const redirectTo =
+      dto.redirectTo ?? process.env.FRONTEND_URL ?? 'http://localhost:3000';
+
+    const { error } = await supabase.auth.resetPasswordForEmail(dto.email, {
+      redirectTo,
+    });
+
+    if (error) {
+      throw new BadRequestException(
+        error.message ?? 'Failed to send password reset email.',
+      );
+    }
+
+    return { message: 'Password reset email sent.' };
+  }
+
+  async updatePassword(
+    accessToken: string | undefined,
+    dto: UpdatePasswordRequestDto,
+  ): Promise<UpdatePasswordResponseDto> {
+    if (!accessToken) {
+      throw new UnauthorizedException('Missing access token.');
+    }
+
+    const supabase = this.supabaseService.createClientWithToken(accessToken);
+    const { error } = await supabase.auth.updateUser({
+      password: dto.password,
+    });
+
+    if (error) {
+      throw new BadRequestException(
+        error.message ?? 'Failed to update password.',
+      );
+    }
+
+    return { message: 'Password updated successfully.' };
   }
 }

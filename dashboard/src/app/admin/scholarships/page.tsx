@@ -171,9 +171,7 @@ export default function ScholarshipManagement() {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this scholarship?')) {
-      setScholarships(prev => prev.filter(s => s.id !== id));
-    }
+    setScholarships(prev => prev.filter(s => s.id !== id));
   };
 
   const getStatusColor = (status: string) => {

@@ -131,7 +131,7 @@ export default function SavedItems() {
   };
 
   const removeScholarship = (scholarshipId: string) => {
-    console.log('Removing scholarship:', scholarshipId);
+    // Remove scholarship functionality would be implemented here
   };
 
   const removeSelectedScholarships = () => {
