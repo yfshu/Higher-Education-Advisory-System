@@ -29,4 +29,22 @@ export class LoginResponseDto {
 
   @ApiProperty({ type: LoginUserDto })
   user!: LoginUserDto;
+
+  @ApiProperty({
+    description: 'Supabase access token for client session.',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  accessToken!: string;
+
+  @ApiProperty({
+    description: 'Supabase refresh token for client session.',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  refreshToken!: string;
+
+  @ApiProperty({
+    description: 'Token expiry in seconds.',
+    example: 3600,
+  })
+  expiresIn!: number;
 }

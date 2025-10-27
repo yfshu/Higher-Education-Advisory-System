@@ -51,6 +51,9 @@ export class AuthService {
         role,
       },
       message: 'Login successful.',
+      accessToken: data.session?.access_token ?? '',
+      refreshToken: data.session?.refresh_token ?? '',
+      expiresIn: data.session?.expires_in ?? 0,
     };
   }
 

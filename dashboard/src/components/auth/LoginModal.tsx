@@ -45,45 +45,60 @@ export default function LoginModal() {
     setStatus(null);
     setLoading(true);
 
-    const { email, password } = formData;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
+    try {
+      const { email, password } = formData;
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+      const res = await fetch(`${backendUrl}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const msg = errBody?.message || `Login failed with status ${res.status}`;
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+
+      const body = await res.json();
+      const accessToken: string = body?.accessToken ?? "";
+      const refreshToken: string = body?.refreshToken ?? "";
+      const role: string = body?.user?.role ?? "student";
+
+      if (!accessToken || !refreshToken) {
+        setError("Missing session tokens from backend response.");
+        setLoading(false);
+        return;
+      }
+
+      const { error: setErrorResult } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (setErrorResult) {
+        setError(setErrorResult.message);
+        setLoading(false);
+        return;
+      }
+
+      setStatus("Signed in successfully.");
+      closeLogin();
+
+      if (role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/student");
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unexpected error during login.";
+      setError(msg);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Determine role and redirect accordingly
-    const userId = data.user?.id ?? (await supabase.auth.getUser()).data.user?.id;
-    if (!userId) {
-      setError("Failed to determine authenticated user.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: details, error: detailsError } = await supabase
-      .from("users_details")
-      .select("role")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (detailsError) {
-      // If role fetch fails, default to student
-      console.warn("Failed to fetch user role:", detailsError.message);
-    }
-
-    const role = details?.role ?? "student";
-
-    setStatus("Signed in successfully.");
-    closeLogin();
-
-    if (role === "admin") {
-      router.push("/admin");
-    } else {
-      router.push("/student");
-    }
-
-    setLoading(false);
   };
 
   return (

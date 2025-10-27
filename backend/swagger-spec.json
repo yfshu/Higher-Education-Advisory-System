@@ -189,11 +189,29 @@
           },
           "user": {
             "$ref": "#/components/schemas/LoginUserDto"
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "Supabase access token for client session.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Supabase refresh token for client session.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Token expiry in seconds.",
+            "example": 3600
           }
         },
         "required": [
           "message",
-          "user"
+          "user",
+          "accessToken",
+          "refreshToken",
+          "expiresIn"
         ]
       },
       "RegisterRequestDto": {
