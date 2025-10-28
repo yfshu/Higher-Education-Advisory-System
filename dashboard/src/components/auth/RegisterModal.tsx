@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
-import { GraduationCap, User, Mail, Phone, Calendar, MapPin, Lock, Camera, Target } from "lucide-react";
+import { GraduationCap, User, Mail, Phone, Calendar, MapPin, Lock, Camera, Target, Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -60,8 +60,13 @@ const EDUCATION_LEVELS = [
   "Other",
 ] as const;
 
+// Dropdown options for SPM/STPM academic results (number of As)
+const SPM_STPM_AS_OPTIONS = Array.from({ length: 13 }, (_, i) => `${i}As`);
+
 export default function RegisterModal() {
   const { isRegisterOpen, closeRegister, switchToLogin } = useAuthModals();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState<RegisterFormState>({
     firstName: "",
     lastName: "",
@@ -214,7 +219,7 @@ export default function RegisterModal() {
 
   return (
     <Dialog open={isRegisterOpen} onOpenChange={(open) => (!open ? closeRegister() : null)}>
-      <DialogContent className="h-[90vh] w-full max-w-3xl gap-0 overflow-hidden border-none bg-white/95 p-0 shadow-2xl backdrop-blur-xl">
+      <DialogContent className="h-[92vh] w-[60vw] sm:max-w-[60vw] gap-0 overflow-hidden border-none bg-white p-0 shadow-2xl">
         <DialogHeader className="space-y-3 border-b border-slate-200/60 px-8 py-6 text-center">
           <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-blue-600">
             <GraduationCap className="size-8 text-white" />
@@ -222,12 +227,12 @@ export default function RegisterModal() {
           <DialogTitle className="text-2xl font-semibold text-gray-900">
             Create Your Account
           </DialogTitle>
-          <p className="text-sm text-gray-600">
+          <p className="text-base text-gray-700">
             Start exploring Malaysian universities and programs today.
           </p>
         </DialogHeader>
 
-        <ScrollArea className="h-full max-h-[calc(90vh-8rem)]">
+        <ScrollArea className="h-full max-h-[calc(92vh-8rem)]">
           <form className="space-y-8 px-8 py-6" onSubmit={handleSubmit}>
             <Section title="Personal Information" description="Tell us about yourself to personalise your experience.">
               <div className="grid gap-4 md:grid-cols-2">
@@ -265,19 +270,19 @@ export default function RegisterModal() {
                   onChange={(value) => setFormData((prev) => ({ ...prev, phoneNumber: value }))}
                 />
                 <div className="space-y-2">
-                  <Label>Identity Type</Label>
+                  <Label className="text-gray-900 font-medium">Identity Type</Label>
                   <Select
                     value={formData.identityType}
                     onValueChange={(value: IdentityType) =>
                       setFormData((prev) => ({ ...prev, identityType: value }))
                     }
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-11 rounded-md bg-white border border-slate-300 text-gray-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                       <SelectValue placeholder="Select identity type" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ic">Malaysian IC Number</SelectItem>
-                      <SelectItem value="passport">Passport</SelectItem>
+                    <SelectContent position="popper" className="z-50 max-h-none overflow-visible bg-white shadow-2xl border-2 border-slate-300 rounded-lg">
+                      <SelectItem value="ic" className="cursor-pointer text-gray-900 hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">Malaysian IC Number</SelectItem>
+                      <SelectItem value="passport" className="cursor-pointer text-gray-900 hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">Passport</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -319,14 +324,6 @@ export default function RegisterModal() {
                   value={formData.currentLocation}
                   onChange={(value) => setFormData((prev) => ({ ...prev, currentLocation: value }))}
                 />
-                <Field
-                  id="avatarUrl"
-                  label="Avatar URL (optional)"
-                  placeholder="https://example.com/profile.jpg"
-                  icon={<Camera className="size-4" />}
-                  value={formData.avatarUrl}
-                  onChange={(value) => setFormData((prev) => ({ ...prev, avatarUrl: value }))}
-                />
               </div>
             </Section>
 
@@ -335,20 +332,24 @@ export default function RegisterModal() {
                 <Field
                   id="password"
                   label="Password"
-                  type="password"
                   placeholder="Create password"
                   icon={<Lock className="size-4" />}
                   value={formData.password}
                   onChange={(value) => setFormData((prev) => ({ ...prev, password: value }))}
+                  showPasswordToggle={true}
+                  showPassword={showPassword}
+                  onTogglePassword={() => setShowPassword(!showPassword)}
                 />
                 <Field
                   id="confirmPassword"
                   label="Confirm Password"
-                  type="password"
                   placeholder="Confirm password"
                   icon={<Lock className="size-4" />}
                   value={formData.confirmPassword}
                   onChange={(value) => setFormData((prev) => ({ ...prev, confirmPassword: value }))}
+                  showPasswordToggle={true}
+                  showPassword={showConfirmPassword}
+                  onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
                 />
               </div>
             </Section>
@@ -359,17 +360,17 @@ export default function RegisterModal() {
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Education Level</Label>
+                  <Label className="text-gray-900 font-medium">Education Level</Label>
                   <Select
                     value={formData.educationLevel}
                     onValueChange={(value) => setFormData((prev) => ({ ...prev, educationLevel: value }))}
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-11 rounded-md bg-white border border-slate-300 text-gray-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                       <SelectValue placeholder="Select education level" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-50 max-h-none overflow-visible bg-white shadow-2xl border-2 border-slate-300 rounded-lg">
                       {EDUCATION_LEVELS.map((level) => (
-                        <SelectItem key={level} value={level}>
+                        <SelectItem key={level} value={level} className="cursor-pointer text-gray-900 hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                           {level}
                         </SelectItem>
                       ))}
@@ -386,35 +387,60 @@ export default function RegisterModal() {
                   }
                 />
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Field of Interest</Label>
+                  <Label className="text-gray-900 font-medium">Field of Interest</Label>
                   <Select
                     value={formData.fieldOfInterestId}
                     onValueChange={(value) => setFormData((prev) => ({ ...prev, fieldOfInterestId: value }))}
                   >
-                    <SelectTrigger className="h-11">
+                    <SelectTrigger className="h-11 rounded-md bg-white border border-slate-300 text-gray-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                       <SelectValue placeholder="Select preferred field" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-50 max-h-none overflow-visible bg-white shadow-2xl border-2 border-slate-300 rounded-lg">
                       {fieldOptions.map((option) => (
-                        <SelectItem key={option.id} value={String(option.id)}>
+                        <SelectItem key={option.id} value={String(option.id)} className="cursor-pointer text-gray-900 hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
                           {option.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <Field
-                  id="academicResult"
-                  label="Academic Result"
-                  placeholder="CGPA, number of As, or highlight results"
-                  value={formData.academicResult}
-                  onChange={(value) => setFormData((prev) => ({ ...prev, academicResult: value }))}
-                />
+                {formData.educationLevel === "SPM" || formData.educationLevel === "STPM" ? (
+                  <div className="space-y-2">
+                    <Label className="text-gray-900 font-medium">Academic Result</Label>
+                    <Select
+                      value={formData.academicResult}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, academicResult: value }))}
+                    >
+                      <SelectTrigger className="h-11 rounded-md bg-white border border-slate-300 text-gray-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
+                        <SelectValue placeholder="Select number of As" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" className="z-50 max-h-none overflow-visible bg-white shadow-2xl border-2 border-slate-300 rounded-lg">
+                        {SPM_STPM_AS_OPTIONS.map((opt) => (
+                          <SelectItem key={opt} value={opt} className="cursor-pointer text-gray-900 hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700">
+                            {opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <Field
+                    id="academicResult"
+                    label="Academic Result (CGPA)"
+                    placeholder="e.g., 3.85 (0.00–4.00)"
+                    type="number"
+                    value={formData.academicResult}
+                    onChange={(value) => setFormData((prev) => ({ ...prev, academicResult: value }))}
+                    min={0}
+                    max={4}
+                    step={0.01}
+                  />
+                )}
                 <div className="md:col-span-2 space-y-2">
-                  <Label>Study Preferences</Label>
+                  <Label className="text-gray-900 font-medium">Study Preferences</Label>
                   <Textarea
                     placeholder="Preferred study locations, university type, budget, etc."
-                    className="min-h-24"
+                    className="min-h-24 bg-white text-gray-900 placeholder:text-gray-500 border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                     value={formData.studyPreferences}
                     onChange={(event) =>
                       setFormData((prev) => ({ ...prev, studyPreferences: event.target.value }))
@@ -422,10 +448,10 @@ export default function RegisterModal() {
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <Label>Career Goal</Label>
+                  <Label className="text-gray-900 font-medium">Career Goal</Label>
                   <Textarea
                     placeholder="Tell us about your aspirations or desired career path."
-                    className="min-h-24"
+                    className="min-h-24 bg-white text-gray-900 placeholder:text-gray-500 border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                     value={formData.careerGoal}
                     onChange={(event) =>
                       setFormData((prev) => ({ ...prev, careerGoal: event.target.value }))
@@ -478,7 +504,7 @@ function Section({ title, description, children }: SectionProps) {
           <Target className="size-5 text-blue-600" />
           {title}
         </h2>
-        <p className="text-sm text-gray-600">{description}</p>
+        <p className="text-base text-gray-700">{description}</p>
       </header>
       {children}
     </section>
@@ -493,22 +519,41 @@ interface FieldProps {
   placeholder?: string;
   type?: string;
   icon?: ReactNode;
+  showPasswordToggle?: boolean;
+  showPassword?: boolean;
+  onTogglePassword?: () => void;
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
-function Field({ id, label, value, onChange, placeholder, type = "text", icon }: FieldProps) {
+function Field({ id, label, value, onChange, placeholder, type = "text", icon, showPasswordToggle, showPassword, onTogglePassword, min, max, step }: FieldProps) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id} className="text-gray-900 font-medium">{label}</Label>
       <div className="relative">
         {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</span>}
         <Input
           id={id}
-          type={type}
+          type={showPasswordToggle ? (showPassword ? "text" : "password") : type}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className={icon ? "h-11 pl-10" : "h-11"}
+          className={(icon ? "h-11 pl-10 " : "h-11 ") + (showPasswordToggle ? "pr-10 " : "") + "text-gray-900 placeholder:text-gray-500 border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"}
+          min={min}
+          max={max}
+          step={step}
         />
+        {showPasswordToggle && onTogglePassword && (
+          <button
+            type="button"
+            onClick={onTogglePassword}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+          >
+            {showPassword ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+          </button>
+        )}
       </div>
     </div>
   );
