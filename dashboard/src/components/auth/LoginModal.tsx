@@ -268,7 +268,7 @@ export default function LoginModal() {
                   }
                   placeholder="Enter your email"
                   required
-                  className="h-11 pl-10"
+                  className="h-11 pl-10 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function LoginModal() {
                   }
                   placeholder="Enter your password"
                   required
-                  className="h-11 pl-10 pr-10"
+                  className="h-11 pl-10 pr-10 text-gray-900 placeholder:text-gray-500"
                 />
                 <button
                   type="button"
@@ -345,7 +345,7 @@ export default function LoginModal() {
                   }
                   placeholder="Enter your email"
                   required
-                  className="h-11 pl-10"
+                  className="h-11 pl-10 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
             </div>

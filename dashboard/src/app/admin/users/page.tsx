@@ -69,14 +69,14 @@ export default function UserManagement() {
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Registered Users</h2>
-            <p className="text-gray-600">Manage student accounts and monitor activity.</p>
+            <p className="text-muted-foreground">Manage student accounts and monitor activity.</p>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
               <Input
                 type="text"
                 placeholder="Search users..."

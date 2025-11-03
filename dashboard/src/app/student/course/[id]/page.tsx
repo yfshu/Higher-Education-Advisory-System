@@ -109,14 +109,14 @@ export default function ProgramDetail() {
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <h1 className="text-3xl font-bold text-gray-900">{program.title}</h1>
+                  <h1 className="text-3xl font-bold text-foreground">{program.title}</h1>
                   <Badge className="bg-green-500/20 text-green-700 border-green-200/30">
                     {program.matchPercentage}% Match
                   </Badge>
                   <Badge variant="outline">{program.type}</Badge>
                 </div>
                 
-                <div className="flex items-center gap-6 text-gray-600 mb-4">
+                <div className="flex items-center gap-6 text-muted-foreground mb-4">
                   <div className="flex items-center gap-2">
                     <GraduationCap className="w-5 h-5" />
                     <span className="font-medium">{program.university}</span>
@@ -134,8 +134,8 @@ export default function ProgramDetail() {
                 <div className="flex items-center gap-4 mb-6">
                   <div className="flex items-center gap-1">
                     <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                    <span className="font-medium text-gray-900">{program.rating}</span>
-                    <span className="text-gray-500">({program.reviews} reviews)</span>
+                    <span className="font-medium text-foreground">{program.rating}</span>
+                    <span className="text-muted-foreground">({program.reviews} reviews)</span>
                   </div>
                 </div>
 
@@ -165,25 +165,25 @@ export default function ProgramDetail() {
             {/* Key Information Grid */}
             <div className="grid md:grid-cols-4 gap-4 mb-6">
               <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-gray-900">RM {program.tuitionFee.toLocaleString()}</p>
-                <p className="text-sm text-gray-600">per semester</p>
+                <p className="text-2xl font-bold text-foreground">RM {program.tuitionFee.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">per semester</p>
               </div>
               <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-gray-900">{program.duration}</p>
-                <p className="text-sm text-gray-600">duration</p>
+                <p className="text-2xl font-bold text-foreground">{program.duration}</p>
+                <p className="text-sm text-muted-foreground">duration</p>
               </div>
               <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-gray-900">{program.startDate.split(' ')[0]}</p>
-                <p className="text-sm text-gray-600">start date</p>
+                <p className="text-2xl font-bold text-foreground">{program.startDate.split(' ')[0]}</p>
+                <p className="text-sm text-muted-foreground">start date</p>
               </div>
               <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Calendar className="w-4 h-4 text-orange-600" />
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-foreground">
                     {new Date(program.deadline).toLocaleDateString()}
                   </p>
                 </div>
-                <p className="text-sm text-gray-600">deadline</p>
+                <p className="text-sm text-muted-foreground">deadline</p>
               </div>
             </div>
 
@@ -204,33 +204,33 @@ export default function ProgramDetail() {
           <TabsContent value="overview" className="space-y-6">
             <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Program Description</h3>
-                <p className="text-gray-700 leading-relaxed mb-6">{program.description}</p>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Program Description</h3>
+                <p className="text-muted-foreground leading-relaxed mb-6">{program.description}</p>
                 
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Users className="w-8 h-8 text-blue-600" />
                     </div>
-                    <h4 className="font-medium text-gray-900 mb-1">Employment Rate</h4>
+                    <h4 className="font-medium text-foreground mb-1">Employment Rate</h4>
                     <p className="text-2xl font-bold text-blue-600">{program.employmentStats.employmentRate}%</p>
-                    <p className="text-sm text-gray-600">within 6 months of graduation</p>
+                    <p className="text-sm text-muted-foreground">within 6 months of graduation</p>
                   </div>
                   <div className="text-center">
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Award className="w-8 h-8 text-green-600" />
                     </div>
-                    <h4 className="font-medium text-gray-900 mb-1">Average Salary</h4>
+                    <h4 className="font-medium text-foreground mb-1">Average Salary</h4>
                     <p className="text-2xl font-bold text-green-600">RM {program.employmentStats.averageSalary.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600">starting salary/month</p>
+                    <p className="text-sm text-muted-foreground">starting salary/month</p>
                   </div>
                   <div className="text-center">
                     <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Star className="w-8 h-8 text-purple-600" />
                     </div>
-                    <h4 className="font-medium text-gray-900 mb-1">Satisfaction</h4>
+                    <h4 className="font-medium text-foreground mb-1">Satisfaction</h4>
                     <p className="text-2xl font-bold text-purple-600">{program.employmentStats.graduateSatisfaction}%</p>
-                    <p className="text-sm text-gray-600">graduate satisfaction</p>
+                    <p className="text-sm text-muted-foreground">graduate satisfaction</p>
                   </div>
                 </div>
               </div>
@@ -240,17 +240,17 @@ export default function ProgramDetail() {
           <TabsContent value="curriculum" className="space-y-6">
             <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Course Structure</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-6">Course Structure</h3>
                 <div className="space-y-6">
                   {program.curriculum.map((year) => (
                     <div key={year.year} className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4">
-                      <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                      <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
                         <Book className="w-5 h-5 text-blue-600" />
                         Year {year.year}
                       </h4>
                       <div className="grid md:grid-cols-2 gap-2">
                         {year.subjects.map((subject, index) => (
-                          <div key={index} className="flex items-center gap-2 text-gray-700">
+                          <div key={index} className="flex items-center gap-2 text-muted-foreground">
                             <CheckCircle className="w-4 h-4 text-green-600" />
                             <span>{subject}</span>
                           </div>
@@ -266,17 +266,17 @@ export default function ProgramDetail() {
           <TabsContent value="requirements" className="space-y-6">
             <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Entry Requirements</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-6">Entry Requirements</h3>
                 <div className="space-y-4">
                   {Object.entries(program.requirements).map(([key, value]) => (
                     <div key={key} className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4">
                       <div className="flex items-start gap-3">
                         <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                         <div>
-                          <h4 className="font-medium text-gray-900 mb-1 capitalize">
+                          <h4 className="font-medium text-foreground mb-1 capitalize">
                             {key.replace(/([A-Z])/g, ' $1')}
                           </h4>
-                          <p className="text-gray-700">{value}</p>
+                          <p className="text-muted-foreground">{value}</p>
                         </div>
                       </div>
                     </div>
@@ -289,13 +289,13 @@ export default function ProgramDetail() {
           <TabsContent value="careers" className="space-y-6">
             <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Career Paths</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-6">Career Paths</h3>
                 <div className="space-y-4">
                   {program.careerOutcomes.map((career, index) => (
                     <div key={index} className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-900">{career.role}</span>
-                        <span className="text-sm font-medium text-gray-600">{career.percentage}%</span>
+                        <span className="font-medium text-foreground">{career.role}</span>
+                        <span className="text-sm font-medium text-muted-foreground">{career.percentage}%</span>
                       </div>
                       <Progress value={career.percentage} className="h-2" />
                     </div>
@@ -308,12 +308,12 @@ export default function ProgramDetail() {
           <TabsContent value="facilities" className="space-y-6">
             <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-6">Facilities & Resources</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-6">Facilities & Resources</h3>
                 <div className="grid md:grid-cols-2 gap-3">
                   {program.facilities.map((facility, index) => (
                     <div key={index} className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-gray-700">{facility}</span>
+                      <span className="text-muted-foreground">{facility}</span>
                     </div>
                   ))}
                 </div>
@@ -325,26 +325,26 @@ export default function ProgramDetail() {
         {/* Contact Information */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Get More Information</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Get More Information</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <div className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
                 <Phone className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-600">Phone</p>
-                  <p className="font-medium text-gray-900">{program.contact.admissions}</p>
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-medium text-foreground">{program.contact.admissions}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
                 <Mail className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium text-gray-900">{program.contact.email}</p>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium text-foreground">{program.contact.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
                 <Globe className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-600">Website</p>
+                  <p className="text-sm text-muted-foreground">Website</p>
                   <p className="font-medium text-blue-600">{program.contact.website}</p>
                 </div>
               </div>

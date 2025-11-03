@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/lib/supabaseClient";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -102,15 +103,13 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen text-foreground bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-950 dark:to-black">
       <nav className="backdrop-blur-2xl bg-white/10 border-b border-white/10 sticky top-0 z-50 shadow-2xl">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <GraduationCap className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-semibold text-gray-800">
-                BackToSchool
-              </span>
+              <span className="text-xl font-semibold text-foreground">BackToSchool</span>
             </div>
 
             <div className="hidden md:flex items-center gap-1 bg-white/20 backdrop-blur-lg rounded-full px-2 py-1 border border-white/10 shadow-xl">
@@ -119,60 +118,57 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
               )}
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10 border-2 border-blue-200">
-                    <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                      {userName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 backdrop-blur-2xl bg-white/15 border-white/10 shadow-2xl"
-                align="end"
-              >
-                <div className="flex items-center gap-2 p-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src="/placeholder-avatar.jpg"
-                      alt={userName}
-                    />
-                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm">
-                      {userName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{userName}</p>
-                    <p className="text-xs text-gray-500">Student</p>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link
-                    href="/student/profile"
-                    className="flex items-center gap-2 w-full"
-                  >
-                    <User className="w-4 h-4" />
-                    Profile &amp; Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={async (event) => {
-                    event.preventDefault();
-                    await supabase.auth.signOut();
-                    router.push("/");
-                  }}
-                  className="flex items-center gap-2 text-red-600 focus:text-red-600"
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10 border-2 border-blue-200">
+                      <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
+                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                        {userName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-56 backdrop-blur-2xl bg-white/15 border-white/10 shadow-2xl"
+                  align="end"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <div className="flex items-center gap-2 p-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
+                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm">
+                        {userName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{userName}</p>
+                      <p className="text-xs text-muted-foreground">Student</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/student/profile" className="flex items-center gap-2 w-full">
+                      <User className="w-4 h-4" />
+                      Profile &amp; Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={async (event) => {
+                      event.preventDefault();
+                      await supabase.auth.signOut();
+                      router.push("/");
+                    }}
+                    className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           <div className="md:hidden mt-4">
@@ -187,8 +183,8 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
 
       <div className="flex-1">
         {title && (
-          <div className="max-w-7xl mx-auto px-6 py-6 backdrop-blur-xl bg-white/5">
-            <h1 className="text-3xl font-semibold text-gray-900">{title}</h1>
+          <div className="max-w-7xl mx-auto px-6 py-6 backdrop-blur-xl bg-white/5 dark:bg-slate-900/30">
+            <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
           </div>
         )}
         <div className="max-w-7xl mx-auto px-6 pb-8">{children}</div>

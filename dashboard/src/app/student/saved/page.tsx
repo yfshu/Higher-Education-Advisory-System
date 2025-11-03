@@ -143,7 +143,7 @@ export default function SavedItems() {
     const daysUntilDeadline = Math.ceil((new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     
     if (status === 'closed' || daysUntilDeadline < 0) {
-      return <Badge variant="secondary" className="bg-gray-100 text-gray-600">Closed</Badge>;
+      return <Badge variant="secondary" className="bg-gray-100 text-muted-foreground">Closed</Badge>;
     } else if (daysUntilDeadline <= 7) {
       return <Badge variant="destructive">Urgent - {daysUntilDeadline} days left</Badge>;
     } else if (daysUntilDeadline <= 30) {
@@ -212,8 +212,8 @@ export default function SavedItems() {
                   <Heart className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">Saved Items</h1>
-                  <p className="text-gray-600">Manage your saved programs and scholarships</p>
+                  <h1 className="text-2xl font-semibold text-foreground">Saved Items</h1>
+                  <p className="text-muted-foreground">Manage your saved programs and scholarships</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -240,8 +240,8 @@ export default function SavedItems() {
             <div className="flex items-center gap-3">
               <GraduationCap className="w-8 h-8 text-blue-600" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">{savedPrograms.length}</p>
-                <p className="text-sm text-gray-600">Saved Programs</p>
+                <p className="text-2xl font-semibold text-foreground">{savedPrograms.length}</p>
+                <p className="text-sm text-muted-foreground">Saved Programs</p>
               </div>
             </div>
           </Card>
@@ -249,8 +249,8 @@ export default function SavedItems() {
             <div className="flex items-center gap-3">
               <Award className="w-8 h-8 text-yellow-600" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">{savedScholarships.length}</p>
-                <p className="text-sm text-gray-600">Saved Scholarships</p>
+                <p className="text-2xl font-semibold text-foreground">{savedScholarships.length}</p>
+                <p className="text-sm text-muted-foreground">Saved Scholarships</p>
               </div>
             </div>
           </Card>
@@ -258,13 +258,13 @@ export default function SavedItems() {
             <div className="flex items-center gap-3">
               <AlertCircle className="w-8 h-8 text-red-600" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-2xl font-semibold text-foreground">
                   {[...savedPrograms, ...savedScholarships].filter(item => {
                     const days = Math.ceil((new Date(item.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                     return days <= 7 && days >= 0;
                   }).length}
                 </p>
-                <p className="text-sm text-gray-600">Urgent Deadlines</p>
+                <p className="text-sm text-muted-foreground">Urgent Deadlines</p>
               </div>
             </div>
           </Card>
@@ -272,12 +272,12 @@ export default function SavedItems() {
             <div className="flex items-center gap-3">
               <Star className="w-8 h-8 text-purple-600" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-2xl font-semibold text-foreground">
                   {Math.round((savedPrograms.reduce((acc, p) => acc + p.matchPercentage, 0) + 
                     savedScholarships.reduce((acc, s) => acc + s.matchScore, 0)) / 
                     (savedPrograms.length + savedScholarships.length))}%
                 </p>
-                <p className="text-sm text-gray-600">Avg Match Score</p>
+                <p className="text-sm text-muted-foreground">Avg Match Score</p>
               </div>
             </div>
           </Card>
@@ -310,7 +310,7 @@ export default function SavedItems() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <SortAsc className="w-4 h-4 text-gray-500" />
+                      <SortAsc className="w-4 h-4 text-muted-foreground" />
                       <Select value={programSortBy} onValueChange={setProgramSortBy}>
                         <SelectTrigger className="w-48 backdrop-blur-sm bg-white/50 border-white/30">
                           <SelectValue />
@@ -324,7 +324,7 @@ export default function SavedItems() {
                       </Select>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {savedPrograms.length} program{savedPrograms.length !== 1 ? 's' : ''} saved
                   </p>
                 </div>
@@ -337,10 +337,10 @@ export default function SavedItems() {
                 <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
                   <div className="p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <GraduationCap className="w-8 h-8 text-gray-400" />
+                      <GraduationCap className="w-8 h-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No programs saved yet</h3>
-                    <p className="text-gray-600 mb-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">No programs saved yet</h3>
+                    <p className="text-muted-foreground mb-4">
                       Start exploring Malaysian university programs and save the ones you are interested in.
                     </p>
                     <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -358,12 +358,12 @@ export default function SavedItems() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{program.title}</h3>
+                            <h3 className="text-lg font-semibold text-foreground">{program.title}</h3>
                             <Badge className="bg-green-500/20 text-green-700">
                               {program.matchPercentage}% Match
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-gray-600 mb-2">
+                          <div className="flex items-center gap-4 text-muted-foreground mb-2">
                             <div className="flex items-center gap-1">
                               <GraduationCap className="w-4 h-4" />
                               {program.university}
@@ -373,7 +373,7 @@ export default function SavedItems() {
                               {program.location}
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>Saved on {new Date(program.savedDate).toLocaleDateString()}</span>
                             <div className="flex items-center gap-1">
                               <Calendar className="w-4 h-4" />
@@ -422,7 +422,7 @@ export default function SavedItems() {
                       </Select>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 text-gray-500" />
+                      <Filter className="w-4 h-4 text-muted-foreground" />
                       <Select value={scholarshipFilterBy} onValueChange={setScholarshipFilterBy}>
                         <SelectTrigger className="w-48 backdrop-blur-sm bg-white/50 border-white/30">
                           <SelectValue />
@@ -456,10 +456,10 @@ export default function SavedItems() {
                 <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
                   <div className="p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Award className="w-8 h-8 text-gray-400" />
+                      <Award className="w-8 h-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No scholarships found</h3>
-                    <p className="text-gray-600 mb-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">No scholarships found</h3>
+                    <p className="text-muted-foreground mb-4">
                       {scholarshipFilterBy === 'all' 
                         ? "You haven't saved any scholarships yet. Start exploring opportunities!"
                         : `No scholarships match the current filter: ${scholarshipFilterBy}`
@@ -487,7 +487,7 @@ export default function SavedItems() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                              <h3 className="text-xl font-semibold text-gray-900">{scholarship.title}</h3>
+                              <h3 className="text-xl font-semibold text-foreground">{scholarship.title}</h3>
                               {getStatusBadge(scholarship.status, scholarship.deadline)}
                               <Badge variant="outline" className="bg-blue-50 text-blue-700">
                                 {scholarship.matchScore}% match
@@ -497,48 +497,48 @@ export default function SavedItems() {
                               variant="ghost"
                               size="sm"
                               onClick={() => removeScholarship(scholarship.id)}
-                              className="text-gray-500 hover:text-red-600"
+                              className="text-muted-foreground hover:text-red-600"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
 
-                          <div className="flex items-center gap-2 text-gray-600 mb-3">
+                          <div className="flex items-center gap-2 text-muted-foreground mb-3">
                             <Building2 className="w-4 h-4" />
                             <span>{scholarship.organization}</span>
-                            <span className="text-gray-400">•</span>
+                            <span className="text-muted-foreground">•</span>
                             <Badge variant="secondary" className="text-xs">{scholarship.type}</Badge>
                           </div>
 
-                          <p className="text-gray-700 mb-4">{scholarship.description}</p>
+                          <p className="text-muted-foreground mb-4">{scholarship.description}</p>
 
                           <div className="grid md:grid-cols-4 gap-4 mb-4">
                             <div className="flex items-center gap-2">
                               <DollarSign className="w-4 h-4 text-green-600" />
                               <div>
-                                <p className="text-sm text-gray-500">Amount</p>
-                                <p className="font-medium text-gray-900">{scholarship.amount}</p>
+                                <p className="text-sm text-muted-foreground">Amount</p>
+                                <p className="font-medium text-foreground">{scholarship.amount}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-red-600" />
                               <div>
-                                <p className="text-sm text-gray-500">Deadline</p>
-                                <p className="font-medium text-gray-900">{new Date(scholarship.deadline).toLocaleDateString()}</p>
+                                <p className="text-sm text-muted-foreground">Deadline</p>
+                                <p className="font-medium text-foreground">{new Date(scholarship.deadline).toLocaleDateString()}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <MapPin className="w-4 h-4 text-purple-600" />
                               <div>
-                                <p className="text-sm text-gray-500">Location</p>
-                                <p className="font-medium text-gray-900">{scholarship.location}</p>
+                                <p className="text-sm text-muted-foreground">Location</p>
+                                <p className="font-medium text-foreground">{scholarship.location}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <Users className="w-4 h-4 text-blue-600" />
                               <div>
-                                <p className="text-sm text-gray-500">Applicants</p>
-                                <p className="font-medium text-gray-900">{scholarship.applicants}</p>
+                                <p className="text-sm text-muted-foreground">Applicants</p>
+                                <p className="font-medium text-foreground">{scholarship.applicants}</p>
                               </div>
                             </div>
                           </div>
@@ -547,10 +547,10 @@ export default function SavedItems() {
                             <div className="flex items-center gap-4">
                               <div className="flex items-center gap-1">
                                 <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                                <span className="text-sm font-medium text-gray-900">{scholarship.rating}</span>
-                                <span className="text-sm text-gray-500">({scholarship.reviews} reviews)</span>
+                                <span className="text-sm font-medium text-foreground">{scholarship.rating}</span>
+                                <span className="text-sm text-muted-foreground">({scholarship.reviews} reviews)</span>
                               </div>
-                              <span className="text-sm text-gray-500">
+                              <span className="text-sm text-muted-foreground">
                                 Saved on {new Date(scholarship.savedDate).toLocaleDateString()}
                               </span>
                             </div>
@@ -575,7 +575,7 @@ export default function SavedItems() {
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <div className="p-6 text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Keep Exploring</h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-muted-foreground mb-4">
               Continue discovering programs and scholarships that match your goals and interests.
             </p>
             <div className="flex items-center justify-center gap-3">

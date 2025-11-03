@@ -32,10 +32,10 @@ export default function AdminDashboard() {
       <div className="space-y-8">
         {/* Welcome Section */}
         <div className="backdrop-blur-xl bg-gradient-to-r from-slate-500/20 to-blue-500/20 border border-white/20 rounded-2xl p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-2xl font-semibold text-foreground mb-2">
             BackToSchool Admin Dashboard
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             Monitor and manage the Malaysian Higher Education Advisory System. Track student registrations, university programs, and recommendation analytics across 150+ Malaysian institutions.
           </p>
         <div className="flex gap-4 flex-wrap">
@@ -197,13 +197,13 @@ export default function AdminDashboard() {
                       <BookOpen className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{program.title}</h4>
-                      <p className="text-sm text-gray-600">{program.university}</p>
-                      <p className="text-xs text-gray-500">Added {new Date(program.added).toLocaleDateString()}</p>
+                      <h4 className="font-medium text-foreground">{program.title}</h4>
+                      <p className="text-sm text-muted-foreground">{program.university}</p>
+                      <p className="text-xs text-muted-foreground">Added {new Date(program.added).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium text-gray-900">{program.applications}</p>
-                      <p className="text-xs text-gray-500">applications</p>
+                      <p className="font-medium text-foreground">{program.applications}</p>
+                      <p className="text-xs text-muted-foreground">applications</p>
                     </div>
                   </div>
                 ))}
@@ -215,7 +215,7 @@ export default function AdminDashboard() {
         {/* System Alerts */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <div className="p-6 border-b border-white/20">
-            <h3 className="font-semibold text-gray-900">System Alerts & Notifications</h3>
+            <h3 className="font-semibold text-foreground">System Alerts & Notifications</h3>
           </div>
           <div className="p-6">
             <div className="space-y-4">
@@ -237,8 +237,8 @@ export default function AdminDashboard() {
                     }`} />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">{alert.message}</p>
-                    <p className="text-xs text-gray-500">{alert.time}</p>
+                    <p className="font-medium text-foreground">{alert.message}</p>
+                    <p className="text-xs text-muted-foreground">{alert.time}</p>
                   </div>
                   <Button variant="ghost" size="sm">
                     Resolve
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 className="font-semibold text-foreground mb-4">Quick Actions</h3>
           <div className="grid md:grid-cols-5 gap-4">
             <Button asChild variant="outline" className="w-full justify-start backdrop-blur-sm bg-white/50">
               <Link href="/admin/programs">

@@ -148,13 +148,13 @@ export default function ProgramRecommendations() {
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-foreground">
                 Personalized Recommendations
               </h2>
-              <p className="text-gray-600">Based on your profile and preferences</p>
+              <p className="text-muted-foreground">Based on your profile and preferences</p>
             </div>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Our AI has analyzed your SPM/STPM results, interests, and career goals to find the best matching programs from Malaysian universities. 
             Results are ranked by compatibility score and aligned with local industry demands.
           </p>
@@ -164,7 +164,7 @@ export default function ProgramRecommendations() {
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
               <Input
                 type="text"
                 placeholder="Search recommendations..."
@@ -208,7 +208,7 @@ export default function ProgramRecommendations() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">{program.title}</h3>
+                      <h3 className="text-xl font-semibold text-foreground">{program.title}</h3>
                       <Badge className="bg-green-500/20 text-green-700 border-green-200/30">
                         {program.matchPercentage}% Match
                       </Badge>
@@ -216,7 +216,7 @@ export default function ProgramRecommendations() {
                         {program.type}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-gray-600 mb-2">
+                    <div className="flex items-center gap-4 text-muted-foreground mb-2">
                       <div className="flex items-center gap-1">
                         <GraduationCap className="w-4 h-4" />
                         {program.university}
@@ -230,7 +230,7 @@ export default function ProgramRecommendations() {
                         {program.duration}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <Star className="w-4 h-4 text-yellow-500 fill-current" />
                       {program.rating} • {program.applicationCount} applications
                     </div>
@@ -238,14 +238,14 @@ export default function ProgramRecommendations() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={program.saved ? 'text-red-600 hover:text-red-700' : 'text-gray-600 hover:text-red-600'}
+                    className={program.saved ? 'text-red-600 hover:text-red-700' : 'text-muted-foreground hover:text-red-600'}
                   >
                     {program.saved ? <Heart className="w-5 h-5 fill-current" /> : <Heart className="w-5 h-5" />}
                   </Button>
                 </div>
 
                 {/* Description */}
-                <p className="text-gray-600 mb-4">{program.description}</p>
+                <p className="text-muted-foreground mb-4">{program.description}</p>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -259,19 +259,19 @@ export default function ProgramRecommendations() {
                 {/* Details Grid */}
                 <div className="grid md:grid-cols-3 gap-4 mb-6">
                   <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 mb-1">Tuition Fee</p>
-                    <p className="font-medium text-gray-900">{program.tuitionFee}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Tuition Fee</p>
+                    <p className="font-medium text-foreground">{program.tuitionFee}</p>
                   </div>
                   <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 mb-1">Application Deadline</p>
-                    <p className="font-medium text-gray-900 flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground mb-1">Application Deadline</p>
+                    <p className="font-medium text-foreground flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {new Date(program.deadline).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
-                    <p className="text-xs text-gray-500 mb-1">Entry Requirements</p>
-                    <p className="font-medium text-gray-900 text-sm">{program.requirements}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Entry Requirements</p>
+                    <p className="font-medium text-foreground text-sm">{program.requirements}</p>
                   </div>
                 </div>
 

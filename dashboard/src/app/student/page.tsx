@@ -68,8 +68,8 @@ export default function StudentDashboardPage() {
     <StudentLayout title="Dashboard">
       <div className="space-y-8">
         <section className="backdrop-blur-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-white/20 rounded-2xl p-8 shadow-lg">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Selamat datang kembali, Ahmad! 👋</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-2xl font-semibold text-foreground mb-2">Selamat datang kembali, Ahmad! 👋</h2>
+          <p className="text-muted-foreground mb-6">
             Your personalized Malaysian university program recommendations are ready. Let&apos;s continue
             exploring the perfect program that matches your SPM/STPM results and career aspirations.
           </p>
@@ -97,8 +97,8 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Profile Completion</p>
-                <p className="text-2xl font-semibold text-gray-900">85%</p>
+                <p className="text-sm text-muted-foreground mb-1">Profile Completion</p>
+                <p className="text-2xl font-semibold text-foreground">85%</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
                 <Target className="h-6 w-6 text-blue-600" />
@@ -110,8 +110,8 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Programs Viewed</p>
-                <p className="text-2xl font-semibold text-gray-900">24</p>
+                <p className="text-sm text-muted-foreground mb-1">Programs Viewed</p>
+                <p className="text-2xl font-semibold text-foreground">24</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
                 <BookOpen className="h-6 w-6 text-green-600" />
@@ -126,21 +126,21 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Saved Items</p>
-                <p className="text-2xl font-semibold text-gray-900">11</p>
+                <p className="text-sm text-muted-foreground mb-1">Saved Items</p>
+                <p className="text-2xl font-semibold text-foreground">11</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
                 <Star className="h-6 w-6 text-purple-600" />
               </div>
             </div>
-            <p className="mt-2 text-sm text-gray-500">Programs &amp; scholarships</p>
+            <p className="mt-2 text-sm text-muted-foreground">Programs &amp; scholarships</p>
           </Card>
 
           <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Days Until Deadline</p>
-                <p className="text-2xl font-semibold text-gray-900">23</p>
+                <p className="text-sm text-muted-foreground mb-1">Days Until Deadline</p>
+                <p className="text-2xl font-semibold text-foreground">23</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
                 <Clock className="h-6 w-6 text-orange-600" />
@@ -154,7 +154,7 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
             <div className="border-b border-white/20 p-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Latest Recommendations</h3>
+                <h3 className="font-semibold text-foreground">Latest Recommendations</h3>
                 <Button asChild variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
                   <Link href="/student/recommendations">
                     View All
@@ -172,13 +172,13 @@ export default function StudentDashboardPage() {
                   >
                     <div className="flex-1">
                       <div className="mb-1 flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900">{program.title}</h4>
+                        <h4 className="font-medium text-foreground">{program.title}</h4>
                         <Badge variant="secondary" className="text-xs">
                           {program.matchPercentage}% match
                         </Badge>
                       </div>
-                      <p className="mb-2 text-sm text-gray-600">{program.university}</p>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                      <p className="mb-2 text-sm text-muted-foreground">{program.university}</p>
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {program.location}
@@ -210,7 +210,7 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
             <div className="border-b border-white/20 p-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Saved Items</h3>
+                <h3 className="font-semibold text-foreground">Saved Items</h3>
                 <Button asChild variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
                   <Link href="/student/saved">
                     View All
@@ -230,9 +230,9 @@ export default function StudentDashboardPage() {
                       <BookOpen className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{program.title}</h4>
-                      <p className="text-sm text-gray-600">{program.university}</p>
-                      <p className="text-xs text-gray-500">Saved {program.saved}</p>
+                      <h4 className="font-medium text-foreground">{program.title}</h4>
+                      <p className="text-sm text-muted-foreground">{program.university}</p>
+                      <p className="text-xs text-muted-foreground">Saved {program.saved}</p>
                     </div>
                     <Button
                       size="sm"
@@ -249,7 +249,7 @@ export default function StudentDashboardPage() {
         </section>
 
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 p-6 shadow-lg">
-          <h3 className="mb-4 font-semibold text-gray-900">Quick Actions</h3>
+          <h3 className="mb-4 font-semibold text-foreground">Quick Actions</h3>
           <div className="grid gap-4 md:grid-cols-3">
             <Button
               asChild

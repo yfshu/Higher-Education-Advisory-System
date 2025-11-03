@@ -45,13 +45,13 @@ export default function StudentHelp() {
           <div className="flex items-center gap-3 mb-4">
             <HelpCircle className="w-8 h-8 text-blue-600" />
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">How can we help you?</h2>
-              <p className="text-gray-600">Find answers to common questions about Malaysian university applications and our platform</p>
+              <h2 className="text-xl font-semibold text-foreground">How can we help you?</h2>
+              <p className="text-muted-foreground">Find answers to common questions about Malaysian university applications and our platform</p>
             </div>
           </div>
           
           <div className="relative">
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+            <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
             <Input
               type="text"
               placeholder="Search for help about Malaysian universities..."
@@ -62,7 +62,7 @@ export default function StudentHelp() {
 
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Frequently Asked Questions</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Frequently Asked Questions</h3>
             <Accordion type="single" collapsible>
               {faqs.map((faq, index) => (
                 <AccordionItem key={index} value={`item-${index}`}>
@@ -76,22 +76,22 @@ export default function StudentHelp() {
 
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Support</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Contact Support</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <Button variant="outline" className="h-auto p-4 flex-col backdrop-blur-sm bg-white/50">
                 <MessageCircle className="w-6 h-6 mb-2 text-blue-600" />
                 <span className="font-medium">Live Chat</span>
-                <span className="text-sm text-gray-500">Available 24/7</span>
+                <span className="text-sm text-muted-foreground">Available 24/7</span>
               </Button>
               <Button variant="outline" className="h-auto p-4 flex-col backdrop-blur-sm bg-white/50">
                 <Mail className="w-6 h-6 mb-2 text-green-600" />
                 <span className="font-medium">Email Support</span>
-                <span className="text-sm text-gray-500">support@backtoschool.my</span>
+                <span className="text-sm text-muted-foreground">support@backtoschool.my</span>
               </Button>
               <Button variant="outline" className="h-auto p-4 flex-col backdrop-blur-sm bg-white/50">
                 <Phone className="w-6 h-6 mb-2 text-purple-600" />
                 <span className="font-medium">Phone Support</span>
-                <span className="text-sm text-gray-500">+603-2123 4567</span>
+                <span className="text-sm text-muted-foreground">+603-2123 4567</span>
               </Button>
             </div>
           </div>

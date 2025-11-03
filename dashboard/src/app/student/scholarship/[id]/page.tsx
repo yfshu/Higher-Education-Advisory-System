@@ -144,7 +144,7 @@ export default function ScholarshipDetail() {
         {/* Back Navigation */}
         <Link
           href="/student/scholarships"
-          className="inline-flex items-center text-gray-600 transition-colors hover:text-gray-800"
+          className="inline-flex items-center text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Scholarship Search
@@ -156,16 +156,16 @@ export default function ScholarshipDetail() {
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <h1 className="text-3xl font-semibold text-gray-900">{scholarship.title}</h1>
+                  <h1 className="text-3xl font-semibold text-foreground">{scholarship.title}</h1>
                   <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                     {scholarship.type}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600 mb-4">
+                <div className="flex items-center gap-2 text-muted-foreground mb-4">
                   <Building2 className="w-5 h-5" />
                   <span className="text-lg">{scholarship.organization}</span>
                 </div>
-                <p className="text-gray-700 text-lg leading-relaxed">{scholarship.description}</p>
+                <p className="text-muted-foreground text-lg leading-relaxed">{scholarship.description}</p>
               </div>
               <div className="flex gap-2 ml-6">
                 <Button
@@ -199,8 +199,8 @@ export default function ScholarshipDetail() {
                 <div className="flex items-center gap-3">
                   <DollarSign className="w-8 h-8 text-green-600" />
                   <div>
-                    <p className="text-sm text-gray-500">Scholarship Amount</p>
-                    <p className="font-semibold text-gray-900">{scholarship.amount}</p>
+                    <p className="text-sm text-muted-foreground">Scholarship Amount</p>
+                    <p className="font-semibold text-foreground">{scholarship.amount}</p>
                   </div>
                 </div>
               </div>
@@ -208,8 +208,8 @@ export default function ScholarshipDetail() {
                 <div className="flex items-center gap-3">
                   <Calendar className="w-8 h-8 text-red-600" />
                   <div>
-                    <p className="text-sm text-gray-500">Application Deadline</p>
-                    <p className="font-semibold text-gray-900">{new Date(scholarship.deadline).toLocaleDateString()}</p>
+                    <p className="text-sm text-muted-foreground">Application Deadline</p>
+                    <p className="font-semibold text-foreground">{new Date(scholarship.deadline).toLocaleDateString()}</p>
                     <p className="text-xs text-red-600">{daysUntilDeadline} days left</p>
                   </div>
                 </div>
@@ -218,8 +218,8 @@ export default function ScholarshipDetail() {
                 <div className="flex items-center gap-3">
                   <Users className="w-8 h-8 text-blue-600" />
                   <div>
-                    <p className="text-sm text-gray-500">Applicants</p>
-                    <p className="font-semibold text-gray-900">{scholarship.applicants}</p>
+                    <p className="text-sm text-muted-foreground">Applicants</p>
+                    <p className="font-semibold text-foreground">{scholarship.applicants}</p>
                   </div>
                 </div>
               </div>
@@ -227,9 +227,9 @@ export default function ScholarshipDetail() {
                 <div className="flex items-center gap-3">
                   <Star className="w-8 h-8 text-yellow-600" />
                   <div>
-                    <p className="text-sm text-gray-500">Rating</p>
-                    <p className="font-semibold text-gray-900">{scholarship.rating}/5.0</p>
-                    <p className="text-xs text-gray-600">{scholarship.reviews} reviews</p>
+                    <p className="text-sm text-muted-foreground">Rating</p>
+                    <p className="font-semibold text-foreground">{scholarship.rating}/5.0</p>
+                    <p className="text-xs text-muted-foreground">{scholarship.reviews} reviews</p>
                   </div>
                 </div>
               </div>
@@ -265,36 +265,36 @@ export default function ScholarshipDetail() {
 
             <TabsContent value="overview" className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">About This Scholarship</h3>
-                <p className="text-gray-700 leading-relaxed mb-6">{scholarship.detailedDescription}</p>
+                <h3 className="text-lg font-semibold text-foreground mb-4">About This Scholarship</h3>
+                <p className="text-muted-foreground leading-relaxed mb-6">{scholarship.detailedDescription}</p>
                 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Study Level</h4>
+                    <h4 className="font-medium text-foreground mb-3">Study Level</h4>
                     <Badge variant="outline" className="mb-4">{scholarship.level}</Badge>
                     
-                    <h4 className="font-medium text-gray-900 mb-3">Field of Study</h4>
+                    <h4 className="font-medium text-foreground mb-3">Field of Study</h4>
                     <Badge variant="outline" className="mb-4">{scholarship.field}</Badge>
                     
-                    <h4 className="font-medium text-gray-900 mb-3">Study Location</h4>
+                    <h4 className="font-medium text-foreground mb-3">Study Location</h4>
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-700">{scholarship.location}</span>
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{scholarship.location}</span>
                     </div>
                   </div>
                   
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Success Rate</h4>
+                    <h4 className="font-medium text-foreground mb-3">Success Rate</h4>
                     <div className="flex items-center gap-3 mb-2">
                       <Progress value={scholarship.successRate} className="flex-1" />
-                      <span className="text-sm font-medium text-gray-900">{scholarship.successRate}%</span>
+                      <span className="text-sm font-medium text-foreground">{scholarship.successRate}%</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">Application success rate</p>
+                    <p className="text-sm text-muted-foreground mb-4">Application success rate</p>
                     
-                    <h4 className="font-medium text-gray-900 mb-3">Processing Time</h4>
+                    <h4 className="font-medium text-foreground mb-3">Processing Time</h4>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-700">{scholarship.averageProcessingTime}</span>
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">{scholarship.averageProcessingTime}</span>
                     </div>
                   </div>
                 </div>
@@ -303,12 +303,12 @@ export default function ScholarshipDetail() {
               <Separator />
 
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Eligible Engineering Programs</h4>
+                <h4 className="font-medium text-foreground mb-3">Eligible Engineering Programs</h4>
                 <div className="grid md:grid-cols-2 gap-2">
                   {scholarship.eligiblePrograms.map((program, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-gray-700">{program}</span>
+                      <span className="text-muted-foreground">{program}</span>
                     </div>
                   ))}
                 </div>
@@ -317,12 +317,12 @@ export default function ScholarshipDetail() {
               <Separator />
 
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">Partner Universities</h4>
+                <h4 className="font-medium text-foreground mb-3">Partner Universities</h4>
                 <div className="grid md:grid-cols-2 gap-2">
                   {scholarship.partnerUniversities.map((university, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <GraduationCap className="w-4 h-4 text-blue-600" />
-                      <span className="text-gray-700">{university}</span>
+                      <span className="text-muted-foreground">{university}</span>
                     </div>
                   ))}
                 </div>
@@ -330,12 +330,12 @@ export default function ScholarshipDetail() {
             </TabsContent>
 
             <TabsContent value="requirements" className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Eligibility Requirements</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Eligibility Requirements</h3>
               <div className="space-y-3">
                 {scholarship.requirements.map((requirement, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">{requirement}</span>
+                    <span className="text-muted-foreground">{requirement}</span>
                   </div>
                 ))}
               </div>
@@ -348,19 +348,19 @@ export default function ScholarshipDetail() {
             </TabsContent>
 
             <TabsContent value="benefits" className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Scholarship Benefits</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Scholarship Benefits</h3>
               <div className="space-y-3">
                 {scholarship.benefits.map((benefit, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
                     <Award className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">{benefit}</span>
+                    <span className="text-muted-foreground">{benefit}</span>
                   </div>
                 ))}
               </div>
             </TabsContent>
 
             <TabsContent value="process" className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Selection Process</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Selection Process</h3>
               <div className="space-y-4">
                 {scholarship.selectionProcess.map((step, index) => (
                   <div key={index} className="flex gap-4 p-4 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
@@ -368,9 +368,9 @@ export default function ScholarshipDetail() {
                       {step.step}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 mb-1">{step.title}</h4>
-                      <p className="text-gray-700 mb-2">{step.description}</p>
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <h4 className="font-medium text-foreground mb-1">{step.title}</h4>
+                      <p className="text-muted-foreground mb-2">{step.description}</p>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Clock className="w-4 h-4" />
                         <span>Duration: {step.duration}</span>
                       </div>
@@ -381,13 +381,13 @@ export default function ScholarshipDetail() {
             </TabsContent>
 
             <TabsContent value="contact" className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Contact Information</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <Globe className="w-5 h-5 text-blue-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Website</p>
+                      <p className="font-medium text-foreground">Website</p>
                       <a 
                         href={scholarship.contact.website} 
                         target="_blank" 
@@ -401,7 +401,7 @@ export default function ScholarshipDetail() {
                   <div className="flex items-start gap-3">
                     <Mail className="w-5 h-5 text-green-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Email</p>
+                      <p className="font-medium text-foreground">Email</p>
                       <a 
                         href={`mailto:${scholarship.contact.email}`}
                         className="text-green-600 hover:text-green-700"
@@ -415,7 +415,7 @@ export default function ScholarshipDetail() {
                   <div className="flex items-start gap-3">
                     <Phone className="w-5 h-5 text-purple-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Phone</p>
+                      <p className="font-medium text-foreground">Phone</p>
                       <a 
                         href={`tel:${scholarship.contact.phone}`}
                         className="text-purple-600 hover:text-purple-700"
@@ -427,15 +427,15 @@ export default function ScholarshipDetail() {
                   <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-red-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Address</p>
-                      <p className="text-gray-700">{scholarship.contact.address}</p>
+                      <p className="font-medium text-foreground">Address</p>
+                      <p className="text-muted-foreground">{scholarship.contact.address}</p>
                     </div>
                   </div>
                 </div>
               </div>
               
               <div className="mt-6 p-4 backdrop-blur-sm bg-gray-50/40 border border-gray-200/30 rounded-lg">
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-muted-foreground">
                   <strong>Office Hours:</strong> Monday - Friday, 8:30 AM - 5:00 PM (GMT+8)<br />
                   <strong>Response Time:</strong> Scholarship inquiries are typically responded to within 2-3 business days.
                 </p>
@@ -449,8 +449,8 @@ export default function ScholarshipDetail() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Apply?</h3>
-                <p className="text-gray-600">Visit the official website to start your application process.</p>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Ready to Apply?</h3>
+                <p className="text-muted-foreground">Visit the official website to start your application process.</p>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">

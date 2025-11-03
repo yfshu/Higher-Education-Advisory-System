@@ -146,15 +146,15 @@ export default function ScholarshipSearch() {
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Scholarship Opportunities</h1>
-                <p className="text-gray-600">Discover funding opportunities from Malaysian organizations</p>
+                <h1 className="text-2xl font-semibold text-foreground">Scholarship Opportunities</h1>
+                <p className="text-muted-foreground">Discover funding opportunities from Malaysian organizations</p>
               </div>
             </div>
 
             {/* Search Bar */}
             <div className="flex gap-4 mb-6">
               <div className="flex-1 relative">
-                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <Input
                   type="text"
                   placeholder="Search scholarships, organizations, or fields..."
@@ -246,7 +246,7 @@ export default function ScholarshipSearch() {
 
         {/* Results Summary */}
         <div className="flex items-center justify-between">
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Showing {filteredScholarships.length} scholarship{filteredScholarships.length !== 1 ? 's' : ''}
             {searchQuery && ` for "${searchQuery}"`}
           </p>
@@ -266,22 +266,22 @@ export default function ScholarshipSearch() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900">{scholarship.title}</h3>
+                      <h3 className="text-xl font-semibold text-foreground">{scholarship.title}</h3>
                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                         {scholarship.type}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600 mb-2">
+                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
                       <Building2 className="w-4 h-4" />
                       <span>{scholarship.organization}</span>
                     </div>
-                    <p className="text-gray-700 mb-4">{scholarship.description}</p>
+                    <p className="text-muted-foreground mb-4">{scholarship.description}</p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleSaveScholarship(scholarship.id)}
-                    className="text-gray-500 hover:text-yellow-600"
+                    className="text-muted-foreground hover:text-yellow-600"
                   >
                     {savedScholarships.includes(scholarship.id) ? (
                       <BookmarkCheck className="w-5 h-5 text-yellow-600" />
@@ -295,29 +295,29 @@ export default function ScholarshipSearch() {
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-green-600" />
                     <div>
-                      <p className="text-sm text-gray-500">Amount</p>
-                      <p className="font-medium text-gray-900">{scholarship.amount}</p>
+                      <p className="text-sm text-muted-foreground">Amount</p>
+                      <p className="font-medium text-foreground">{scholarship.amount}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <GraduationCap className="w-4 h-4 text-blue-600" />
                     <div>
-                      <p className="text-sm text-gray-500">Level</p>
-                      <p className="font-medium text-gray-900">{scholarship.level}</p>
+                      <p className="text-sm text-muted-foreground">Level</p>
+                      <p className="font-medium text-foreground">{scholarship.level}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-purple-600" />
                     <div>
-                      <p className="text-sm text-gray-500">Location</p>
-                      <p className="font-medium text-gray-900">{scholarship.location}</p>
+                      <p className="text-sm text-muted-foreground">Location</p>
+                      <p className="font-medium text-foreground">{scholarship.location}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-red-600" />
                     <div>
-                      <p className="text-sm text-gray-500">Deadline</p>
-                      <p className="font-medium text-gray-900">{new Date(scholarship.deadline).toLocaleDateString()}</p>
+                      <p className="text-sm text-muted-foreground">Deadline</p>
+                      <p className="font-medium text-foreground">{new Date(scholarship.deadline).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>
@@ -326,12 +326,12 @@ export default function ScholarshipSearch() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                      <span className="text-sm font-medium text-gray-900">{scholarship.rating}</span>
-                      <span className="text-sm text-gray-500">({scholarship.reviews} reviews)</span>
+                      <span className="text-sm font-medium text-foreground">{scholarship.rating}</span>
+                      <span className="text-sm text-muted-foreground">({scholarship.reviews} reviews)</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-500">{scholarship.applicants} applicants</span>
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">{scholarship.applicants} applicants</span>
                     </div>
                   </div>
                   <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -350,10 +350,10 @@ export default function ScholarshipSearch() {
           <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
             <div className="p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
+                <Search className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No scholarships found</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-lg font-medium text-foreground mb-2">No scholarships found</h3>
+              <p className="text-muted-foreground mb-4">
                 Try adjusting your search terms or filters to find more opportunities.
               </p>
               <Button 

@@ -163,17 +163,17 @@ export default function StudentProfile() {
                     size="sm"
                     className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full p-0 bg-white shadow-lg hover:bg-gray-50"
                   >
-                    <Camera className="w-4 h-4 text-gray-600" />
+                    <Camera className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-900">
+                  <h2 className="text-2xl font-semibold text-foreground">
                     {profile.firstName} {profile.lastName}
                   </h2>
-                  <p className="text-gray-600">{profile.email}</p>
+                  <p className="text-muted-foreground">{profile.email}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <MapPin className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">{profile.location}</span>
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{profile.location}</span>
                   </div>
                 </div>
               </div>
@@ -198,11 +198,11 @@ export default function StudentProfile() {
             {/* Profile Completion */}
             <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-gray-900">Profile Completion</span>
-                <span className="text-sm text-gray-600">{completionPercentage}%</span>
+                <span className="font-medium text-foreground">Profile Completion</span>
+                <span className="text-sm text-muted-foreground">{completionPercentage}%</span>
               </div>
               <Progress value={completionPercentage} className="mb-2" />
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Complete your profile to get better program recommendations.
               </p>
             </div>
@@ -323,10 +323,10 @@ export default function StudentProfile() {
 
               {/* Languages & Skills */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Languages & Skills</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Languages & Skills</h3>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Languages</Label>
+                    <Label className="text-sm font-medium text-foreground mb-2 block">Languages</Label>
                     <div className="flex flex-wrap gap-2">
                       {profile.languages.map((language, index) => (
                         <Badge key={index} variant="secondary" className="text-sm">
@@ -349,8 +349,8 @@ export default function StudentProfile() {
                   <div className="flex items-center gap-3">
                     <GraduationCap className="w-8 h-8 text-blue-600" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">24</p>
-                      <p className="text-sm text-gray-600">Programs Viewed</p>
+                      <p className="text-lg font-semibold text-foreground">24</p>
+                      <p className="text-sm text-muted-foreground">Programs Viewed</p>
                     </div>
                   </div>
                 </div>
@@ -358,8 +358,8 @@ export default function StudentProfile() {
                   <div className="flex items-center gap-3">
                     <Target className="w-8 h-8 text-green-600" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">8</p>
-                      <p className="text-sm text-gray-600">Programs Saved</p>
+                      <p className="text-lg font-semibold text-foreground">8</p>
+                      <p className="text-sm text-muted-foreground">Programs Saved</p>
                     </div>
                   </div>
                 </div>
@@ -367,8 +367,8 @@ export default function StudentProfile() {
                   <div className="flex items-center gap-3">
                     <Calendar className="w-8 h-8 text-purple-600" />
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">12</p>
-                      <p className="text-sm text-gray-600">Recommendations</p>
+                      <p className="text-lg font-semibold text-foreground">12</p>
+                      <p className="text-sm text-muted-foreground">Recommendations</p>
                     </div>
                   </div>
                 </div>
@@ -473,8 +473,8 @@ export default function StudentProfile() {
                 <div className="flex items-center gap-3">
                   <History className="w-8 h-8 text-purple-600" />
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">Recommendation History</h3>
-                    <p className="text-gray-600">Track your AI recommendations over time</p>
+                    <h3 className="text-xl font-semibold text-foreground">Recommendation History</h3>
+                    <p className="text-muted-foreground">Track your AI recommendations over time</p>
                   </div>
                 </div>
               </div>
@@ -485,13 +485,13 @@ export default function StudentProfile() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span className="font-medium text-gray-900">
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium text-foreground">
                             {new Date(rec.date).toLocaleDateString()}
                           </span>
                           <Badge variant="secondary">{rec.count} programs</Badge>
                         </div>
-                        <p className="text-gray-600">Top match: {rec.topMatch}</p>
+                        <p className="text-muted-foreground">Top match: {rec.topMatch}</p>
                       </div>
                       <Button variant="outline" size="sm" className="backdrop-blur-sm bg-white/50">
                         <Eye className="w-4 h-4 mr-2" />
