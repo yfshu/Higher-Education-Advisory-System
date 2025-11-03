@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import StudentLayout from "@/components/layout/StudentLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ import {
   Trash2,
   History,
 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function StudentProfile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -56,6 +57,8 @@ export default function StudentProfile() {
     languages: ['Bahasa Malaysia (Native)', 'English (Fluent)', 'Mandarin (Basic)'],
     location: 'Kuala Lumpur, Malaysia'
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -92,6 +95,55 @@ export default function StudentProfile() {
     // Format passport number (uppercase letters and numbers)
     return value.toUpperCase().replace(/[^A-Z0-9]/g, '');
   };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const sessionRes = await supabase.auth.getSession();
+        const accessToken = sessionRes.data.session?.access_token;
+        if (!accessToken) {
+          setError("Not authenticated");
+          setLoading(false);
+          return;
+        }
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+        const res = await fetch(`${backendUrl}/api/profile/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          const msg = errBody?.message || `Failed to load profile (${res.status})`;
+          throw new Error(msg);
+        }
+        const body = await res.json();
+        setProfile((prev) => ({
+          ...prev,
+          firstName: body?.firstName ?? prev.firstName,
+          lastName: body?.lastName ?? prev.lastName,
+          email: body?.email ?? prev.email,
+          phone: body?.phoneNumber ?? prev.phone,
+          nationality: body?.nationality ?? prev.nationality,
+          location: body?.currentLocation ?? prev.location,
+          careerGoals: body?.careerGoal ?? prev.careerGoals,
+          currentEducation: body?.educationLevel ?? prev.currentEducation,
+          academicResults: body?.academicResult ?? prev.academicResults,
+          studyPreferences: body?.studyPreferences ?? prev.studyPreferences,
+          fieldOfInterest:
+            typeof body?.fieldOfInterestId === "number"
+              ? String(body.fieldOfInterestId)
+              : prev.fieldOfInterest,
+        }));
+      } catch (err: unknown) {
+        console.warn("Profile fetch error", err);
+        setError(err instanceof Error ? err.message : "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchProfile();
+  }, []);
 
   const profileSections = [
     {
@@ -153,6 +205,9 @@ export default function StudentProfile() {
         {/* Profile Header */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <div className="p-6">
+            {error && (
+              <div className="mb-4 text-sm text-red-600">{error}</div>
+            )}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="relative">

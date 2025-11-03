@@ -189,6 +189,36 @@
           "Auth"
         ]
       }
+    },
+    "/api/profile/me": {
+      "get": {
+        "operationId": "ProfileController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Profile loaded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get the authenticated user's profile",
+        "tags": [
+          "Profile"
+        ]
+      }
     }
   },
   "info": {
@@ -500,6 +530,76 @@
         },
         "required": [
           "message"
+        ]
+      },
+      "ProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "object",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "object",
+            "nullable": true
+          },
+          "phoneNumber": {
+            "type": "object",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "object",
+            "nullable": true
+          },
+          "currentLocation": {
+            "type": "object",
+            "nullable": true
+          },
+          "avatarUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "careerGoal": {
+            "type": "object",
+            "nullable": true
+          },
+          "educationLevel": {
+            "type": "object",
+            "nullable": true
+          },
+          "fieldOfInterestId": {
+            "type": "object",
+            "nullable": true
+          },
+          "academicResult": {
+            "type": "object",
+            "nullable": true
+          },
+          "studyPreferences": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "lastName",
+          "phoneNumber",
+          "nationality",
+          "currentLocation",
+          "avatarUrl",
+          "careerGoal",
+          "educationLevel",
+          "fieldOfInterestId",
+          "academicResult",
+          "studyPreferences"
         ]
       }
     }
