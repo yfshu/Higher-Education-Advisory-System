@@ -52,12 +52,6 @@ interface FieldOfInterestOption {
 const EDUCATION_LEVELS = [
   "SPM",
   "STPM",
-  "A-Levels",
-  "Foundation",
-  "Diploma",
-  "Bachelor",
-  "Master",
-  "Other",
 ] as const;
 
 // Dropdown options for SPM/STPM academic results (number of As)

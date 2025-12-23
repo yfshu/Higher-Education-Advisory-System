@@ -1,171 +1,196 @@
-import React, { useState } from 'react';
-import { Input } from './input';
-import { Label } from './label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
-import { cn } from './utils';
-
-interface Country {
-  code: string;
-  name: string;
-  flag: string;
-  dialCode: string;
-}
-
-const countries: Country[] = [
-  { code: 'MY', name: 'Malaysia', flag: '🇲🇾', dialCode: '+60' },
-  { code: 'SG', name: 'Singapore', flag: '🇸🇬', dialCode: '+65' },
-  { code: 'US', name: 'United States', flag: '🇺🇸', dialCode: '+1' },
-  { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', dialCode: '+44' },
-  { code: 'AU', name: 'Australia', flag: '🇦🇺', dialCode: '+61' },
-  { code: 'CA', name: 'Canada', flag: '🇨🇦', dialCode: '+1' },
-  { code: 'IN', name: 'India', flag: '🇮🇳', dialCode: '+91' },
-  { code: 'CN', name: 'China', flag: '🇨🇳', dialCode: '+86' },
-  { code: 'JP', name: 'Japan', flag: '🇯🇵', dialCode: '+81' },
-  { code: 'KR', name: 'South Korea', flag: '🇰🇷', dialCode: '+82' },
-  { code: 'TH', name: 'Thailand', flag: '🇹🇭', dialCode: '+66' },
-  { code: 'ID', name: 'Indonesia', flag: '🇮🇩', dialCode: '+62' },
-  { code: 'PH', name: 'Philippines', flag: '🇵🇭', dialCode: '+63' },
-  { code: 'VN', name: 'Vietnam', flag: '🇻🇳', dialCode: '+84' },
-  { code: 'BD', name: 'Bangladesh', flag: '🇧🇩', dialCode: '+880' },
-  { code: 'PK', name: 'Pakistan', flag: '🇵🇰', dialCode: '+92' },
-  { code: 'LK', name: 'Sri Lanka', flag: '🇱🇰', dialCode: '+94' },
-  { code: 'MM', name: 'Myanmar', flag: '🇲🇲', dialCode: '+95' },
-  { code: 'BN', name: 'Brunei', flag: '🇧🇳', dialCode: '+673' },
-  { code: 'KH', name: 'Cambodia', flag: '🇰🇭', dialCode: '+855' },
-  { code: 'LA', name: 'Laos', flag: '🇱🇦', dialCode: '+856' },
-  { code: 'NZ', name: 'New Zealand', flag: '🇳🇿', dialCode: '+64' },
-  { code: 'HK', name: 'Hong Kong', flag: '🇭🇰', dialCode: '+852' },
-  { code: 'TW', name: 'Taiwan', flag: '🇹🇼', dialCode: '+886' },
-  { code: 'AE', name: 'UAE', flag: '🇦🇪', dialCode: '+971' },
-  { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦', dialCode: '+966' },
-  { code: 'QA', name: 'Qatar', flag: '🇶🇦', dialCode: '+974' },
-  { code: 'KW', name: 'Kuwait', flag: '🇰🇼', dialCode: '+965' },
-  { code: 'BH', name: 'Bahrain', flag: '🇧🇭', dialCode: '+973' },
-  { code: 'OM', name: 'Oman', flag: '🇴🇲', dialCode: '+968' },
-  { code: 'DE', name: 'Germany', flag: '🇩🇪', dialCode: '+49' },
-  { code: 'FR', name: 'France', flag: '🇫🇷', dialCode: '+33' },
-  { code: 'IT', name: 'Italy', flag: '🇮🇹', dialCode: '+39' },
-  { code: 'ES', name: 'Spain', flag: '🇪🇸', dialCode: '+34' },
-  { code: 'NL', name: 'Netherlands', flag: '🇳🇱', dialCode: '+31' },
-];
+import * as React from "react";
+import PhoneInputWithCountry, {
+  getCountries,
+  getCountryCallingCode,
+} from "react-phone-number-input";
+import type { E164Number } from "libphonenumber-js/core";
+import "react-phone-number-input/style.css";
+import { Label } from "./label";
+import { cn } from "./utils";
+import type { Country as CountryCode } from "react-phone-number-input";
+import flags from "react-phone-number-input/flags";
 
 interface PhoneInputProps {
   id?: string;
   label?: string;
   value?: string;
-  defaultCountry?: string;
-  onChange?: (value: string, countryCode?: string) => void;
-  onCountryChange?: (country: Country) => void;
+  defaultCountry?: CountryCode;
+  onChange?: (value: string | undefined) => void;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
   className?: string;
   error?: string;
+  setActiveDropdown?: (key: string | null) => void;
 }
+
+interface CountrySelectProps {
+  value?: CountryCode;
+  onChange: (value?: CountryCode) => void;
+  labels?: { [key: string]: string };
+  disabled?: boolean;
+  name?: string;
+  tabIndex?: number;
+  "aria-label"?: string;
+  setActiveDropdown?: (key: string | null) => void;
+}
+
+const CountrySelect = ({
+  value,
+  onChange,
+  labels,
+  disabled,
+  name,
+  tabIndex,
+  "aria-label": ariaLabel,
+  setActiveDropdown,
+}: CountrySelectProps) => {
+  const Flag = value ? flags[value] : null;
+
+  // Get commonly used countries sorted by dial code
+  const sortedCountries = React.useMemo(() => {
+    // Popular countries to prioritize
+    const popularCountries = [
+      "US",
+      "MY",
+      "SG",
+      "GB",
+      "AU",
+      "CA",
+      "IN",
+      "CN",
+      "JP",
+      "KR",
+      "TH",
+      "ID",
+      "PH",
+      "VN",
+      "DE",
+      "FR",
+      "IT",
+      "ES",
+      "BR",
+      "MX",
+    ];
+
+    const allCountries = getCountries().map((country) => ({
+      code: country,
+      dialCode: parseInt(getCountryCallingCode(country)),
+      name: labels?.[country] || country,
+      isPopular: popularCountries.includes(country),
+    }));
+
+    // Separate popular and other countries
+    const popular = allCountries.filter((c) => c.isPopular);
+    const others = allCountries.filter((c) => !c.isPopular);
+
+    // Sort both groups by dial code
+    const sortedPopular = popular.sort((a, b) => a.dialCode - b.dialCode);
+    const sortedOthers = others.sort((a, b) => a.dialCode - b.dialCode);
+
+    // Combine: popular first, then others
+    return [...sortedPopular, ...sortedOthers];
+  }, [labels]);
+
+  return (
+    <div className="relative">
+      <select
+        name={name}
+        disabled={disabled}
+        tabIndex={tabIndex}
+        aria-label={ariaLabel}
+        value={value || ""}
+        onChange={(event) =>
+          onChange((event.target.value as CountryCode) || undefined)
+        }
+        onFocus={() => setActiveDropdown?.(null)}
+        size={1}
+        style={{
+          maxHeight: "240px",
+          overflowY: "auto",
+        }}
+        className="h-10 rounded-l-md border border-r-0 border-gray-300 bg-white pl-3 pr-20 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer disabled:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200"
+      >
+        <option value="">International</option>
+        {sortedCountries.map((country) => (
+          <option key={country.code} value={country.code}>
+            {country.name} (+{country.dialCode})
+          </option>
+        ))}
+      </select>
+      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none gap-0.5">
+        {Flag && (
+          <span className="w-5 h-4 flex items-center justify-center flex-shrink-0">
+            <Flag title="" />
+          </span>
+        )}
+        <span className="text-sm font-medium flex-shrink-0">
+          {value && `+${getCountryCallingCode(value)}`}
+        </span>
+        <svg
+          className="h-4 w-4 text-gray-500 ml-0.5 flex-shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+};
 
 export default function PhoneInput({
   id,
   label,
-  value = '',
-  defaultCountry = 'MY',
+  value = "",
+  defaultCountry = "MY",
   onChange,
-  onCountryChange,
-  placeholder = '12-345-6789',
+  placeholder = "Enter phone number",
   required = false,
   disabled = false,
   className,
-  error
+  error,
+  setActiveDropdown,
 }: PhoneInputProps) {
-  const [selectedCountry, setSelectedCountry] = useState<Country>(
-    countries.find(c => c.code === defaultCountry) || countries[0]
-  );
-  
-  const [phoneNumber, setPhoneNumber] = useState(() => {
-    // If value already contains country code, extract the number part
-    if (value && value.startsWith(selectedCountry.dialCode)) {
-      return value.substring(selectedCountry.dialCode.length).trim();
-    }
-    return value.replace(/^\+\d+\s*/, ''); // Remove any existing country code
-  });
-
-  const handleCountryChange = (countryCode: string) => {
-    const country = countries.find(c => c.code === countryCode);
-    if (country) {
-      setSelectedCountry(country);
-      const fullNumber = phoneNumber ? `${country.dialCode} ${phoneNumber}` : '';
-      onChange?.(fullNumber, country.code);
-      onCountryChange?.(country);
-    }
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const number = e.target.value;
-    setPhoneNumber(number);
-    const fullNumber = number ? `${selectedCountry.dialCode} ${number}` : '';
-    onChange?.(fullNumber, selectedCountry.code);
-  };
-
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn("space-y-2", className)}>
       {label && (
-        <Label htmlFor={id}>
+        <Label htmlFor={id} className="text-gray-900 font-medium">
           {label} {required && <span className="text-red-500">*</span>}
         </Label>
       )}
-      
-      <div className="flex gap-2">
-        {/* Country Code Selector */}
-        <Select value={selectedCountry.code} onValueChange={handleCountryChange}>
-          <SelectTrigger className="w-32 backdrop-blur-sm bg-white/50 border-white/30">
-            <SelectValue>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{selectedCountry.flag}</span>
-                <span className="text-sm font-medium">{selectedCountry.dialCode}</span>
-              </div>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent className="backdrop-blur-xl bg-white/90 border-white/20">
-            <div className="max-h-64 overflow-y-auto">
-              {countries.map((country) => (
-                <SelectItem key={country.code} value={country.code}>
-                  <div className="flex items-center gap-3 w-full">
-                    <span className="text-lg">{country.flag}</span>
-                    <span className="flex-1 text-left">{country.name}</span>
-                    <span className="text-sm text-gray-500">{country.dialCode}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </div>
-          </SelectContent>
-        </Select>
 
-        {/* Phone Number Input */}
-        <div className="flex-1 relative">
-          <Input
-            id={id}
-            type="tel"
-            value={phoneNumber}
-            onChange={handlePhoneChange}
-            placeholder={placeholder}
-            required={required}
-            disabled={disabled}
-            className="backdrop-blur-sm bg-white/50 border-white/30"
-          />
-        </div>
+      <div className="flex">
+        <PhoneInputWithCountry
+          id={id}
+          international
+          defaultCountry={defaultCountry}
+          value={value}
+          onChange={(value: E164Number | undefined) => onChange?.(value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          countrySelectComponent={(props) => (
+            <CountrySelect {...props} setActiveDropdown={setActiveDropdown} />
+          )}
+          numberInputProps={{
+            className: cn(
+              "flex h-10 w-full rounded-r-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 transition-colors duration-200",
+              error && "border-red-500 focus:ring-red-500 focus:border-red-500"
+            ),
+          }}
+        />
       </div>
-      
-      {error && (
-        <p className="text-sm text-red-600 mt-1">{error}</p>
-      )}
-      
-      {!error && (
-        <p className="text-xs text-gray-500">
-          Example: {selectedCountry.dialCode} {placeholder}
-        </p>
-      )}
+
+      {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
     </div>
   );
 }
 
 export { PhoneInput };
-export type { Country };
+export type { CountryCode as Country };

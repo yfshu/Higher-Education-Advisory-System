@@ -187,3 +187,54 @@
 html {
   font-size: var(--font-size);
 }
+
+.PhoneInput {
+  display: flex;
+  width: 100%;
+}
+
+.PhoneInputCountry {
+  position: relative;
+}
+
+.PhoneInputInput {
+  flex: 1;
+}
+
+/* Constrain phone country dropdown */
+.PhoneInputCountry select {
+  max-height: 240px !important;
+}
+
+/* Style dropdown options for better readability */
+.PhoneInputCountry select option {
+  padding: 6px 10px;
+  line-height: 1.4;
+  font-size: 0.875rem;
+}
+
+/* Ensure dropdown stays within modal bounds */
+.PhoneInputCountry {
+  position: relative;
+  z-index: 10;
+}
+
+/* Disable browser autofill tooltips on password fields */
+input[type="password"]::-webkit-contacts-auto-fill-button,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+}
+
+/* Disable tooltips on all buttons */
+button[type="button"]::before,
+button[type="button"]::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Ensure SVG icons don't block button clicks */
+button svg {
+  pointer-events: none;
+}

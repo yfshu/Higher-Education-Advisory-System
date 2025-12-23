@@ -14,6 +14,204 @@ export type Database = {
   };
   public: {
     Tables: {
+      // New schema tables (Task 2)
+      users: {
+        Row: {
+          user_id: string;
+          full_name: string;
+          email: string;
+          password_hash: string | null;  // Nullable: passwords may be managed by Supabase Auth
+          phone_number: string | null;
+          registration_step: number;
+          is_profile_completed: boolean;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          user_id?: string;
+          full_name: string;
+          email: string;
+          password_hash?: string | null;  // Nullable: passwords may be managed by Supabase Auth
+          phone_number?: string | null;
+          registration_step?: number;
+          is_profile_completed?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          full_name?: string;
+          email?: string;
+          password_hash?: string | null;
+          phone_number?: string | null;
+          registration_step?: number;
+          is_profile_completed?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      student_profile: {
+        Row: {
+          user_id: string;
+          study_level: Database['public']['Enums']['study_level_enum'];
+          extracurricular: boolean;
+          // Academic Subjects
+          bm: Database['public']['Enums']['subject_grade'];
+          english: Database['public']['Enums']['subject_grade'];
+          history: Database['public']['Enums']['subject_grade'];
+          mathematics: Database['public']['Enums']['subject_grade'];
+          islamic_education_moral_education: Database['public']['Enums']['subject_grade'];
+          physics: Database['public']['Enums']['subject_grade'];
+          chemistry: Database['public']['Enums']['subject_grade'];
+          biology: Database['public']['Enums']['subject_grade'];
+          additional_mathematics: Database['public']['Enums']['subject_grade'];
+          geography: Database['public']['Enums']['subject_grade'];
+          economics: Database['public']['Enums']['subject_grade'];
+          accounting: Database['public']['Enums']['subject_grade'];
+          chinese: Database['public']['Enums']['subject_grade'];
+          tamil: Database['public']['Enums']['subject_grade'];
+          ict: Database['public']['Enums']['subject_grade'];
+          // Interest Survey
+          maths_interest: number | null;
+          science_interest: number | null;
+          computer_interest: number | null;
+          writing_interest: number | null;
+          art_interest: number | null;
+          business_interest: number | null;
+          social_interest: number | null;
+          // Skills Survey
+          logical_thinking: number | null;
+          problem_solving: number | null;
+          creativity: number | null;
+          communication: number | null;
+          teamwork: number | null;
+          leadership: number | null;
+          attention_to_detail: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          study_level: Database['public']['Enums']['study_level_enum'];
+          extracurricular?: boolean;
+          bm?: Database['public']['Enums']['subject_grade'];
+          english?: Database['public']['Enums']['subject_grade'];
+          history?: Database['public']['Enums']['subject_grade'];
+          mathematics?: Database['public']['Enums']['subject_grade'];
+          islamic_education_moral_education?: Database['public']['Enums']['subject_grade'];
+          physics?: Database['public']['Enums']['subject_grade'];
+          chemistry?: Database['public']['Enums']['subject_grade'];
+          biology?: Database['public']['Enums']['subject_grade'];
+          additional_mathematics?: Database['public']['Enums']['subject_grade'];
+          geography?: Database['public']['Enums']['subject_grade'];
+          economics?: Database['public']['Enums']['subject_grade'];
+          accounting?: Database['public']['Enums']['subject_grade'];
+          chinese?: Database['public']['Enums']['subject_grade'];
+          tamil?: Database['public']['Enums']['subject_grade'];
+          ict?: Database['public']['Enums']['subject_grade'];
+          maths_interest?: number | null;
+          science_interest?: number | null;
+          computer_interest?: number | null;
+          writing_interest?: number | null;
+          art_interest?: number | null;
+          business_interest?: number | null;
+          social_interest?: number | null;
+          logical_thinking?: number | null;
+          problem_solving?: number | null;
+          creativity?: number | null;
+          communication?: number | null;
+          teamwork?: number | null;
+          leadership?: number | null;
+          attention_to_detail?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          study_level?: Database['public']['Enums']['study_level_enum'];
+          extracurricular?: boolean;
+          bm?: Database['public']['Enums']['subject_grade'];
+          english?: Database['public']['Enums']['subject_grade'];
+          history?: Database['public']['Enums']['subject_grade'];
+          mathematics?: Database['public']['Enums']['subject_grade'];
+          islamic_education_moral_education?: Database['public']['Enums']['subject_grade'];
+          physics?: Database['public']['Enums']['subject_grade'];
+          chemistry?: Database['public']['Enums']['subject_grade'];
+          biology?: Database['public']['Enums']['subject_grade'];
+          additional_mathematics?: Database['public']['Enums']['subject_grade'];
+          geography?: Database['public']['Enums']['subject_grade'];
+          economics?: Database['public']['Enums']['subject_grade'];
+          accounting?: Database['public']['Enums']['subject_grade'];
+          chinese?: Database['public']['Enums']['subject_grade'];
+          tamil?: Database['public']['Enums']['subject_grade'];
+          ict?: Database['public']['Enums']['subject_grade'];
+          maths_interest?: number | null;
+          science_interest?: number | null;
+          computer_interest?: number | null;
+          writing_interest?: number | null;
+          art_interest?: number | null;
+          business_interest?: number | null;
+          social_interest?: number | null;
+          logical_thinking?: number | null;
+          problem_solving?: number | null;
+          creativity?: number | null;
+          communication?: number | null;
+          teamwork?: number | null;
+          leadership?: number | null;
+          attention_to_detail?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_profile_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['user_id'];
+          },
+        ];
+      };
+      preferences: {
+        Row: {
+          user_id: string;
+          budget_range: string | null;
+          preferred_location: string | null;
+          preferred_country: string | null;
+          study_mode: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          budget_range?: string | null;
+          preferred_location?: string | null;
+          preferred_country?: string | null;
+          study_mode?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          budget_range?: string | null;
+          preferred_location?: string | null;
+          preferred_country?: string | null;
+          study_mode?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'preferences_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['user_id'];
+          },
+        ];
+      };
+      // Legacy tables (kept for backward compatibility during migration)
       activity_logs: {
         Row: {
           activity_type: string | null;
@@ -700,19 +898,15 @@ export type Database = {
       alert_type: 'info' | 'warning' | 'error';
       education_level:
         | 'SPM'
-        | 'STPM'
-        | 'A-Levels'
-        | 'Foundation'
-        | 'Diploma'
-        | 'Bachelor'
-        | 'Master'
-        | 'Other';
+        | 'STPM';
       help_category: 'FAQ' | 'System Message' | 'Policy';
       item_type: 'program' | 'scholarship';
       program_level: 'Foundation' | 'Diploma' | 'Bachelor' | 'Master' | 'PhD';
       program_status: 'active' | 'draft' | 'archived';
       scholarship_status: 'active' | 'expired' | 'draft';
       scholarship_type: 'Merit-based' | 'Need-based' | 'Academic' | 'Other';
+      study_level_enum: 'SPM' | 'STPM';
+      subject_grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'G' | '0';
       university_type: 'public' | 'private';
       user_role: 'student' | 'admin';
       user_status: 'active' | 'inactive' | 'banned';
@@ -851,12 +1045,6 @@ export const Constants = {
       education_level: [
         'SPM',
         'STPM',
-        'A-Levels',
-        'Foundation',
-        'Diploma',
-        'Bachelor',
-        'Master',
-        'Other',
       ],
       help_category: ['FAQ', 'System Message', 'Policy'],
       item_type: ['program', 'scholarship'],
@@ -864,6 +1052,8 @@ export const Constants = {
       program_status: ['active', 'draft', 'archived'],
       scholarship_status: ['active', 'expired', 'draft'],
       scholarship_type: ['Merit-based', 'Need-based', 'Academic', 'Other'],
+      study_level_enum: ['SPM', 'STPM'],
+      subject_grade: ['A', 'B', 'C', 'D', 'E', 'G', '0'],
       university_type: ['public', 'private'],
       user_role: ['student', 'admin'],
       user_status: ['active', 'inactive', 'banned'],

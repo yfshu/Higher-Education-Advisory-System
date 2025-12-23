@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
+import { UserProvider } from "@/contexts/UserContext";
+import PasswordRecoveryHandler from "@/components/auth/PasswordRecoveryHandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,7 +48,10 @@ export default function RootLayout({
             })();`
           }}
         />
-        <AuthModalProvider>{children}</AuthModalProvider>
+        <UserProvider>
+          <PasswordRecoveryHandler />
+          <AuthModalProvider>{children}</AuthModalProvider>
+        </UserProvider>
       </body>
     </html>
   );

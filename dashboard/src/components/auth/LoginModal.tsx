@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabaseClient";
 
 import { useAuthModals } from "./AuthModalProvider";
+import { useUser } from "@/contexts/UserContext";
 
 interface LoginFormState {
   email: string;
@@ -27,6 +28,7 @@ interface LoginFormState {
 
 export default function LoginModal() {
   const { isLoginOpen, closeLogin, switchToRegister } = useAuthModals();
+  const { setUserData } = useUser();
   const router = useRouter();
   const [view, setView] = useState<"login" | "forgot" | "update">("login");
   const [formData, setFormData] = useState<LoginFormState>({
@@ -63,20 +65,6 @@ export default function LoginModal() {
     }
   }, [isLoginOpen]);
 
-  useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setView("update");
-        setError(null);
-        setStatus("Please enter a new password to complete reset.");
-      }
-    });
-    return () => {
-      try {
-        data.subscription.unsubscribe();
-      } catch {}
-    };
-  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -124,7 +112,14 @@ export default function LoginModal() {
         return;
       }
 
-      // Persist or clear remembered email preference
+      setUserData({
+        user: body.user,
+        profile: body.profile,
+        preferences: body.preferences,
+        accessToken,
+        refreshToken,
+      });
+
       if (formData.rememberMe) {
         try {
           localStorage.setItem(REMEMBER_EMAIL_KEY, formData.email);
@@ -136,7 +131,6 @@ export default function LoginModal() {
       }
 
       setStatus("Signed in successfully.");
-      // Clear fields after successful login
       resetForm();
       closeLogin();
 
@@ -279,6 +273,7 @@ export default function LoginModal() {
                 <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
                 <Input
                   id="login-password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(event) =>
@@ -287,11 +282,15 @@ export default function LoginModal() {
                   placeholder="Enter your password"
                   required
                   className="h-11 pl-10 pr-10 text-gray-900 placeholder:text-gray-500"
+                  autoComplete="current-password"
+                  title=""
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
@@ -366,11 +365,29 @@ export default function LoginModal() {
           <form className="space-y-4" onSubmit={updatePassword}>
             <div className="space-y-2">
               <Label htmlFor="new-password">New Password</Label>
-              <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+              <Input 
+                id="new-password" 
+                name="new-password"
+                type="password" 
+                value={newPassword} 
+                onChange={(e) => setNewPassword(e.target.value)} 
+                required 
+                autoComplete="new-password"
+                title=""
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+              <Input 
+                id="confirm-password" 
+                name="confirm-password"
+                type="password" 
+                value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} 
+                required 
+                autoComplete="new-password"
+                title=""
+              />
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             {status && <p className="text-sm text-green-600">{status}</p>}

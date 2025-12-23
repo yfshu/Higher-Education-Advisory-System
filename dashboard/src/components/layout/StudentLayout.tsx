@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/lib/supabaseClient";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import { useUser } from "@/contexts/UserContext";
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -45,29 +46,66 @@ const navigationItems = [
 export default function StudentLayout({ children, title }: StudentLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { userData, logout } = useUser();
 
   useEffect(() => {
     const ensureStudent = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id;
       if (!userId) {
         router.push("/auth/login");
         return;
       }
-      const { data: details } = await supabase
-        .from("users_details")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
-      const role = details?.role ?? "student";
+      const role = userData?.user?.role ?? "student";
       if (role === "admin") {
         router.push("/admin");
       }
     };
     void ensureStudent();
-  }, [router]);
+  }, [router, userData]);
 
-  const userName = "Ahmad";
+  const userName = userData?.user?.fullName || "Student";
+  const userEmail = userData?.user?.email || "";
+  const userInitials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .substring(0, 2);
+
+  const handleLogout = async () => {
+    try {
+      // Clear Supabase session
+      await supabase.auth.signOut();
+      
+      // Clear user context and localStorage
+      logout();
+      
+      // Preserve "Remember Me" email before clearing
+      const rememberEmail = localStorage.getItem("hea.remember.email");
+      
+      // Clear all cached data
+      localStorage.clear();
+      
+      // Restore "Remember Me" email if it existed
+      if (rememberEmail) {
+        localStorage.setItem("hea.remember.email", rememberEmail);
+      }
+      
+      sessionStorage.clear();
+      
+      // Clear cache storage if available
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+    } catch (err) {
+      console.warn("Logout error", err);
+    } finally {
+      // Force redirect to homepage
+      window.location.href = "/";
+    }
+  };
 
   const renderNavLink = (
     href: string,
@@ -126,7 +164,7 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
                     <Avatar className="h-10 w-10 border-2 border-blue-200">
                       <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
                       <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                        {userName.charAt(0)}
+                        {userInitials}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -139,12 +177,12 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
                       <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm">
-                        {userName.charAt(0)}
+                        {userInitials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{userName}</p>
-                      <p className="text-xs text-muted-foreground">Student</p>
+                      <p className="text-xs text-muted-foreground">{userEmail}</p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />
@@ -156,10 +194,9 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onSelect={async (event) => {
+                    onSelect={(event) => {
                       event.preventDefault();
-                      await supabase.auth.signOut();
-                      router.push("/");
+                      handleLogout();
                     }}
                     className="flex items-center gap-2 text-red-600 focus:text-red-600"
                   >

@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import LoginModal from "./LoginModal";
 import RegisterModal from "./RegisterModal";
+import MultiStepRegisterModal from "./MultiStepRegisterModal";
 
 interface AuthModalContextValue {
   isLoginOpen: boolean;
@@ -76,7 +77,10 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
     <AuthModalContext.Provider value={value}>
       {children}
       <LoginModal />
-      <RegisterModal />
+      {/* Use MultiStepRegisterModal for new 4-step registration flow */}
+      <MultiStepRegisterModal />
+      {/* Keep RegisterModal for backward compatibility if needed */}
+      {/* <RegisterModal /> */}
     </AuthModalContext.Provider>
   );
 }

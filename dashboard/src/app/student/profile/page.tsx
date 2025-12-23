@@ -163,7 +163,7 @@ export default function StudentProfile() {
     {
       title: 'Academic Background',
       fields: [
-        { key: 'currentEducation', label: 'Current Education Level', type: 'select', options: ['SPM', 'STPM', 'A-Levels', 'Foundation', 'Diploma', 'Bachelor\'s Degree', 'Other'] },
+        { key: 'currentEducation', label: 'Current Education Level', type: 'select', options: ['SPM', 'STPM'] },
         { key: 'institution', label: 'Current Institution', type: 'text' },
         { key: 'academicResults', label: 'Academic Results/Grades', type: 'textarea' }
       ]

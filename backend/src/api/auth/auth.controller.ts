@@ -17,7 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dto/requests/login-request.dto';
-import { RegisterRequestDto } from './dto/requests/register-request.dto';
+import { RegisterCompleteRequestDto as RegisterRequestDto } from './dto/requests/register-complete-request.dto';
 import { LoginResponseDto } from './dto/responses/login-response.dto';
 import { RegisterResponseDto } from './dto/responses/register-response.dto';
 import { Request } from 'express';
@@ -45,12 +45,12 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Create a new student account' })
+  @ApiOperation({ summary: 'Register new student account' })
   @ApiCreatedResponse({
-    description: 'Account created successfully.',
+    description: 'Registration completed successfully.',
     type: RegisterResponseDto,
   })
-  @ApiBadRequestResponse({ description: 'Invalid registration payload.' })
+  @ApiBadRequestResponse({ description: 'Invalid registration data.' })
   register(@Body() body: RegisterRequestDto): Promise<RegisterResponseDto> {
     return this.authService.register(body);
   }
