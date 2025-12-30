@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { parsePhoneNumber, PhoneNumber } from 'libphonenumber-js';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { Database } from '../../supabase/types/supabase.types';
 import { LoginRequestDto } from './dto/requests/login-request.dto';
@@ -51,6 +52,28 @@ export class AuthService {
       .eq('user_id', userId)
       .maybeSingle();
 
+    // Generate signed URL for avatar if it exists (for private bucket)
+    let avatarUrl: string | undefined = undefined;
+    if (profileData?.avatar_url) {
+      // Check if avatar_url is already a full URL (legacy data) or a path
+      if (profileData.avatar_url.startsWith('http://') || profileData.avatar_url.startsWith('https://')) {
+        // Already a full URL, use as-is
+        avatarUrl = profileData.avatar_url;
+      } else {
+        // It's a path, generate signed URL (expires in 1 hour)
+        const { data: signedUrlData, error: signedUrlError } = await dbClient.storage
+          .from('profile-avatars')
+          .createSignedUrl(profileData.avatar_url, 3600);
+        
+        if (!signedUrlError && signedUrlData) {
+          avatarUrl = signedUrlData.signedUrl;
+        } else {
+          console.error('Failed to generate signed URL for avatar:', signedUrlError);
+          // If signed URL generation fails, return undefined (will show initials)
+        }
+      }
+    }
+
     return {
       user: {
         id: userId,
@@ -61,6 +84,13 @@ export class AuthService {
       },
       profile: profileData
         ? {
+            phoneNumber: (profileData.phone_number ?? undefined) as
+              | string
+              | undefined,
+            countryCode: (profileData.country_code ?? undefined) as
+              | string
+              | undefined,
+            avatarUrl: avatarUrl,
             studyLevel: profileData.study_level,
             extracurricular: profileData.extracurricular,
             bm: profileData.bm ?? undefined,
@@ -124,6 +154,33 @@ export class AuthService {
       );
     }
 
+    // Sanitize phone number to E.164 format (remove spaces, dashes, parentheses)
+    const sanitizedPhone = dto.phoneNumber.replace(/[\s\-()]/g, '');
+
+    // Validate and parse phone number using libphonenumber-js
+    let parsedPhone: PhoneNumber;
+    try {
+      parsedPhone = parsePhoneNumber(sanitizedPhone);
+    } catch {
+      throw new BadRequestException(
+        'Invalid phone number format. Please provide a valid phone number with country code.',
+      );
+    }
+
+    if (!parsedPhone || !parsedPhone.isValid()) {
+      throw new BadRequestException(
+        'Invalid phone number. Please provide a valid phone number with country code.',
+      );
+    }
+
+    // Extract country code correctly (e.g., +60 from +60123456789)
+    const countryCode = parsedPhone.countryCallingCode
+      ? `+${parsedPhone.countryCallingCode}`
+      : null;
+
+    // Use the parsed phone number's E.164 format for consistency
+    const normalizedPhone: string = parsedPhone.number;
+
     const authClient = this.supabaseService.getAuthClient();
     const dbClient = this.supabaseService.getClient();
 
@@ -132,7 +189,6 @@ export class AuthService {
         {
           email: dto.email,
           password: dto.password,
-          phone: dto.phoneNumber,
           options: {
             emailRedirectTo:
               process.env.EMAIL_CONFIRM_REDIRECT ??
@@ -140,7 +196,8 @@ export class AuthService {
             data: {
               role: 'student',
               full_name: dto.fullName,
-              phone_number: dto.phoneNumber,
+              phone_number: normalizedPhone,
+              country_code: countryCode,
             },
           },
         },
@@ -158,6 +215,8 @@ export class AuthService {
       const profileInsert: Database['public']['Tables']['student_profile']['Insert'] =
         {
           user_id: userId,
+          phone_number: normalizedPhone,
+          country_code: countryCode,
           study_level: dto.studyLevel,
           extracurricular: dto.extracurricular,
           bm: dto.bm as any,

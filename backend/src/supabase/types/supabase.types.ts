@@ -54,6 +54,10 @@ export type Database = {
       student_profile: {
         Row: {
           user_id: string;
+          phone_number: string | null;
+          country_code: string | null;
+          avatar_url: string | null;
+          avatar_updated_at: string | null;
           study_level: Database['public']['Enums']['study_level_enum'];
           extracurricular: boolean;
           // Academic Subjects
@@ -93,6 +97,10 @@ export type Database = {
         };
         Insert: {
           user_id: string;
+          phone_number?: string | null;
+          country_code?: string | null;
+          avatar_url?: string | null;
+          avatar_updated_at?: string | null;
           study_level: Database['public']['Enums']['study_level_enum'];
           extracurricular?: boolean;
           bm?: Database['public']['Enums']['subject_grade'];
@@ -129,6 +137,10 @@ export type Database = {
         };
         Update: {
           user_id?: string;
+          phone_number?: string | null;
+          country_code?: string | null;
+          avatar_url?: string | null;
+          avatar_updated_at?: string | null;
           study_level?: Database['public']['Enums']['study_level_enum'];
           extracurricular?: boolean;
           bm?: Database['public']['Enums']['subject_grade'];

@@ -33,6 +33,24 @@ export class LoginUserDto {
 }
 
 export class StudentProfileDto {
+  @ApiPropertyOptional({ 
+    description: 'Phone number in E.164 format',
+    example: '+60123456789' 
+  })
+  phoneNumber?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Country code extracted from phone number',
+    example: '+60' 
+  })
+  countryCode?: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Avatar URL from Supabase Storage',
+    example: 'https://...' 
+  })
+  avatarUrl?: string;
+
   @ApiPropertyOptional({ example: 'SPM' })
   studyLevel?: string;
 

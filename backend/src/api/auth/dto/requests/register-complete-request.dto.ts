@@ -34,11 +34,14 @@ export class RegisterCompleteRequestDto {
   email!: string;
 
   @ApiProperty({
-    description: 'Contact number with country code.',
-    example: '+60 12-345-6789',
+    description: 'Contact number in E.164 format (e.g., +60123456789). Must start with + followed by 8-15 digits.',
+    example: '+60123456789',
   })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^\+\d{8,15}$/, {
+    message: 'Phone number must be in E.164 format: + followed by 8-15 digits (no spaces or dashes)',
+  })
   phoneNumber!: string;
 
   @ApiPropertyOptional({

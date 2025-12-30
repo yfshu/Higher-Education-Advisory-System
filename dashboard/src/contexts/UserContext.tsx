@@ -3,6 +3,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface StudentProfile {
+  phoneNumber?: string;
+  countryCode?: string;
+  avatarUrl?: string;
   studyLevel?: string;
   extracurricular?: boolean;
   bm?: string;

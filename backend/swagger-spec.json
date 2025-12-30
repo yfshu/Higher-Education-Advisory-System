@@ -196,11 +196,50 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Profile loaded.",
+            "description": "Profile retrieved successfully."
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get current user profile",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/api/profile/avatar": {
+      "post": {
+        "operationId": "ProfileController_uploadAvatar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar uploaded successfully.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileResponseDto"
+                  "$ref": "#/components/schemas/UploadAvatarResponseDto"
                 }
               }
             }
@@ -214,9 +253,588 @@
             "supabase-auth": []
           }
         ],
-        "summary": "Get the authenticated user's profile",
+        "summary": "Upload profile picture",
         "tags": [
           "Profile"
+        ]
+      }
+    },
+    "/api/profile/update": {
+      "put": {
+        "operationId": "ProfileController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateProfileResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Update profile (academic, interests, skills only)",
+        "tags": [
+          "Profile"
+        ]
+      }
+    },
+    "/api/programs": {
+      "get": {
+        "operationId": "ProgramsController_getPrograms",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of programs retrieved successfully"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get all active programs",
+        "tags": [
+          "Programs"
+        ]
+      }
+    },
+    "/api/programs/{id}": {
+      "get": {
+        "operationId": "ProgramsController_getProgramById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Program ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Program retrieved successfully"
+          },
+          "404": {
+            "description": "Program not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get program by ID",
+        "tags": [
+          "Programs"
+        ]
+      }
+    },
+    "/api/programs/level/{level}": {
+      "get": {
+        "operationId": "ProgramsController_getProgramsByLevel",
+        "parameters": [
+          {
+            "name": "level",
+            "required": true,
+            "in": "path",
+            "description": "Program level",
+            "schema": {
+              "enum": [
+                "foundation",
+                "diploma",
+                "degree"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of programs retrieved successfully"
+          },
+          "400": {
+            "description": "Invalid level"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get programs by level",
+        "tags": [
+          "Programs"
+        ]
+      }
+    },
+    "/api/programs/university/{universityId}": {
+      "get": {
+        "operationId": "ProgramsController_getProgramsByUniversity",
+        "parameters": [
+          {
+            "name": "universityId",
+            "required": true,
+            "in": "path",
+            "description": "University ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of programs retrieved successfully"
+          },
+          "400": {
+            "description": "Invalid university ID"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get programs by university ID",
+        "tags": [
+          "Programs"
+        ]
+      }
+    },
+    "/api/universities": {
+      "get": {
+        "operationId": "UniversitiesController_getUniversities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of universities retrieved successfully"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get all universities",
+        "tags": [
+          "Universities"
+        ]
+      }
+    },
+    "/api/universities/{id}": {
+      "get": {
+        "operationId": "UniversitiesController_getUniversityById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "University ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "University retrieved successfully"
+          },
+          "404": {
+            "description": "University not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get university by ID",
+        "tags": [
+          "Universities"
+        ]
+      }
+    },
+    "/api/scholarships": {
+      "get": {
+        "operationId": "ScholarshipsController_getScholarships",
+        "parameters": [
+          {
+            "name": "studyLevel",
+            "required": false,
+            "in": "query",
+            "description": "Filter by study level: foundation, diploma, degree",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by scholarship type",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "required": false,
+            "in": "query",
+            "description": "Filter by location: local, overseas, both",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by field ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of scholarships retrieved successfully"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get all active scholarships",
+        "tags": [
+          "Scholarships"
+        ]
+      }
+    },
+    "/api/scholarships/{id}": {
+      "get": {
+        "operationId": "ScholarshipsController_getScholarshipById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Scholarship ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scholarship retrieved successfully"
+          },
+          "404": {
+            "description": "Scholarship not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get scholarship by ID",
+        "tags": [
+          "Scholarships"
+        ]
+      }
+    },
+    "/api/scholarships/level/{level}": {
+      "get": {
+        "operationId": "ScholarshipsController_getScholarshipsByLevel",
+        "parameters": [
+          {
+            "name": "level",
+            "required": true,
+            "in": "path",
+            "description": "Study level: foundation, diploma, or degree",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of scholarships retrieved successfully"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get scholarships by study level",
+        "tags": [
+          "Scholarships"
+        ]
+      }
+    },
+    "/api/saved-items": {
+      "post": {
+        "operationId": "SavedItemsController_saveItem",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Item saved successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Save an item (program or scholarship)",
+        "tags": [
+          "Saved Items"
+        ]
+      },
+      "get": {
+        "operationId": "SavedItemsController_getSavedItems",
+        "parameters": [
+          {
+            "name": "itemType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "program",
+                "scholarship"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved items retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get all saved items for the current user",
+        "tags": [
+          "Saved Items"
+        ]
+      }
+    },
+    "/api/saved-items/{itemType}/{itemId}": {
+      "delete": {
+        "operationId": "SavedItemsController_unsaveItem",
+        "parameters": [
+          {
+            "name": "itemType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "program",
+                "scholarship"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item unsaved successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Unsave an item (program or scholarship)",
+        "tags": [
+          "Saved Items"
+        ]
+      }
+    },
+    "/api/saved-items/check/{itemType}/{itemId}": {
+      "get": {
+        "operationId": "SavedItemsController_checkSaved",
+        "parameters": [
+          {
+            "name": "itemType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "program",
+                "scholarship"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved state retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Check if an item is saved",
+        "tags": [
+          "Saved Items"
+        ]
+      }
+    },
+    "/api/saved-items/programs": {
+      "get": {
+        "operationId": "SavedItemsController_getSavedPrograms",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Saved programs retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get saved programs with full program data",
+        "tags": [
+          "Saved Items"
+        ]
+      }
+    },
+    "/api/saved-items/scholarships": {
+      "get": {
+        "operationId": "SavedItemsController_getSavedScholarships",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Saved scholarships retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get saved scholarships with full scholarship data",
+        "tags": [
+          "Saved Items"
+        ]
+      }
+    },
+    "/api/help/faq": {
+      "get": {
+        "operationId": "HelpController_getFAQs",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum number of FAQs to return (default: 8)",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search query to filter FAQs by title or content",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FAQs retrieved successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "Get FAQs from help_support table",
+        "tags": [
+          "Help & Support"
+        ]
+      }
+    },
+    "/api/help/ai": {
+      "post": {
+        "operationId": "HelpController_handleAIChat",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "AI response generated successfully"
+          },
+          "400": {
+            "description": "Bad request (invalid message, rate limit, etc.)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Send a message to the AI assistant",
+        "tags": [
+          "Help & Support"
         ]
       }
     }
@@ -297,6 +915,21 @@
       "StudentProfileDto": {
         "type": "object",
         "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "description": "Phone number in E.164 format",
+            "example": "+60123456789"
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "Country code extracted from phone number",
+            "example": "+60"
+          },
+          "avatarUrl": {
+            "type": "string",
+            "description": "Avatar URL from Supabase Storage",
+            "example": "https://..."
+          },
           "studyLevel": {
             "type": "string",
             "example": "SPM"
@@ -500,8 +1133,8 @@
           },
           "phoneNumber": {
             "type": "string",
-            "description": "Contact number with country code.",
-            "example": "+60 12-345-6789"
+            "description": "Contact number in E.164 format (e.g., +60123456789). Must start with + followed by 8-15 digits.",
+            "example": "+60123456789"
           },
           "currentLocation": {
             "type": "string",
@@ -997,74 +1630,310 @@
           "message"
         ]
       },
-      "ProfileResponseDto": {
+      "UploadAvatarResponseDto": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "firstName": {
-            "type": "object",
-            "nullable": true
-          },
-          "lastName": {
-            "type": "object",
-            "nullable": true
-          },
-          "phoneNumber": {
-            "type": "object",
-            "nullable": true
-          },
-          "nationality": {
-            "type": "object",
-            "nullable": true
-          },
-          "currentLocation": {
-            "type": "object",
-            "nullable": true
+          "message": {
+            "type": "string",
+            "example": "Avatar uploaded successfully."
           },
           "avatarUrl": {
-            "type": "object",
-            "nullable": true
-          },
-          "careerGoal": {
-            "type": "object",
-            "nullable": true
-          },
-          "educationLevel": {
-            "type": "object",
-            "nullable": true
-          },
-          "fieldOfInterestId": {
-            "type": "object",
-            "nullable": true
-          },
-          "academicResult": {
-            "type": "object",
-            "nullable": true
-          },
-          "studyPreferences": {
-            "type": "object",
-            "nullable": true
+            "type": "string",
+            "example": "https://..."
           }
         },
         "required": [
-          "id",
-          "email",
-          "firstName",
-          "lastName",
-          "phoneNumber",
-          "nationality",
-          "currentLocation",
-          "avatarUrl",
-          "careerGoal",
-          "educationLevel",
-          "fieldOfInterestId",
-          "academicResult",
-          "studyPreferences"
+          "message",
+          "avatarUrl"
+        ]
+      },
+      "UpdateProfileRequestDto": {
+        "type": "object",
+        "properties": {
+          "studyLevel": {
+            "type": "string",
+            "enum": [
+              "SPM",
+              "STPM"
+            ]
+          },
+          "extracurricular": {
+            "type": "boolean"
+          },
+          "bm": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "english": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "history": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "mathematics": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "islamicEducationMoralEducation": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "physics": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "chemistry": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "biology": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "additionalMathematics": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "geography": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "economics": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "accounting": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "chinese": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "tamil": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "ict": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              "E",
+              "G",
+              "0"
+            ]
+          },
+          "mathsInterest": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "scienceInterest": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "computerInterest": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "writingInterest": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "artInterest": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "businessInterest": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "socialInterest": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "logicalThinking": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "problemSolving": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "creativity": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "communication": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "teamwork": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "leadership": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "attentionToDetail": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "budgetRange": {
+            "type": "string"
+          },
+          "preferredLocation": {
+            "type": "string"
+          },
+          "preferredCountry": {
+            "type": "string"
+          },
+          "studyMode": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Profile updated successfully."
+          }
+        },
+        "required": [
+          "message"
         ]
       }
     }

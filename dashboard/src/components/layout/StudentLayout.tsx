@@ -66,12 +66,22 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
 
   const userName = userData?.user?.fullName || "Student";
   const userEmail = userData?.user?.email || "";
+  const avatarUrl = userData?.profile?.avatarUrl;
   const userInitials = userName
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase()
     .substring(0, 2);
+
+  // Debug: Log avatar URL in navbar
+  useEffect(() => {
+    if (avatarUrl) {
+      console.log("🖼️ Navbar avatar URL:", avatarUrl);
+    } else {
+      console.log("⚠️ No avatar URL in navbar");
+    }
+  }, [avatarUrl]);
 
   const handleLogout = async () => {
     try {
@@ -161,8 +171,15 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 border-2 border-blue-200">
-                      <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
+                    <Avatar 
+                      className="h-10 w-10 border-2 border-blue-200"
+                      key={avatarUrl || "no-avatar"}
+                    >
+                      <AvatarImage 
+                        src={avatarUrl || undefined} 
+                        alt={userName}
+                        className="object-cover"
+                      />
                       <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
                         {userInitials}
                       </AvatarFallback>
@@ -174,8 +191,15 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
                   align="end"
                 >
                   <div className="flex items-center gap-2 p-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder-avatar.jpg" alt={userName} />
+                    <Avatar 
+                      className="h-8 w-8"
+                      key={avatarUrl || "no-avatar"}
+                    >
+                      <AvatarImage 
+                        src={avatarUrl || undefined} 
+                        alt={userName}
+                        className="object-cover"
+                      />
                       <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm">
                         {userInitials}
                       </AvatarFallback>

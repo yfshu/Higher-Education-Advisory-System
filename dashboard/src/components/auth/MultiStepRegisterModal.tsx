@@ -351,10 +351,20 @@ export default function MultiStepRegisterModal() {
 
   const validatePhone = (phone: string) => {
     setPhoneErrors("");
-    if (!phone || phone.trim().length < 6) {
+    if (!phone || phone.trim().length === 0) {
       setPhoneErrors("Phone number is required.");
       return false;
     }
+    
+    // Validate E.164 format: + followed by 8-15 digits
+    const e164Regex = /^\+\d{8,15}$/;
+    const sanitizedPhone = phone.replace(/[\s\-\(\)]/g, ''); // Remove formatting
+    
+    if (!e164Regex.test(sanitizedPhone)) {
+      setPhoneErrors("Phone number must include country code (e.g., +60123456789)");
+      return false;
+    }
+    
     return true;
   };
 
@@ -414,6 +424,9 @@ export default function MultiStepRegisterModal() {
     }
 
     try {
+      // Sanitize phone number to E.164 format (remove spaces, dashes, parentheses)
+      const sanitizedPhone = step1Data.phoneNumber.replace(/[\s\-\(\)]/g, '');
+      
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
       const res = await fetch(`${backendUrl}/api/auth/register`, {
@@ -423,6 +436,7 @@ export default function MultiStepRegisterModal() {
         },
         body: JSON.stringify({
           ...step1Data,
+          phoneNumber: sanitizedPhone, // Use sanitized phone
           ...step2Data,
           ...step3Data,
           ...step4Data,

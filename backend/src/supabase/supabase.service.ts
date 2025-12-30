@@ -56,4 +56,24 @@ export class SupabaseService {
 
     return createClient<Database>(this.supabaseUrl, this.serviceRoleKey);
   }
+
+  /**
+   * Create a client with user token using anon key (respects RLS)
+   * Use this for operations that need RLS enforcement
+   */
+  createUserClient(token: string) {
+    if (!this.supabaseUrl) {
+      throw new Error('SUPABASE_URL is required');
+    }
+    if (!this.anonKey) {
+      throw new Error('SUPABASE_ANON_KEY is required');
+    }
+    return createClient<Database>(this.supabaseUrl, this.anonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
+  }
 }

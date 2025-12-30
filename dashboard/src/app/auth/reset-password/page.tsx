@@ -147,9 +147,10 @@ export default function ResetPasswordPage() {
           openLogin();
         }, 300);
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("❌ Error updating password:", err);
-      setError(err.message || "Failed to update password. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : "Failed to update password. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
