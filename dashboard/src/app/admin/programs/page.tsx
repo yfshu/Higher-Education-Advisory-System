@@ -1,297 +1,144 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  BookOpen,
-  GraduationCap,
-  MapPin,
-  Calendar,
-  Users,
-  Eye,
-} from "lucide-react";
+import { Search, Edit, Trash2, BookOpen, GraduationCap, MapPin, Users, Eye, Loader2 } from "lucide-react";
+import Link from "next/link";
+
+interface Program {
+  id: number;
+  name: string;
+  level: string | null;
+  duration_months: number | null;
+  tuition_fee_amount: number | null;
+  university: {
+    id: number;
+    name: string;
+    city: string | null;
+    state: string | null;
+  } | null;
+  created_at: string | null;
+}
 
 export default function ProgramManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newProgram, setNewProgram] = useState({
-    title: '',
-    university: '',
-    location: '',
-    type: '',
-    duration: '',
-    tuitionFee: '',
-    deadline: '',
-    requirements: '',
-    description: '',
-    field: ''
-  });
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const programs = [
-    {
-      id: 1,
-      title: 'Computer Science',
-      university: 'University of Malaya',
-      location: 'Kuala Lumpur, Malaysia',
-      type: 'Bachelor',
-      duration: '4 years',
-      tuitionFee: 'RM 3,500/semester',
-      deadline: '2024-03-15',
-      applications: 456,
-      status: 'Active',
-      field: 'Computer Science & IT',
-      lastUpdated: '2024-01-10'
-    },
-    {
-      id: 2,
-      title: 'Software Engineering',
-      university: 'Universiti Teknologi Malaysia',
-      location: 'Johor Bahru, Malaysia',
-      type: 'Bachelor',
-      duration: '4 years',
-      tuitionFee: 'RM 3,200/semester',
-      deadline: '2024-04-01',
-      applications: 312,
-      status: 'Active',
-      field: 'Computer Science & IT',
-      lastUpdated: '2024-01-08'
-    },
-    {
-      id: 3,
-      title: 'Business Administration',
-      university: 'Universiti Kebangsaan Malaysia',
-      location: 'Bangi, Malaysia',
-      type: 'Bachelor',
-      duration: '3 years',
-      tuitionFee: 'RM 2,800/semester',
-      deadline: '2024-02-15',
-      applications: 289,
-      status: 'Active',
-      field: 'Business & Management',
-      lastUpdated: '2024-01-05'
-    },
-    {
-      id: 4,
-      title: 'Mechanical Engineering',
-      university: 'Universiti Putra Malaysia',
-      location: 'Serdang, Malaysia',
-      type: 'Bachelor',
-      duration: '4 years',
-      tuitionFee: 'RM 3,100/semester',
-      deadline: '2024-01-31',
-      applications: 234,
-      status: 'Draft',
-      field: 'Engineering',
-      lastUpdated: '2024-01-12'
-    }
-  ];
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+        const response = await fetch(`${backendUrl}/api/programs`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch programs: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setPrograms(result.data);
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } catch (err) {
+        console.error('Error fetching programs:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load programs');
+        setPrograms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrograms();
+  }, []);
 
   const filteredPrograms = programs.filter(program => {
-    const matchesSearch = program.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         program.university.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === 'all' || program.type.toLowerCase() === filterType;
+    const matchesSearch = program.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         program.university?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterType === 'all' || 
+                         (program.level && program.level.toLowerCase() === filterType.toLowerCase());
     return matchesSearch && matchesFilter;
   });
 
-  const handleAddProgram = () => {
-    // Add program functionality would be implemented here
-    setIsAddDialogOpen(false);
-    setNewProgram({
-      title: '',
-      university: '',
-      location: '',
-      type: '',
-      duration: '',
-      tuitionFee: '',
-      deadline: '',
-      requirements: '',
-      description: '',
-      field: ''
-    });
+  const getLevelDisplay = (level: string | null): string => {
+    if (!level) return 'N/A';
+    return level;
   };
+
+  const getLocation = (program: Program): string => {
+    if (!program.university) return 'Unknown';
+    const parts = [program.university.city, program.university.state].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : 'Malaysia';
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout title="Program Management">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <p className="text-muted-foreground">Loading programs...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Program Management">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Error loading programs</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout title="Program Management">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
               Malaysian University Programs
             </h2>
-            <p className="text-gray-600">
-              Add, edit, and manage university programs from Malaysian institutions across public and private universities.
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+              Add, edit, and manage university programs from Malaysian institutions.
             </p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-slate-700 hover:bg-slate-800 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Program
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl backdrop-blur-xl bg-white/90">
-              <DialogHeader>
-                <DialogTitle>Add New Program</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Program Title</Label>
-                    <Input
-                      value={newProgram.title}
-                      onChange={(e) => setNewProgram({...newProgram, title: e.target.value})}
-                      placeholder="e.g., Computer Science"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>University</Label>
-                    <Input
-                      value={newProgram.university}
-                      onChange={(e) => setNewProgram({...newProgram, university: e.target.value})}
-                      placeholder="e.g., University of Malaya"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Location</Label>
-                    <Input
-                      value={newProgram.location}
-                      onChange={(e) => setNewProgram({...newProgram, location: e.target.value})}
-                      placeholder="e.g., Kuala Lumpur, Malaysia"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Program Type</Label>
-                    <Select
-                      value={newProgram.type}
-                      onValueChange={(value) => setNewProgram({ ...newProgram, type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Foundation">Foundation</SelectItem>
-                        <SelectItem value="Diploma">Diploma</SelectItem>
-                        <SelectItem value="Bachelor">Bachelor</SelectItem>
-                        <SelectItem value="Master">Master</SelectItem>
-                        <SelectItem value="PhD">PhD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Duration</Label>
-                    <Input
-                      value={newProgram.duration}
-                      onChange={(e) => setNewProgram({...newProgram, duration: e.target.value})}
-                      placeholder="e.g., 4 years"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tuition Fee</Label>
-                    <Input
-                      value={newProgram.tuitionFee}
-                      onChange={(e) => setNewProgram({...newProgram, tuitionFee: e.target.value})}
-                      placeholder="e.g., RM 3,500/semester"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Application Deadline</Label>
-                    <Input
-                      type="date"
-                      value={newProgram.deadline}
-                      onChange={(e) => setNewProgram({...newProgram, deadline: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                    <Label>Field of Study</Label>
-                    <Select
-                      value={newProgram.field}
-                      onValueChange={(value) => setNewProgram({ ...newProgram, field: value })}
-                    >
-                      <SelectTrigger>
-                      <SelectValue placeholder="Select field" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Computer Science & IT">Computer Science & IT</SelectItem>
-                      <SelectItem value="Engineering">Engineering</SelectItem>
-                      <SelectItem value="Business & Management">Business & Management</SelectItem>
-                      <SelectItem value="Medicine & Health Sciences">Medicine & Health Sciences</SelectItem>
-                      <SelectItem value="Pure Sciences">Pure Sciences</SelectItem>
-                      <SelectItem value="Arts & Humanities">Arts & Humanities</SelectItem>
-                      <SelectItem value="Social Sciences">Social Sciences</SelectItem>
-                      <SelectItem value="Education">Education</SelectItem>
-                      <SelectItem value="Law">Law</SelectItem>
-                      <SelectItem value="Architecture & Built Environment">Architecture & Built Environment</SelectItem>
-                      <SelectItem value="Accounting & Finance">Accounting & Finance</SelectItem>
-                      <SelectItem value="Mass Communication">Mass Communication</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Entry Requirements</Label>
-                  <Textarea
-                    value={newProgram.requirements}
-                    onChange={(e) => setNewProgram({...newProgram, requirements: e.target.value})}
-                    placeholder="e.g., SPM: 5 credits including Mathematics and English, or STPM: CGPA 3.0"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Program Description</Label>
-                  <Textarea
-                    value={newProgram.description}
-                    onChange={(e) => setNewProgram({...newProgram, description: e.target.value})}
-                    placeholder="Detailed program description..."
-                    className="min-h-20"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddProgram} className="bg-slate-700 hover:bg-slate-800 text-white">
-                    Add Program
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button asChild className="bg-slate-700 hover:bg-slate-800 text-white">
+            <Link href="/admin/programs/new">
+              Add New Program
+            </Link>
+          </Button>
         </div>
 
         {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               <Input
                 type="text"
                 placeholder="Search programs or universities..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 backdrop-blur-sm bg-white/50 border-white/30"
+                className="pl-9 sm:pl-10 backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-white/30"
               />
             </div>
           </div>
@@ -300,138 +147,155 @@ export default function ProgramManagement() {
               variant={filterType === 'all' ? 'default' : 'outline'}
               onClick={() => setFilterType('all')}
               size="sm"
+              className="text-xs sm:text-sm"
             >
               All
+            </Button>
+            <Button
+              variant={filterType === 'foundation' ? 'default' : 'outline'}
+              onClick={() => setFilterType('foundation')}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              Foundation
+            </Button>
+            <Button
+              variant={filterType === 'diploma' ? 'default' : 'outline'}
+              onClick={() => setFilterType('diploma')}
+              size="sm"
+              className="text-xs sm:text-sm"
+            >
+              Diploma
             </Button>
             <Button
               variant={filterType === 'bachelor' ? 'default' : 'outline'}
               onClick={() => setFilterType('bachelor')}
               size="sm"
+              className="text-xs sm:text-sm"
             >
-              Bachelor
-            </Button>
-            <Button
-              variant={filterType === 'master' ? 'default' : 'outline'}
-              onClick={() => setFilterType('master')}
-              size="sm"
-            >
-              Master
+              Degree
             </Button>
           </div>
         </div>
 
         {/* Programs Table */}
-        <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg overflow-hidden">
+        <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20 shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-white/30 border-b border-white/20">
+              <thead className="bg-white/30 dark:bg-slate-800/30 border-b border-white/20">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Program</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">University</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Type</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Applications</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Actions</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">Program</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">University</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">Type</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 hidden sm:table-cell">Duration</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 hidden lg:table-cell">Tuition</th>
+                  <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/20">
-                {filteredPrograms.map((program) => (
-                  <tr key={program.id} className="hover:bg-white/20 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">{program.title}</div>
-                        <div className="text-sm text-gray-600 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {program.location}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-900">{program.university}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant="outline" className="text-xs">
-                        {program.type}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-900">{program.applications}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge 
-                        variant={program.status === 'Active' ? 'default' : 'secondary'}
-                        className="text-xs"
-                      >
-                        {program.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                {filteredPrograms.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                      {searchTerm || filterType !== 'all' ? 'No programs found matching your criteria.' : 'No programs available.'}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredPrograms.map((program) => (
+                    <tr key={program.id} className="hover:bg-white/20 dark:hover:bg-slate-800/20 transition-colors">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base">{program.name}</div>
+                          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1 mt-1">
+                            <MapPin className="w-3 h-3" />
+                            {getLocation(program)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <span className="text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">{program.university?.name || 'Unknown'}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <Badge variant="outline" className="text-xs">
+                          {getLevelDisplay(program.level)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 hidden sm:table-cell">
+                        <span className="text-gray-900 dark:text-gray-100 text-sm">
+                          {program.duration_months ? `${program.duration_months} months` : 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 hidden lg:table-cell">
+                        <span className="text-gray-900 dark:text-gray-100 text-sm">
+                          {program.tuition_fee_amount ? `RM ${program.tuition_fee_amount.toLocaleString()}` : 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/student/program/${program.id}`}>
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </Card>
 
         {/* Statistics */}
-        <div className="grid md:grid-cols-4 gap-4">
-          <Card className="p-4 backdrop-blur-xl bg-white/40 border-white/20">
-            <div className="flex items-center gap-3">
-              <BookOpen className="w-8 h-8 text-blue-600" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">{programs.length}</p>
-                <p className="text-sm text-gray-600">Total Programs</p>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">{programs.length}</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Programs</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 backdrop-blur-xl bg-white/40 border-white/20">
-            <div className="flex items-center gap-3">
-              <GraduationCap className="w-8 h-8 text-green-600" />
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {programs.filter(p => p.status === 'Active').length}
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {programs.filter(p => p.level && ['Foundation', 'Diploma', 'Bachelor'].includes(p.level)).length}
                 </p>
-                <p className="text-sm text-gray-600">Active Programs</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Active Programs</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 backdrop-blur-xl bg-white/40 border-white/20">
-            <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-purple-600" />
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {programs.reduce((sum, p) => sum + p.applications, 0)}
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {programs.length}
                 </p>
-                <p className="text-sm text-gray-600">Total Applications</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Programs</p>
               </div>
             </div>
           </Card>
-          <Card className="p-4 backdrop-blur-xl bg-white/40 border-white/20">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-orange-600" />
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 dark:text-orange-400" />
               <div>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {programs.filter(p => new Date(p.deadline) < new Date(Date.now() + 30*24*60*60*1000)).length}
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {programs.filter(p => p.level === 'Foundation').length}
                 </p>
-                <p className="text-sm text-gray-600">Closing Soon</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Foundation</p>
               </div>
             </div>
           </Card>

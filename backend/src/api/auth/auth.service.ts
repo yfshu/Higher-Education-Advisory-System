@@ -36,7 +36,8 @@ export class AuthService {
 
     const dbClient = this.supabaseService.getClient();
     const userId = data.user.id;
-    const role = (data.user.user_metadata?.role as string) ?? 'student';
+    // Read role from app_metadata (set by Supabase Admin API), fallback to user_metadata, then default to 'student'
+    const role = (data.user.app_metadata?.role as string) ?? (data.user.user_metadata?.role as string) ?? 'student';
     const fullName = (data.user.user_metadata?.full_name as string) ?? '';
     const phoneNumber = (data.user.user_metadata?.phone_number as string) ?? '';
 

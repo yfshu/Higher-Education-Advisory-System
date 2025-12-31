@@ -9,6 +9,7 @@ import { UniversitiesModule } from './api/universities/universities.module';
 import { ScholarshipsModule } from './api/scholarships/scholarships.module';
 import { SavedItemsModule } from './api/saved-items/saved-items.module';
 import { HelpModule } from './api/help/help.module';
+import { AdminModule } from './api/admin/admin.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { HelpModule } from './api/help/help.module';
     ScholarshipsModule,
     SavedItemsModule,
     HelpModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

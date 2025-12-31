@@ -96,11 +96,11 @@ export default function RegisterModal() {
       .from("field_of_interest")
       .select("id,name")
       .order("name")
-      .then(({ data, error }) => {
+      .then(({ data, error }: { data: unknown; error: { message?: string } | null }) => {
         if (mounted && !error && data) {
-          setFieldOptions(data);
+          setFieldOptions(data as Array<{ id: number; name: string }>);
         } else if (error) {
-          console.warn("Unable to load field_of_interest options", error.message);
+          console.warn("Unable to load field_of_interest options", error?.message || "Unknown error");
         }
       });
     return () => {

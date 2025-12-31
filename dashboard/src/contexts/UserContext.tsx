@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { getUserRole } from "@/lib/auth/role";
 
 interface StudentProfile {
   phoneNumber?: string;
@@ -73,11 +75,77 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserDataState] = useState<UserData | null>(null);
 
+  // Sync with Supabase session and update role
+  useEffect(() => {
+    const syncSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Get role from app_metadata
+        const role = getUserRole(session.user);
+        
+        // Update userData with current role from Supabase
+        setUserDataState((prev) => {
+          if (prev) {
+            return {
+              ...prev,
+              user: {
+                ...prev.user,
+                role,
+              },
+            };
+          }
+          return prev;
+        });
+      }
+    };
+
+    syncSession();
+
+    // Listen for auth state changes
+    const authStateChangeResult = supabase.auth.onAuthStateChange(async (event: string, session: unknown) => {
+      // Type guard: check if session is a valid object with user property
+      if (session && typeof session === 'object' && 'user' in session && session.user) {
+        const sessionObj = session as { user: { app_metadata?: unknown; user_metadata?: unknown } };
+        const role = getUserRole(sessionObj.user);
+        setUserDataState((prev) => {
+          if (prev) {
+            return {
+              ...prev,
+              user: {
+                ...prev.user,
+                role,
+              },
+            };
+          }
+          return prev;
+        });
+      } else {
+        setUserDataState(null);
+      }
+    });
+
+    // Store subscription safely
+    const subscription = authStateChangeResult?.data?.subscription;
+
+    return () => {
+      // Defensive cleanup: only unsubscribe if subscription exists
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        try {
+          subscription.unsubscribe();
+        } catch (error) {
+          console.warn('Error unsubscribing from auth state change:', error);
+        }
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const storedData = localStorage.getItem("userData");
     if (storedData) {
       try {
-        setUserDataState(JSON.parse(storedData));
+        const parsed = JSON.parse(storedData);
+        setUserDataState(parsed);
       } catch {
         localStorage.removeItem("userData");
       }

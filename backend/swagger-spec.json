@@ -837,6 +837,157 @@
           "Help & Support"
         ]
       }
+    },
+    "/api/admin/dashboard/metrics": {
+      "get": {
+        "operationId": "AdminController_getDashboardMetrics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Dashboard metrics retrieved successfully"
+          },
+          "403": {
+            "description": "Admin access required"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get dashboard metrics (admin only)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/alerts": {
+      "get": {
+        "operationId": "AdminController_getSystemAlerts",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "System alerts retrieved successfully"
+          },
+          "403": {
+            "description": "Admin access required"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get system alerts (admin only)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/alerts/{id}/resolve": {
+      "patch": {
+        "operationId": "AdminController_resolveAlert",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alert resolved successfully"
+          },
+          "403": {
+            "description": "Admin access required"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Resolve a system alert (admin only)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/users/recent": {
+      "get": {
+        "operationId": "AdminController_getRecentUsers",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent users retrieved successfully"
+          },
+          "403": {
+            "description": "Admin access required"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get recent users (admin only)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/api/admin/programs/recent": {
+      "get": {
+        "operationId": "AdminController_getRecentPrograms",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent programs retrieved successfully"
+          },
+          "403": {
+            "description": "Admin access required"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get recent programs (admin only)",
+        "tags": [
+          "Admin"
+        ]
+      }
     }
   },
   "info": {

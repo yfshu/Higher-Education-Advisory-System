@@ -28,6 +28,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useUser } from "@/contexts/UserContext";
+import { getUserRole } from "@/lib/auth/role";
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -50,19 +51,20 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
 
   useEffect(() => {
     const ensureStudent = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      const userId = authData.user?.id;
-      if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         router.push("/auth/login");
         return;
       }
-      const role = userData?.user?.role ?? "student";
+      // Use role helper to get role from app_metadata
+      const role = getUserRole(user);
       if (role === "admin") {
-        router.push("/admin");
+        // Admin users should not access student pages - redirect to admin
+        router.replace("/admin");
       }
     };
     void ensureStudent();
-  }, [router, userData]);
+  }, [router]);
 
   const userName = userData?.user?.fullName || "Student";
   const userEmail = userData?.user?.email || "";

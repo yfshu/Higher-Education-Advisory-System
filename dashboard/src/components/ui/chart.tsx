@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import * as RechartsPrimitive from "recharts";
-
 import { cn } from "./utils";
+
+// Recharts is dynamically imported in components to prevent SSR issues
+// Recharts uses browser-only APIs (self, window) that break SSR
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
@@ -42,12 +43,38 @@ function ChartContainer({
   ...props
 }: React.ComponentProps<"div"> & {
   config: ChartConfig;
-  children: React.ComponentProps<
-    typeof RechartsPrimitive.ResponsiveContainer
-  >["children"];
+  children: React.ReactNode;
 }) {
   const uniqueId = React.useId();
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
+  const [mounted, setMounted] = React.useState(false);
+  const [Recharts, setRecharts] = React.useState<typeof import("recharts") | null>(null);
+
+  React.useEffect(() => {
+    setMounted(true);
+    // Dynamically import recharts only in browser
+    if (typeof window !== "undefined") {
+      import("recharts").then((mod) => {
+        setRecharts(mod);
+      });
+    }
+  }, []);
+
+  if (!mounted || !Recharts) {
+    return (
+      <div
+        data-slot="chart"
+        data-chart={chartId}
+        className={cn(
+          "flex aspect-video items-center justify-center text-xs",
+          className,
+        )}
+        {...props}
+      >
+        <div className="text-muted-foreground">Loading chart...</div>
+      </div>
+    );
+  }
 
   return (
     <ChartContext.Provider value={{ config }}>
@@ -61,9 +88,9 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>
+        <Recharts.ResponsiveContainer>
           {children}
-        </RechartsPrimitive.ResponsiveContainer>
+        </Recharts.ResponsiveContainer>
       </div>
     </ChartContext.Provider>
   );
@@ -102,7 +129,26 @@ ${colorConfig
   );
 };
 
-const ChartTooltip = RechartsPrimitive.Tooltip;
+// ChartTooltip - dynamically loaded to prevent SSR issues
+const ChartTooltip = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div"> & { children?: React.ReactNode }
+>((props, ref) => {
+  const [Recharts, setRecharts] = React.useState<typeof import("recharts") | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      import("recharts").then((mod) => setRecharts(mod));
+    }
+  }, []);
+
+  if (!Recharts) return <div ref={ref} {...props} />;
+  // Recharts.Tooltip has complex types that don't match React.ComponentProps
+  // Use type assertion to bridge the gap
+  const TooltipComponent = Recharts.Tooltip as React.ComponentType<Record<string, unknown>>;
+  return <TooltipComponent {...props} />;
+}) as React.ComponentType<React.ComponentProps<"div"> & { children?: React.ReactNode }>;
+ChartTooltip.displayName = "ChartTooltip";
 
 function ChartTooltipContent({
   active,
@@ -259,7 +305,26 @@ function ChartTooltipContent({
   );
 }
 
-const ChartLegend = RechartsPrimitive.Legend;
+// ChartLegend - dynamically loaded to prevent SSR issues
+const ChartLegend = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div"> & { children?: React.ReactNode }
+>((props, ref) => {
+  const [Recharts, setRecharts] = React.useState<typeof import("recharts") | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      import("recharts").then((mod) => setRecharts(mod));
+    }
+  }, []);
+
+  if (!Recharts) return <div ref={ref} {...props} />;
+  // Recharts.Legend has complex types that don't match React.ComponentProps
+  // Use type assertion to bridge the gap
+  const LegendComponent = Recharts.Legend as React.ComponentType<Record<string, unknown>>;
+  return <LegendComponent {...props} />;
+}) as React.ComponentType<React.ComponentProps<"div"> & { children?: React.ReactNode }>;
+ChartLegend.displayName = "ChartLegend";
 
 function ChartLegendContent({
   className,

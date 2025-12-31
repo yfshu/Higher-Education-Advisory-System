@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
     console.log("🚀 Component mounted, starting password reset flow");
 
     // Listen for auth state changes - PASSWORD_RECOVERY event
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const authStateChangeResult = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
       console.log("🔐 Auth event:", event, "Has session:", !!session);
       
       if (event === 'PASSWORD_RECOVERY' && session && mounted) {
@@ -49,6 +49,9 @@ export default function ResetPasswordPage() {
         setError("");
       }
     });
+
+    // Store subscription safely
+    const subscription = authStateChangeResult?.data?.subscription;
 
     // Check for token in background
     const checkSession = async () => {
@@ -82,7 +85,14 @@ export default function ResetPasswordPage() {
     return () => {
       console.log("🔚 Component unmounting");
       mounted = false;
-      authListener.subscription.unsubscribe();
+      // Defensive cleanup: only unsubscribe if subscription exists
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        try {
+          subscription.unsubscribe();
+        } catch (error) {
+          console.warn('Error unsubscribing from auth state change in reset-password:', error);
+        }
+      }
     };
   }, []);
 

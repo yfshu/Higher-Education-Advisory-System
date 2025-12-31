@@ -15,7 +15,7 @@ export default function PasswordRecoveryHandler() {
   useEffect(() => {
     console.log("🔐 PasswordRecoveryHandler mounted");
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const authStateChangeResult = supabase.auth.onAuthStateChange((event: string, session: unknown) => {
       console.log("🔐 Auth event:", event, "Path:", pathname);
 
       if (event === "PASSWORD_RECOVERY") {
@@ -30,9 +30,19 @@ export default function PasswordRecoveryHandler() {
       }
     });
 
+    // Store subscription safely
+    const subscription = authStateChangeResult?.data?.subscription;
+
     return () => {
       console.log("🔐 PasswordRecoveryHandler unmounting");
-      authListener.subscription.unsubscribe();
+      // Defensive cleanup: only unsubscribe if subscription exists
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        try {
+          subscription.unsubscribe();
+        } catch (error) {
+          console.warn('Error unsubscribing from password recovery handler:', error);
+        }
+      }
     };
   }, [router, pathname]);
 
