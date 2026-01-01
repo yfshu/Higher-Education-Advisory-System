@@ -1,23 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  FileText,
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import {
   Plus,
   Edit,
   Trash2,
   HelpCircle,
-  Settings,
-  AlertTriangle,
   Loader2,
 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
@@ -28,7 +32,7 @@ interface HelpSupportItem {
   id: number;
   title: string;
   content: string;
-  category: 'FAQ' | 'System Message' | 'Policy';
+  category: 'FAQ';
   created_at: string | null;
   updated_at: string | null;
 }
@@ -36,21 +40,20 @@ interface HelpSupportItem {
 export default function ContentManagement() {
   const { userData } = useUser();
   const [faqs, setFaqs] = useState<HelpSupportItem[]>([]);
-  const [systemMessages, setSystemMessages] = useState<HelpSupportItem[]>([]);
-  const [policies, setPolicies] = useState<HelpSupportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<HelpSupportItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<HelpSupportItem | null>(null);
-  const [activeTab, setActiveTab] = useState('faqs');
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    category: 'FAQ' as 'FAQ' | 'System Message' | 'Policy',
+    category: 'FAQ' as 'FAQ',
   });
 
   const handleRefresh = useCallback(async () => {
@@ -65,48 +68,22 @@ export default function ContentManagement() {
       setError(null);
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
-      const [faqsRes, messagesRes, policiesRes] = await Promise.all([
-        fetch(`${backendUrl}/api/help/content?category=FAQ&t=${Date.now()}`, {
-          headers: {
-            Authorization: `Bearer ${userData.accessToken}`,
-            'Cache-Control': 'no-cache',
-          },
-          cache: 'no-store',
-        }),
-        fetch(`${backendUrl}/api/help/content?category=System Message&t=${Date.now()}`, {
-          headers: {
-            Authorization: `Bearer ${userData.accessToken}`,
-            'Cache-Control': 'no-cache',
-          },
-          cache: 'no-store',
-        }),
-        fetch(`${backendUrl}/api/help/content?category=Policy&t=${Date.now()}`, {
-          headers: {
-            Authorization: `Bearer ${userData.accessToken}`,
-            'Cache-Control': 'no-cache',
-          },
-          cache: 'no-store',
-        }),
-      ]);
+      const response = await fetch(`${backendUrl}/api/help/content?category=FAQ&t=${Date.now()}`, {
+        headers: {
+          Authorization: `Bearer ${userData.accessToken}`,
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
+      });
 
-      const [faqsResult, messagesResult, policiesResult] = await Promise.all([
-        faqsRes.json(),
-        messagesRes.json(),
-        policiesRes.json(),
-      ]);
+      const result = await response.json();
 
-      if (faqsResult.success && faqsResult.data) {
-        setFaqs(faqsResult.data);
-      }
-      if (messagesResult.success && messagesResult.data) {
-        setSystemMessages(messagesResult.data);
-      }
-      if (policiesResult.success && policiesResult.data) {
-        setPolicies(policiesResult.data);
+      if (result.success && result.data) {
+        setFaqs(result.data);
       }
     } catch (err) {
-      console.error("Error fetching content:", err);
-      setError(err instanceof Error ? err.message : "Failed to load content");
+      console.error("Error fetching FAQs:", err);
+      setError(err instanceof Error ? err.message : "Failed to load FAQs");
     } finally {
       setLoading(false);
     }
@@ -160,10 +137,11 @@ export default function ContentManagement() {
         throw new Error(errorData.message || "Failed to save content");
       }
 
-      toast.success(editingItem ? "Content updated successfully!" : "Content created successfully!");
+      toast.success(editingItem ? "FAQ updated successfully!" : "FAQ created successfully!");
       resetForm();
       setIsAddDialogOpen(false);
       setEditingItem(null);
+      setCurrentPage(1); // Reset to first page after add/edit
       setTimeout(() => {
         handleRefresh();
       }, 300);
@@ -179,7 +157,7 @@ export default function ContentManagement() {
     setFormData({
       title: '',
       content: '',
-      category: activeTab === 'faqs' ? 'FAQ' : activeTab === 'messages' ? 'System Message' : 'Policy',
+      category: 'FAQ',
     });
   };
 
@@ -201,18 +179,28 @@ export default function ContentManagement() {
   const handleDeleteSuccess = () => {
     setSelectedItem(null);
     setDeleteDialogOpen(false);
+    // Adjust current page if needed after deletion
+    const remainingItems = faqs.length - 1;
+    const maxPage = Math.ceil(remainingItems / itemsPerPage);
+    if (currentPage > maxPage && maxPage > 0) {
+      setCurrentPage(maxPage);
+    }
     setTimeout(() => {
       handleRefresh();
     }, 300);
   };
 
-  const getCurrentItems = () => {
-    switch (activeTab) {
-      case 'faqs': return faqs;
-      case 'messages': return systemMessages;
-      case 'policies': return policies;
-      default: return [];
-    }
+  // Pagination logic
+  const totalPages = Math.ceil(faqs.length / itemsPerPage);
+  const paginatedFaqs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return faqs.slice(startIndex, endIndex);
+  }, [faqs, currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -247,100 +235,108 @@ export default function ContentManagement() {
   return (
     <AdminLayout title="Content Management">
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Content Management</h2>
-          <p className="text-gray-600 dark:text-gray-400">Manage FAQs, help content, and system messages.</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Content Management</h2>
+            <p className="text-gray-600 dark:text-gray-400">Manage Frequently Asked Questions (FAQs).</p>
+          </div>
+          <Dialog 
+            open={isAddDialogOpen} 
+            onOpenChange={(open) => {
+              setIsAddDialogOpen(open);
+              if (!open) {
+                setEditingItem(null);
+                resetForm();
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button 
+                className="bg-slate-700 hover:bg-slate-800 text-white"
+                onClick={() => {
+                  resetForm();
+                  setFormData(prev => ({ ...prev, category: 'FAQ' }));
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add FAQ
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{editingItem ? 'Edit FAQ' : 'Add New FAQ'}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Question *</Label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    placeholder="Enter the question"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Answer *</Label>
+                  <Textarea
+                    value={formData.content}
+                    onChange={(e) => setFormData({...formData, content: e.target.value})}
+                    placeholder="Enter the answer"
+                    className="min-h-32"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={() => {
+                      setIsAddDialogOpen(false);
+                      setEditingItem(null);
+                      resetForm();
+                    }}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      editingItem ? 'Update FAQ' : 'Add FAQ'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border border-white/20">
-            <TabsTrigger value="faqs">FAQs</TabsTrigger>
-            <TabsTrigger value="messages">System Messages</TabsTrigger>
-            <TabsTrigger value="policies">Policies</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="faqs" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Frequently Asked Questions</h3>
-              <Dialog open={isAddDialogOpen && (!editingItem || editingItem.category === 'FAQ')} onOpenChange={(open) => {
-                setIsAddDialogOpen(open);
-                if (!open) {
-                  setEditingItem(null);
-                  resetForm();
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="bg-slate-700 hover:bg-slate-800 text-white"
-                    onClick={() => {
-                      resetForm();
-                      setFormData(prev => ({ ...prev, category: 'FAQ' }));
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add FAQ
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit FAQ' : 'Add New FAQ'}</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Question *</Label>
-                      <Input
-                        value={formData.title}
-                        onChange={(e) => setFormData({...formData, title: e.target.value})}
-                        placeholder="Enter the question"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Answer *</Label>
-                      <Textarea
-                        value={formData.content}
-                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                        placeholder="Enter the answer"
-                        className="min-h-32"
-                        required
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        onClick={() => {
-                          setIsAddDialogOpen(false);
-                          setEditingItem(null);
-                          resetForm();
-                        }}
-                        disabled={submitting}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          editingItem ? 'Update FAQ' : 'Add FAQ'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
+        {/* FAQs List */}
+        <div className="space-y-4">
+          {loading ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+              <p className="text-muted-foreground">Loading FAQs...</p>
             </div>
-
-            <div className="space-y-4">
-              {faqs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No FAQs found. Click "Add FAQ" to create one.
-                </div>
-              ) : (
-                faqs.map((faq) => (
+          ) : error ? (
+            <div className="text-center py-8 text-red-600">
+              <p>{error}</p>
+              <Button onClick={handleRefresh} className="mt-4" variant="outline">
+                Retry
+              </Button>
+            </div>
+          ) : paginatedFaqs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No FAQs found. Click "Add FAQ" to create one.
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                {paginatedFaqs.map((faq) => (
                   <Card key={faq.id} className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20 shadow-lg">
                     <div className="p-6">
                       <div className="flex items-start justify-between">
@@ -349,7 +345,7 @@ export default function ContentManagement() {
                             <HelpCircle className="w-5 h-5 text-blue-600" />
                             <h4 className="font-medium text-gray-900 dark:text-gray-100">{faq.title}</h4>
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 mb-3">{faq.content}</p>
+                          <p className="text-gray-600 dark:text-gray-400 mb-3 whitespace-pre-wrap">{faq.content}</p>
                           <div className="text-sm text-gray-500">
                             Updated: {faq.updated_at ? new Date(faq.updated_at).toLocaleDateString() : 'N/A'}
                           </div>
@@ -365,233 +361,66 @@ export default function ContentManagement() {
                       </div>
                     </div>
                   </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
+                ))}
+              </div>
 
-          <TabsContent value="messages" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">System Messages</h3>
-              <Dialog open={isAddDialogOpen && (!editingItem || editingItem.category === 'System Message')} onOpenChange={(open) => {
-                setIsAddDialogOpen(open);
-                if (!open) {
-                  setEditingItem(null);
-                  resetForm();
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="bg-slate-700 hover:bg-slate-800 text-white"
-                    onClick={() => {
-                      resetForm();
-                      setFormData(prev => ({ ...prev, category: 'System Message' }));
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Message
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit System Message' : 'Add New System Message'}</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Title *</Label>
-                      <Input
-                        value={formData.title}
-                        onChange={(e) => setFormData({...formData, title: e.target.value})}
-                        placeholder="Enter message title"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Content *</Label>
-                      <Textarea
-                        value={formData.content}
-                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                        placeholder="Enter message content"
-                        className="min-h-32"
-                        required
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        onClick={() => {
-                          setIsAddDialogOpen(false);
-                          setEditingItem(null);
-                          resetForm();
-                        }}
-                        disabled={submitting}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          editingItem ? 'Update Message' : 'Add Message'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="space-y-4">
-              {systemMessages.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No system messages found. Click "Add Message" to create one.
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                          className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => handlePageChange(page)}
+                                isActive={currentPage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        } else if (page === currentPage - 2 || page === currentPage + 2) {
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return null;
+                      })}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                          className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 </div>
-              ) : (
-                systemMessages.map((message) => (
-                  <Card key={message.id} className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20 shadow-lg">
-                    <div className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Settings className="w-5 h-5 text-green-600" />
-                            <h4 className="font-medium text-gray-900 dark:text-gray-100">{message.title}</h4>
-                          </div>
-                          <p className="text-gray-600 dark:text-gray-400">{message.content}</p>
-                          <div className="text-sm text-gray-500 mt-2">
-                            Updated: {message.updated_at ? new Date(message.updated_at).toLocaleDateString() : 'N/A'}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(message)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(message)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))
               )}
-            </div>
-          </TabsContent>
 
-          <TabsContent value="policies" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Policies & Legal</h3>
-              <Dialog open={isAddDialogOpen && (!editingItem || editingItem.category === 'Policy')} onOpenChange={(open) => {
-                setIsAddDialogOpen(open);
-                if (!open) {
-                  setEditingItem(null);
-                  resetForm();
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button 
-                    className="bg-slate-700 hover:bg-slate-800 text-white"
-                    onClick={() => {
-                      resetForm();
-                      setFormData(prev => ({ ...prev, category: 'Policy' }));
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Policy
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit Policy' : 'Add New Policy'}</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Policy Title *</Label>
-                      <Input
-                        value={formData.title}
-                        onChange={(e) => setFormData({...formData, title: e.target.value})}
-                        placeholder="e.g., Privacy Policy"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Policy Content *</Label>
-                      <Textarea
-                        value={formData.content}
-                        onChange={(e) => setFormData({...formData, content: e.target.value})}
-                        placeholder="Enter policy content"
-                        className="min-h-32"
-                        required
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        type="button"
-                        variant="outline" 
-                        onClick={() => {
-                          setIsAddDialogOpen(false);
-                          setEditingItem(null);
-                          resetForm();
-                        }}
-                        disabled={submitting}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          editingItem ? 'Update Policy' : 'Add Policy'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {policies.length === 0 ? (
-                <div className="col-span-2 text-center py-8 text-muted-foreground">
-                  No policies found. Click "Add Policy" to create one.
-                </div>
-              ) : (
-                policies.map((policy) => (
-                  <Card key={policy.id} className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20 shadow-lg">
-                    <div className="p-6">
-                      <div className="flex items-center gap-2 mb-4">
-                        <FileText className="w-5 h-5 text-blue-600" />
-                        <h4 className="font-medium text-gray-900 dark:text-gray-100">{policy.title}</h4>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">
-                        {policy.content}
-                      </p>
-                      <div className="text-sm text-gray-500 mb-4">
-                        Last updated: {policy.updated_at ? new Date(policy.updated_at).toLocaleDateString() : 'N/A'}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(policy)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-red-600" onClick={() => handleDelete(policy)}>
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+              {/* Results count */}
+              <div className="text-center text-sm text-muted-foreground mt-4">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, faqs.length)} of {faqs.length} FAQs
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Delete Dialog */}
