@@ -444,5 +444,129 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
       return "I'm sorry, I encountered an error processing your request. Please try again or contact support for assistance.";
     }
   }
+
+  /**
+   * Get all help support items (FAQs, System Messages, Policies) for admin
+   */
+  async getAllHelpSupport(category?: string): Promise<any[]> {
+    try {
+      const db = this.supabaseService.getClient();
+
+      let query = db
+        .from('help_support')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (category) {
+        query = query.eq('category', category as any); // Type assertion for enum
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        this.logger.error('Error fetching help support items:', error);
+        throw new Error(`Failed to fetch help support items: ${error.message}`);
+      }
+
+      this.logger.log(`Successfully fetched ${data?.length || 0} help support items`);
+      return data || [];
+    } catch (error) {
+      this.logger.error('Exception in getAllHelpSupport:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new help support item
+   */
+  async createHelpSupport(helpData: any): Promise<any> {
+    try {
+      const db = this.supabaseService.getClient();
+
+      // Ensure category defaults to 'FAQ' if not provided
+      if (!helpData.category) {
+        helpData.category = 'FAQ';
+      }
+
+      const { data, error } = await db
+        .from('help_support')
+        .insert(helpData)
+        .select()
+        .single();
+
+      if (error) {
+        this.logger.error('Error creating help support item:', error);
+        throw new Error(`Failed to create help support item: ${error.message}`);
+      }
+
+      this.logger.log(`Successfully created help support item: ${data.id}`);
+      return data;
+    } catch (error) {
+      this.logger.error('Exception in createHelpSupport:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing help support item
+   */
+  async updateHelpSupport(id: number, helpData: any): Promise<any> {
+    try {
+      const db = this.supabaseService.getClient();
+
+      // Add updated_at timestamp
+      helpData.updated_at = new Date().toISOString();
+
+      const { data, error } = await db
+        .from('help_support')
+        .update(helpData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          this.logger.warn(`Help support item with id ${id} not found for update`);
+          throw new Error('Help support item not found');
+        }
+        this.logger.error('Error updating help support item:', error);
+        throw new Error(`Failed to update help support item: ${error.message}`);
+      }
+
+      this.logger.log(`Successfully updated help support item: ${id}`);
+      return data;
+    } catch (error) {
+      this.logger.error('Exception in updateHelpSupport:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a help support item
+   */
+  async deleteHelpSupport(id: number): Promise<void> {
+    try {
+      const db = this.supabaseService.getClient();
+
+      const { error } = await db
+        .from('help_support')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          this.logger.warn(`Help support item with id ${id} not found for deletion`);
+          throw new Error('Help support item not found');
+        }
+        this.logger.error('Error deleting help support item:', error);
+        throw new Error(`Failed to delete help support item: ${error.message}`);
+      }
+
+      this.logger.log(`Successfully deleted help support item: ${id}`);
+    } catch (error) {
+      this.logger.error('Exception in deleteHelpSupport:', error);
+      throw error;
+    }
+  }
 }
 

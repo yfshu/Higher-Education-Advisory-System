@@ -155,80 +155,303 @@ export class ScholarshipsService {
   }
 
   /**
-   * Parse scholarship data and convert JSONB fields to proper types
+   * Parse scholarship data and convert database fields to frontend-friendly format
    */
   private parseScholarshipData(scholarship: any): ScholarshipWithDetails {
-    // Parse eligibility_requirements JSONB to array
+    // Map database column names to frontend field names
+    const parsed: any = {
+      ...scholarship,
+      // Map organization_name to provider for frontend compatibility
+      provider: scholarship.organization_name || null,
+      // Map website_url to application_url for frontend compatibility
+      application_url: scholarship.website_url || null,
+      // Map requirements to eligibility_requirements for frontend compatibility
+      eligibility_requirements: scholarship.requirements || null,
+    };
+
+    // Parse eligibility_requirements if it's a JSON string
     let eligibilityRequirements: string[] | null = null;
-    if (scholarship.eligibility_requirements) {
+    if (parsed.eligibility_requirements) {
       try {
-        if (Array.isArray(scholarship.eligibility_requirements)) {
-          eligibilityRequirements = scholarship.eligibility_requirements;
-        } else if (typeof scholarship.eligibility_requirements === 'string') {
-          eligibilityRequirements = JSON.parse(scholarship.eligibility_requirements);
+        if (Array.isArray(parsed.eligibility_requirements)) {
+          eligibilityRequirements = parsed.eligibility_requirements;
+        } else if (typeof parsed.eligibility_requirements === 'string') {
+          const parsedJson = JSON.parse(parsed.eligibility_requirements);
+          if (Array.isArray(parsedJson)) {
+            eligibilityRequirements = parsedJson;
+          } else if (typeof parsedJson === 'object' && parsedJson !== null) {
+            // If it's an object, try to extract an array from it
+            eligibilityRequirements = parsedJson.requirements || parsedJson.outcomes || [JSON.stringify(parsedJson)];
+          } else {
+            eligibilityRequirements = [parsed.eligibility_requirements];
+          }
         }
       } catch (e) {
-        this.logger.warn(`Failed to parse eligibility_requirements for scholarship ${scholarship.id}`);
+        // If parsing fails, treat as plain text
+        eligibilityRequirements = [parsed.eligibility_requirements];
       }
     }
 
-    // Parse benefits_json JSONB to array
-    let benefitsJson: string[] | null = null;
-    if (scholarship.benefits_json) {
-      try {
-        if (Array.isArray(scholarship.benefits_json)) {
-          benefitsJson = scholarship.benefits_json;
-        } else if (typeof scholarship.benefits_json === 'string') {
-          benefitsJson = JSON.parse(scholarship.benefits_json);
-        }
-      } catch (e) {
-        this.logger.warn(`Failed to parse benefits_json for scholarship ${scholarship.id}`);
-      }
-    }
-
-    // Parse selection_process JSONB to array of objects
-    let selectionProcess: Array<{
-      step: number;
-      title: string;
-      description: string;
-      duration: string;
-    }> | null = null;
-    if (scholarship.selection_process) {
-      try {
-        if (Array.isArray(scholarship.selection_process)) {
-          selectionProcess = scholarship.selection_process;
-        } else if (typeof scholarship.selection_process === 'string') {
-          selectionProcess = JSON.parse(scholarship.selection_process);
-        }
-      } catch (e) {
-        this.logger.warn(`Failed to parse selection_process for scholarship ${scholarship.id}`);
-      }
-    }
-
-    // Parse partner_universities JSONB to array of objects
-    let partnerUniversities: Array<{
-      name: string;
-      country: string;
-    }> | null = null;
-    if (scholarship.partner_universities) {
-      try {
-        if (Array.isArray(scholarship.partner_universities)) {
-          partnerUniversities = scholarship.partner_universities;
-        } else if (typeof scholarship.partner_universities === 'string') {
-          partnerUniversities = JSON.parse(scholarship.partner_universities);
-        }
-      } catch (e) {
-        this.logger.warn(`Failed to parse partner_universities for scholarship ${scholarship.id}`);
-      }
-    }
+    // Benefits is already a string in the database, keep it as is
+    const benefits = parsed.benefits || null;
 
     return {
-      ...scholarship,
-      eligibility_requirements: eligibilityRequirements,
-      benefits_json: benefitsJson,
-      selection_process: selectionProcess,
-      partner_universities: partnerUniversities,
+      ...parsed,
+      // Remove database-specific fields that don't exist in frontend interface
+      organization_name: undefined,
+      website_url: undefined,
+      requirements: undefined,
+      // Map to frontend-friendly fields
+      provider: parsed.provider,
+      application_url: parsed.application_url,
+      eligibility_requirements: eligibilityRequirements || parsed.eligibility_requirements || null,
+      benefits: benefits,
+      // Remove fields that don't exist in database
+      benefits_json: undefined,
+      selection_process: undefined,
+      partner_universities: undefined,
+      study_levels: undefined,
+      fields_supported: undefined,
+      eligible_programs: undefined,
+      processing_time_weeks: undefined,
+      applicant_count: undefined,
+      rating: undefined,
+      review_count: undefined,
     };
+  }
+
+  /**
+   * Get all scholarships (including inactive) for admin
+   */
+  async getAllScholarships(includeAllStatuses: boolean = false): Promise<ScholarshipWithDetails[]> {
+    try {
+      const db = this.supabaseService.getClient();
+      const allScholarships: ScholarshipWithDetails[] = [];
+      const batchSize = 1000;
+      let from = 0;
+      let to = batchSize - 1;
+      let hasMore = true;
+      let iteration = 0;
+      const maxIterations = 10;
+
+      this.logger.log(`Starting to fetch scholarships${includeAllStatuses ? ' (all statuses)' : ' (active only)'}`);
+
+      while (hasMore && iteration < maxIterations) {
+        iteration++;
+        let query = db
+          .from('scholarships')
+          .select('*')
+          .order('id', { ascending: true })
+          .range(from, to);
+
+        if (!includeAllStatuses) {
+          query = query.eq('status', 'active');
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          this.logger.error(`Error fetching scholarships batch ${iteration}:`, error);
+          throw new Error(`Failed to fetch scholarships: ${error.message}`);
+        }
+
+        if (data && data.length > 0) {
+          const parsed = (data || []).map((scholarship) => this.parseScholarshipData(scholarship));
+          allScholarships.push(...parsed);
+          from = to + 1;
+          to = from + batchSize - 1;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Sort by deadline ascending
+      allScholarships.sort((a, b) => {
+        const aDate = a.deadline ? new Date(a.deadline).getTime() : 0;
+        const bDate = b.deadline ? new Date(b.deadline).getTime() : 0;
+        return aDate - bDate;
+      });
+
+      this.logger.log(`Successfully fetched ${allScholarships.length} scholarships${includeAllStatuses ? ' (all statuses)' : ' (active only)'}`);
+      return allScholarships;
+    } catch (error) {
+      this.logger.error('Exception in getAllScholarships:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new scholarship
+   */
+  async createScholarship(scholarshipData: any): Promise<ScholarshipWithDetails> {
+    try {
+      const db = this.supabaseService.getClient();
+
+      // Ensure status defaults to 'active' if not provided
+      if (!scholarshipData.status) {
+        scholarshipData.status = 'active';
+      }
+
+      // Map frontend field names to database column names
+      if (scholarshipData.provider !== undefined) {
+        scholarshipData.organization_name = scholarshipData.provider;
+        delete scholarshipData.provider;
+      }
+      if (scholarshipData.application_url !== undefined) {
+        scholarshipData.website_url = scholarshipData.application_url;
+        delete scholarshipData.application_url;
+      }
+      if (scholarshipData.eligibility_requirements !== undefined) {
+        // Convert object to string for requirements field
+        if (typeof scholarshipData.eligibility_requirements === 'object' && scholarshipData.eligibility_requirements !== null) {
+          scholarshipData.requirements = JSON.stringify(scholarshipData.eligibility_requirements);
+        } else if (typeof scholarshipData.eligibility_requirements === 'string') {
+          scholarshipData.requirements = scholarshipData.eligibility_requirements;
+        }
+        delete scholarshipData.eligibility_requirements;
+      }
+      // Ensure benefits is always a string (not an object)
+      if (scholarshipData.benefits !== undefined) {
+        if (typeof scholarshipData.benefits !== 'string') {
+          if (typeof scholarshipData.benefits === 'object' && scholarshipData.benefits !== null) {
+            scholarshipData.benefits = JSON.stringify(scholarshipData.benefits);
+          } else {
+            scholarshipData.benefits = scholarshipData.benefits ? String(scholarshipData.benefits) : null;
+          }
+        }
+      }
+      // Remove fields that don't exist in the database
+      delete scholarshipData.study_levels;
+      delete scholarshipData.fields_supported;
+      delete scholarshipData.eligible_programs;
+      delete scholarshipData.processing_time_weeks;
+      delete scholarshipData.applicant_count;
+      delete scholarshipData.rating;
+      delete scholarshipData.review_count;
+      delete scholarshipData.selection_process;
+      delete scholarshipData.partner_universities;
+
+      const { data, error } = await db
+        .from('scholarships')
+        .insert(scholarshipData)
+        .select()
+        .single();
+
+      if (error) {
+        this.logger.error('Error creating scholarship:', error);
+        throw new Error(`Failed to create scholarship: ${error.message}`);
+      }
+
+      const scholarship = this.parseScholarshipData(data);
+      this.logger.log(`Successfully created scholarship: ${data.id}`);
+      return scholarship;
+    } catch (error) {
+      this.logger.error('Exception in createScholarship:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing scholarship
+   */
+  async updateScholarship(id: number, scholarshipData: any): Promise<ScholarshipWithDetails> {
+    try {
+      const db = this.supabaseService.getClient();
+
+      // Map frontend field names to database column names
+      if (scholarshipData.provider !== undefined) {
+        scholarshipData.organization_name = scholarshipData.provider;
+        delete scholarshipData.provider;
+      }
+      if (scholarshipData.application_url !== undefined) {
+        scholarshipData.website_url = scholarshipData.application_url;
+        delete scholarshipData.application_url;
+      }
+      if (scholarshipData.eligibility_requirements !== undefined) {
+        // Convert object to string for requirements field
+        if (typeof scholarshipData.eligibility_requirements === 'object' && scholarshipData.eligibility_requirements !== null) {
+          scholarshipData.requirements = JSON.stringify(scholarshipData.eligibility_requirements);
+        } else if (typeof scholarshipData.eligibility_requirements === 'string') {
+          scholarshipData.requirements = scholarshipData.eligibility_requirements;
+        }
+        delete scholarshipData.eligibility_requirements;
+      }
+      // Ensure benefits is always a string (not an object)
+      if (scholarshipData.benefits !== undefined) {
+        if (typeof scholarshipData.benefits !== 'string') {
+          if (typeof scholarshipData.benefits === 'object' && scholarshipData.benefits !== null) {
+            scholarshipData.benefits = JSON.stringify(scholarshipData.benefits);
+          } else {
+            scholarshipData.benefits = scholarshipData.benefits ? String(scholarshipData.benefits) : null;
+          }
+        }
+      }
+      // Remove fields that don't exist in the database
+      delete scholarshipData.study_levels;
+      delete scholarshipData.fields_supported;
+      delete scholarshipData.eligible_programs;
+      delete scholarshipData.processing_time_weeks;
+      delete scholarshipData.applicant_count;
+      delete scholarshipData.rating;
+      delete scholarshipData.review_count;
+      delete scholarshipData.selection_process;
+      delete scholarshipData.partner_universities;
+
+      // Add updated_at timestamp
+      scholarshipData.updated_at = new Date().toISOString();
+
+      const { data, error } = await db
+        .from('scholarships')
+        .update(scholarshipData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          this.logger.warn(`Scholarship with id ${id} not found for update`);
+          throw new Error('Scholarship not found');
+        }
+        this.logger.error('Error updating scholarship:', error);
+        throw new Error(`Failed to update scholarship: ${error.message}`);
+      }
+
+      const scholarship = this.parseScholarshipData(data);
+      this.logger.log(`Successfully updated scholarship: ${id}`);
+      return scholarship;
+    } catch (error) {
+      this.logger.error('Exception in updateScholarship:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a scholarship (hard delete)
+   */
+  async deleteScholarship(id: number): Promise<void> {
+    try {
+      const db = this.supabaseService.getClient();
+
+      const { error } = await db
+        .from('scholarships')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          this.logger.warn(`Scholarship with id ${id} not found for deletion`);
+          throw new Error('Scholarship not found');
+        }
+        this.logger.error('Error deleting scholarship:', error);
+        throw new Error(`Failed to delete scholarship: ${error.message}`);
+      }
+
+      this.logger.log(`Successfully deleted scholarship: ${id}`);
+    } catch (error) {
+      this.logger.error('Exception in deleteScholarship:', error);
+      throw error;
+    }
   }
 }
 

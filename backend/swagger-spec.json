@@ -302,7 +302,17 @@
     "/api/programs": {
       "get": {
         "operationId": "ProgramsController_getPrograms",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "all",
+            "required": false,
+            "in": "query",
+            "description": "Include all statuses (for admin)",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of programs retrieved successfully"
@@ -311,7 +321,44 @@
             "description": "Internal server error"
           }
         },
-        "summary": "Get all active programs",
+        "summary": "Get all programs",
+        "tags": [
+          "Programs"
+        ]
+      },
+      "post": {
+        "operationId": "ProgramsController_createProgram",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProgramRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Program created successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Create a new program (admin only)",
         "tags": [
           "Programs"
         ]
@@ -343,6 +390,93 @@
           }
         },
         "summary": "Get program by ID",
+        "tags": [
+          "Programs"
+        ]
+      },
+      "put": {
+        "operationId": "ProgramsController_updateProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Program ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProgramRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Program updated successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Program not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Update an existing program (admin only)",
+        "tags": [
+          "Programs"
+        ]
+      },
+      "delete": {
+        "operationId": "ProgramsController_deleteProgram",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Program ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Program deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Program not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Delete a program (admin only - permanent delete)",
         "tags": [
           "Programs"
         ]
@@ -431,6 +565,43 @@
         "tags": [
           "Universities"
         ]
+      },
+      "post": {
+        "operationId": "UniversitiesController_createUniversity",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUniversityRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "University created successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Create a new university (admin only)",
+        "tags": [
+          "Universities"
+        ]
       }
     },
     "/api/universities/{id}": {
@@ -459,6 +630,93 @@
           }
         },
         "summary": "Get university by ID",
+        "tags": [
+          "Universities"
+        ]
+      },
+      "put": {
+        "operationId": "UniversitiesController_updateUniversity",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "University ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUniversityRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "University updated successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "University not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Update an existing university (admin only)",
+        "tags": [
+          "Universities"
+        ]
+      },
+      "delete": {
+        "operationId": "UniversitiesController_deleteUniversity",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "University ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "University and linked programs deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "University not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Delete a university and all linked programs (admin only)",
         "tags": [
           "Universities"
         ]
@@ -503,6 +761,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "all",
+            "required": false,
+            "in": "query",
+            "description": "Include all statuses (for admin)",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -513,7 +780,44 @@
             "description": "Internal server error"
           }
         },
-        "summary": "Get all active scholarships",
+        "summary": "Get all scholarships",
+        "tags": [
+          "Scholarships"
+        ]
+      },
+      "post": {
+        "operationId": "ScholarshipsController_createScholarship",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScholarshipRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Scholarship created successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Create a new scholarship (admin only)",
         "tags": [
           "Scholarships"
         ]
@@ -545,6 +849,93 @@
           }
         },
         "summary": "Get scholarship by ID",
+        "tags": [
+          "Scholarships"
+        ]
+      },
+      "put": {
+        "operationId": "ScholarshipsController_updateScholarship",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Scholarship ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScholarshipRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scholarship updated successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Scholarship not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Update an existing scholarship (admin only)",
+        "tags": [
+          "Scholarships"
+        ]
+      },
+      "delete": {
+        "operationId": "ScholarshipsController_deleteScholarship",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Scholarship ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scholarship deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Scholarship not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Delete a scholarship (admin only - permanent delete)",
         "tags": [
           "Scholarships"
         ]
@@ -838,6 +1229,148 @@
         ]
       }
     },
+    "/api/help/content": {
+      "get": {
+        "operationId": "HelpController_getAllHelpSupport",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category: FAQ, System Message, Policy",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of help support items retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Get all help support content (admin only)",
+        "tags": [
+          "Help & Support"
+        ]
+      },
+      "post": {
+        "operationId": "HelpController_createHelpSupport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "Help support item created successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Create a new help support item (admin only)",
+        "tags": [
+          "Help & Support"
+        ]
+      }
+    },
+    "/api/help/content/{id}": {
+      "put": {
+        "operationId": "HelpController_updateHelpSupport",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Help support item ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Help support item updated successfully"
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Help support item not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Update an existing help support item (admin only)",
+        "tags": [
+          "Help & Support"
+        ]
+      },
+      "delete": {
+        "operationId": "HelpController_deleteHelpSupport",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Help support item ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Help support item deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Help support item not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Delete a help support item (admin only)",
+        "tags": [
+          "Help & Support"
+        ]
+      }
+    },
     "/api/admin/dashboard/metrics": {
       "get": {
         "operationId": "AdminController_getDashboardMetrics",
@@ -986,6 +1519,24 @@
         "summary": "Get recent programs (admin only)",
         "tags": [
           "Admin"
+        ]
+      }
+    },
+    "/api/fields": {
+      "get": {
+        "operationId": "FieldsController_getFields",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of fields retrieved successfully"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Get all fields of interest",
+        "tags": [
+          "Fields"
         ]
       }
     }
@@ -2086,6 +2637,290 @@
         "required": [
           "message"
         ]
+      },
+      "CreateProgramRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Program name"
+          },
+          "university_id": {
+            "type": "number",
+            "description": "University ID"
+          },
+          "level": {
+            "type": "string",
+            "description": "Program level",
+            "enum": [
+              "Foundation",
+              "Diploma",
+              "Bachelor"
+            ]
+          },
+          "description": {
+            "type": "object",
+            "description": "Program description"
+          },
+          "duration_months": {
+            "type": "number",
+            "description": "Duration in months"
+          },
+          "tuition_fee_amount": {
+            "type": "number",
+            "description": "Tuition fee amount"
+          },
+          "tuition_fee_period": {
+            "type": "string",
+            "description": "Tuition fee period",
+            "enum": [
+              "semester",
+              "year",
+              "total"
+            ]
+          },
+          "currency": {
+            "type": "object",
+            "description": "Currency code (e.g., MYR)",
+            "default": "MYR"
+          },
+          "start_month": {
+            "type": "object",
+            "description": "Start month"
+          },
+          "deadline": {
+            "type": "object",
+            "description": "Application deadline"
+          },
+          "field_id": {
+            "type": "number",
+            "description": "Field of interest ID"
+          },
+          "entry_requirements": {
+            "type": "object",
+            "description": "Entry requirements (JSONB)"
+          },
+          "curriculum": {
+            "type": "object",
+            "description": "Curriculum (JSONB)"
+          },
+          "career_outcomes": {
+            "type": "object",
+            "description": "Career outcomes (JSONB)"
+          },
+          "facilities": {
+            "type": "object",
+            "description": "Facilities (JSONB)"
+          },
+          "tags": {
+            "type": "object",
+            "description": "Tags (JSONB array)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Program status",
+            "enum": [
+              "active",
+              "draft",
+              "archived"
+            ]
+          },
+          "rating": {
+            "type": "number",
+            "description": "Rating"
+          },
+          "review_count": {
+            "type": "number",
+            "description": "Review count"
+          },
+          "employment_rate": {
+            "type": "number",
+            "description": "Employment rate"
+          },
+          "average_salary": {
+            "type": "number",
+            "description": "Average salary"
+          },
+          "satisfaction_rate": {
+            "type": "number",
+            "description": "Satisfaction rate"
+          },
+          "duration": {
+            "type": "object",
+            "description": "Duration (text format, e.g., \"3 years\")"
+          },
+          "tuition_fee": {
+            "type": "number",
+            "description": "Tuition fee (legacy field)"
+          },
+          "entry_requirements_old": {
+            "type": "object",
+            "description": "Entry requirements (legacy text field)"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateProgramRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateUniversityRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "University name"
+          },
+          "university_type": {
+            "type": "string",
+            "description": "University type",
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "based_in": {
+            "type": "object",
+            "description": "Based in (country/region)"
+          },
+          "state": {
+            "type": "object",
+            "description": "State"
+          },
+          "city": {
+            "type": "object",
+            "description": "City"
+          },
+          "address": {
+            "type": "object",
+            "description": "Full address"
+          },
+          "description": {
+            "type": "object",
+            "description": "University description"
+          },
+          "website_url": {
+            "type": "object",
+            "description": "Website URL"
+          },
+          "email": {
+            "type": "object",
+            "description": "Contact email"
+          },
+          "phone_number": {
+            "type": "object",
+            "description": "Contact phone number"
+          },
+          "average_fee": {
+            "type": "number",
+            "description": "Average fee (RM)"
+          },
+          "logo_url": {
+            "type": "object",
+            "description": "Logo URL"
+          },
+          "image_urls": {
+            "type": "object",
+            "description": "Image URLs (JSON array)"
+          }
+        },
+        "required": [
+          "name",
+          "university_type"
+        ]
+      },
+      "UpdateUniversityRequestDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateScholarshipRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Scholarship name"
+          },
+          "organization_name": {
+            "type": "object",
+            "description": "Organization name"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Scholarship amount"
+          },
+          "type": {
+            "type": "string",
+            "description": "Scholarship type",
+            "enum": [
+              "Merit-based",
+              "Need-based",
+              "Academic",
+              "Other"
+            ]
+          },
+          "location": {
+            "type": "object",
+            "description": "Location"
+          },
+          "deadline": {
+            "type": "object",
+            "description": "Application deadline"
+          },
+          "description": {
+            "type": "object",
+            "description": "Description"
+          },
+          "level": {
+            "type": "object",
+            "description": "Level (study level)"
+          },
+          "field_id": {
+            "type": "number",
+            "description": "Field ID"
+          },
+          "website_url": {
+            "type": "object",
+            "description": "Website URL"
+          },
+          "contact_email": {
+            "type": "object",
+            "description": "Contact email"
+          },
+          "contact_phone": {
+            "type": "object",
+            "description": "Contact phone"
+          },
+          "requirements": {
+            "type": "object",
+            "description": "Requirements (text)"
+          },
+          "benefits": {
+            "type": "object",
+            "description": "Benefits (text)"
+          },
+          "success_rate": {
+            "type": "number",
+            "description": "Success rate"
+          },
+          "status": {
+            "type": "string",
+            "description": "Scholarship status",
+            "enum": [
+              "active",
+              "expired",
+              "draft"
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateScholarshipRequestDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

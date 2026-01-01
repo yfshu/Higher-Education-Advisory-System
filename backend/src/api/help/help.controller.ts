@@ -2,15 +2,22 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Query,
   Body,
+  Param,
   Req,
   HttpException,
   HttpStatus,
+  UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { HelpService } from './help.service';
 import { Request } from 'express';
+import { AuthGuard } from '../../guards/auth.guard';
+import { AuthenticatedRequest } from '../../supabase/types/express.d';
 
 interface ChatRequest {
   message: string;
@@ -104,6 +111,179 @@ export class HelpController {
           message: error.message || 'Failed to process AI chat request',
         },
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('content')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('supabase-auth')
+  @ApiOperation({ summary: 'Get all help support content (admin only)' })
+  @ApiQuery({ name: 'category', required: false, description: 'Filter by category: FAQ, System Message, Policy' })
+  @ApiResponse({ status: 200, description: 'List of help support items retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async getAllHelpSupport(
+    @Req() req: Request,
+    @Query('category') category?: string,
+  ) {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.id;
+      if (!userId) {
+        throw new HttpException(
+          { success: false, message: 'User not authenticated' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const items = await this.helpService.getAllHelpSupport(category);
+      return {
+        success: true,
+        data: items,
+        count: items.length,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to fetch help support items',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('content')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('supabase-auth')
+  @ApiOperation({ summary: 'Create a new help support item (admin only)' })
+  @ApiResponse({ status: 201, description: 'Help support item created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async createHelpSupport(
+    @Req() req: Request,
+    @Body() body: any,
+  ) {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.id;
+      if (!userId) {
+        throw new HttpException(
+          { success: false, message: 'User not authenticated' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const item = await this.helpService.createHelpSupport(body);
+      return {
+        success: true,
+        data: item,
+        message: 'Help support item created successfully',
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to create help support item',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put('content/:id')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('supabase-auth')
+  @ApiOperation({ summary: 'Update an existing help support item (admin only)' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Help support item ID' })
+  @ApiResponse({ status: 200, description: 'Help support item updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Help support item not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async updateHelpSupport(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: any,
+  ) {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.id;
+      if (!userId) {
+        throw new HttpException(
+          { success: false, message: 'User not authenticated' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      const item = await this.helpService.updateHelpSupport(id, body);
+      return {
+        success: true,
+        data: item,
+        message: 'Help support item updated successfully',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error.message === 'Help support item not found') {
+        throw new HttpException(
+          { success: false, message: 'Help support item not found' },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to update help support item',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete('content/:id')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('supabase-auth')
+  @ApiOperation({ summary: 'Delete a help support item (admin only)' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Help support item ID' })
+  @ApiResponse({ status: 200, description: 'Help support item deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Help support item not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async deleteHelpSupport(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    try {
+      const userId = (req as AuthenticatedRequest).user?.id;
+      if (!userId) {
+        throw new HttpException(
+          { success: false, message: 'User not authenticated' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      await this.helpService.deleteHelpSupport(id);
+      return {
+        success: true,
+        message: 'Help support item deleted successfully',
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error.message === 'Help support item not found') {
+        throw new HttpException(
+          { success: false, message: 'Help support item not found' },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to delete help support item',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,126 +18,223 @@ import {
   Trash2,
   DollarSign,
   Calendar,
-  Users,
   Award,
-  Download
+  Loader2,
 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import { useUser } from "@/contexts/UserContext";
+import { toast } from "sonner";
+import { DeleteScholarshipDialog } from "@/components/admin/DeleteScholarshipDialog";
 
 interface Scholarship {
-  id: string;
+  id: number;
   name: string;
-  provider: string;
-  amount: string;
-  type: 'Merit-based' | 'Need-based' | 'Sports' | 'Academic' | 'Minority' | 'Other';
-  eligibility: string;
-  deadline: string;
-  status: 'Active' | 'Inactive' | 'Expired';
-  applicants: number;
-  description: string;
-  requirements: string[];
-  documentRequired: string[];
+  provider: string | null;
+  amount: number | null;
+  type: 'Merit-based' | 'Need-based' | 'Academic' | 'Other' | null;
+  location: string | null;
+  deadline: string | null;
+    status: 'active' | 'expired' | 'draft' | null;
+  description: string | null;
+  study_levels: string[] | null;
+  eligibility_requirements: any;
+  benefits: any;
+  applicant_count: number | null;
+  application_url: string | null;
 }
 
 export default function ScholarshipManagement() {
-  const [scholarships, setScholarships] = useState<Scholarship[]>([
-    {
-      id: '1',
-      name: 'Malaysia Excellence Scholarship',
-      provider: 'Ministry of Education Malaysia',
-      amount: 'RM 50,000/year',
-      type: 'Merit-based',
-      eligibility: 'Malaysian citizens with excellent SPM results (minimum 8A+)',
-      deadline: '2025-03-15',
-      status: 'Active',
-      applicants: 245,
-      description: 'Full scholarship covering tuition fees, living allowance, and book allowance for undergraduate studies at local public universities.',
-      requirements: ['SPM certificate with minimum 8A+', 'Malaysian citizenship', 'Family income below RM 5,000'],
-      documentRequired: ['SPM certificate', 'Birth certificate', 'Income statement', 'Bank statement']
-    },
-    {
-      id: '2',
-      name: 'Yayasan Khazanah Scholarship',
-      provider: 'Yayasan Khazanah',
-      amount: 'Full sponsorship',
-      type: 'Academic',
-      eligibility: 'Outstanding Malaysian students for local and overseas universities',
-      deadline: '2025-02-28',
-      status: 'Active',
-      applicants: 189,
-      description: 'Comprehensive scholarship program covering full tuition, living expenses, and career development opportunities.',
-      requirements: ['Excellent academic record', 'Leadership experience', 'Community involvement'],
-      documentRequired: ['Academic transcripts', 'Personal statement', 'Reference letters', 'Interview']
-    },
-    {
-      id: '3',
-      name: 'JPA Scholarship Program',
-      provider: 'Public Service Department (JPA)',
-      amount: 'RM 40,000/year',
-      type: 'Merit-based',
-      eligibility: 'Top Malaysian students for overseas studies',
-      deadline: '2025-01-31',
-      status: 'Expired',
-      applicants: 456,
-      description: 'Government scholarship for pursuing undergraduate studies at top overseas universities with bond requirements.',
-      requirements: ['Minimum CGPA 3.5', 'IELTS/TOEFL scores', 'Leadership qualities'],
-      documentRequired: ['Academic transcripts', 'Language proficiency certificates', 'Interview assessment']
-    }
-  ]);
-
+  const { userData } = useUser();
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingScholarship, setEditingScholarship] = useState<Scholarship | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedScholarship, setSelectedScholarship] = useState<Scholarship | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
     provider: '',
     amount: '',
-    type: 'Merit-based' as Scholarship['type'],
-    eligibility: '',
+    type: 'Merit-based' as 'Merit-based' | 'Need-based' | 'Academic' | 'Other',
+    location: '',
     deadline: '',
     description: '',
-    requirements: '',
-    documentRequired: ''
+    status: 'active' as 'active' | 'expired' | 'draft',
+    eligibility_requirements: '',
+    benefits: '',
+    application_url: '',
   });
+
+  const handleRefresh = useCallback(async () => {
+    if (!userData?.accessToken) {
+      setError("User not authenticated. Please log in.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+      const response = await fetch(`${backendUrl}/api/scholarships?all=true&t=${Date.now()}`, {
+        headers: {
+          Authorization: `Bearer ${userData.accessToken}`,
+          'Cache-Control': 'no-cache',
+        },
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch scholarships: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        console.log(`✅ Fetched ${result.data.length} scholarships (count: ${result.count})`);
+        setScholarships(result.data);
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (err) {
+      console.error("Error fetching scholarships:", err);
+      setError(err instanceof Error ? err.message : "Failed to load scholarships");
+      setScholarships([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [userData?.accessToken]);
+
+  useEffect(() => {
+    handleRefresh();
+  }, [handleRefresh]);
 
   const filteredScholarships = scholarships.filter(scholarship => {
     const matchesSearch = scholarship.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         scholarship.provider.toLowerCase().includes(searchTerm.toLowerCase());
+                         scholarship.provider?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         scholarship.location?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || scholarship.status === filterStatus;
     const matchesType = filterType === 'all' || scholarship.type === filterType;
     
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Pagination logic
+  const totalPages = Math.ceil(filteredScholarships.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedScholarships = filteredScholarships.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterType]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const scholarshipData: Scholarship = {
-      id: editingScholarship?.id || Date.now().toString(),
-      name: formData.name,
-      provider: formData.provider,
-      amount: formData.amount,
-      type: formData.type,
-      eligibility: formData.eligibility,
-      deadline: formData.deadline,
-      status: 'Active',
-      applicants: editingScholarship?.applicants || 0,
-      description: formData.description,
-      requirements: formData.requirements.split('\n').filter(req => req.trim()),
-      documentRequired: formData.documentRequired.split('\n').filter(doc => doc.trim())
-    };
-
-    if (editingScholarship) {
-      setScholarships(prev => prev.map(s => s.id === editingScholarship.id ? scholarshipData : s));
-    } else {
-      setScholarships(prev => [...prev, scholarshipData]);
+    if (!userData?.accessToken) {
+      toast.error("Please log in to perform this action.");
+      return;
     }
 
-    resetForm();
-    setIsAddDialogOpen(false);
-    setEditingScholarship(null);
+    try {
+      setSubmitting(true);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+
+      // Prepare payload
+      const payload: any = {
+        name: formData.name,
+        provider: formData.provider || null,
+        amount: formData.amount ? parseFloat(formData.amount) : null,
+        type: formData.type || null,
+        location: formData.location || null,
+        deadline: formData.deadline || null,
+        description: formData.description || null,
+        status: formData.status || 'active',
+        application_url: formData.application_url || null,
+      };
+
+      // Parse eligibility_requirements and benefits if provided
+      // Backend expects objects, so ensure we always send an object or null
+      if (formData.eligibility_requirements && formData.eligibility_requirements.trim()) {
+        try {
+          const parsed = JSON.parse(formData.eligibility_requirements);
+          // Ensure it's an object, not an array or primitive
+          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+            payload.eligibility_requirements = parsed;
+          } else {
+            // If parsed value is not an object, wrap it
+            payload.eligibility_requirements = { requirements: Array.isArray(parsed) ? parsed : [parsed] };
+          }
+        } catch {
+          // If not valid JSON, create a simple object from text lines
+          const lines = formData.eligibility_requirements.split('\n').filter(r => r.trim());
+          payload.eligibility_requirements = lines.length > 0 ? { requirements: lines } : null;
+        }
+      } else {
+        payload.eligibility_requirements = null;
+      }
+
+      // Benefits is a string field in the database, not JSONB
+      payload.benefits = formData.benefits && formData.benefits.trim() ? formData.benefits.trim() : null;
+
+      let response;
+      if (editingScholarship) {
+        response = await fetch(`${backendUrl}/api/scholarships/${editingScholarship.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userData.accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        response = await fetch(`${backendUrl}/api/scholarships`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userData.accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save scholarship");
+      }
+
+      toast.success(editingScholarship ? "Scholarship updated successfully!" : "Scholarship created successfully!");
+      resetForm();
+      setIsAddDialogOpen(false);
+      setEditingScholarship(null);
+      setTimeout(() => {
+        handleRefresh();
+      }, 300);
+    } catch (error) {
+      console.error("Error saving scholarship:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save scholarship");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -146,62 +243,111 @@ export default function ScholarshipManagement() {
       provider: '',
       amount: '',
       type: 'Merit-based',
-      eligibility: '',
+      location: '',
       deadline: '',
       description: '',
-      requirements: '',
-      documentRequired: ''
+      status: 'active',
+      eligibility_requirements: '',
+      benefits: '',
+      application_url: '',
     });
   };
 
   const handleEdit = (scholarship: Scholarship) => {
     setFormData({
       name: scholarship.name,
-      provider: scholarship.provider,
-      amount: scholarship.amount,
-      type: scholarship.type,
-      eligibility: scholarship.eligibility,
-      deadline: scholarship.deadline,
-      description: scholarship.description,
-      requirements: scholarship.requirements.join('\n'),
-      documentRequired: scholarship.documentRequired.join('\n')
+      provider: scholarship.provider || '',
+      amount: scholarship.amount?.toString() || '',
+      type: scholarship.type || 'Merit-based',
+      location: scholarship.location || '',
+      deadline: scholarship.deadline || '',
+      description: scholarship.description || '',
+      status: scholarship.status || 'active',
+      eligibility_requirements: scholarship.eligibility_requirements 
+        ? (typeof scholarship.eligibility_requirements === 'string' 
+          ? scholarship.eligibility_requirements 
+          : JSON.stringify(scholarship.eligibility_requirements, null, 2))
+        : '',
+      benefits: scholarship.benefits
+        ? (typeof scholarship.benefits === 'string'
+          ? scholarship.benefits
+          : JSON.stringify(scholarship.benefits, null, 2))
+        : '',
+      application_url: scholarship.application_url || '',
     });
     setEditingScholarship(scholarship);
     setIsAddDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setScholarships(prev => prev.filter(s => s.id !== id));
+  const handleDelete = (scholarship: Scholarship) => {
+    setSelectedScholarship(scholarship);
+    setDeleteDialogOpen(true);
   };
 
-  const getStatusColor = (status: string) => {
+  const handleDeleteSuccess = () => {
+    setSelectedScholarship(null);
+    setDeleteDialogOpen(false);
+    setTimeout(() => {
+      handleRefresh();
+    }, 300);
+  };
+
+  const getStatusColor = (status: string | null) => {
     switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800';
-      case 'Inactive': return 'bg-yellow-100 text-yellow-800';
-      case 'Expired': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'draft': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'expired': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeColor = (type: string | null) => {
     switch (type) {
-      case 'Merit-based': return 'bg-blue-100 text-blue-800';
-      case 'Need-based': return 'bg-purple-100 text-purple-800';
-      case 'Sports': return 'bg-orange-100 text-orange-800';
-      case 'Academic': return 'bg-green-100 text-green-800';
-      case 'Minority': return 'bg-pink-100 text-pink-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Merit-based': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'Need-based': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'Academic': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'Other': return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
     }
   };
+
+  if (loading) {
+    return (
+      <AdminLayout title="Scholarship Management">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <p className="text-muted-foreground">Loading scholarships...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout title="Scholarship Management">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Error loading scholarships</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button onClick={handleRefresh} className="mt-4">
+              Retry
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Scholarship Management">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Scholarship Management</h1>
-            <p className="text-gray-600 mt-1">Manage scholarship programs and opportunities</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Scholarship Management</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage scholarship programs and opportunities</p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
@@ -223,7 +369,7 @@ export default function ScholarshipManagement() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Scholarship Name</Label>
+                    <Label htmlFor="name">Scholarship Name *</Label>
                     <Input
                       id="name"
                       value={formData.name}
@@ -240,38 +386,61 @@ export default function ScholarshipManagement() {
                       value={formData.provider}
                       onChange={(e) => setFormData(prev => ({ ...prev, provider: e.target.value }))}
                       placeholder="e.g., Ministry of Education Malaysia"
-                      required
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="amount">Award Amount</Label>
+                    <Label htmlFor="amount">Award Amount (RM)</Label>
                     <Input
                       id="amount"
+                      type="number"
                       value={formData.amount}
                       onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                      placeholder="e.g., RM 50,000/year"
-                      required
+                      placeholder="e.g., 50000"
                     />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="type">Scholarship Type</Label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as Scholarship['type'] }))}>
+                    <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as any }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Merit-based">Merit-based</SelectItem>
                         <SelectItem value="Need-based">Need-based</SelectItem>
-                        <SelectItem value="Sports">Sports</SelectItem>
                         <SelectItem value="Academic">Academic</SelectItem>
-                        <SelectItem value="Minority">Minority</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="expired">Expired</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="e.g., Malaysia, Overseas, Both"
+                    />
                   </div>
                   
                   <div className="space-y-2">
@@ -281,19 +450,18 @@ export default function ScholarshipManagement() {
                       type="date"
                       value={formData.deadline}
                       onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
-                      required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="eligibility">Eligibility Criteria</Label>
+                  <Label htmlFor="application_url">Application URL</Label>
                   <Input
-                    id="eligibility"
-                    value={formData.eligibility}
-                    onChange={(e) => setFormData(prev => ({ ...prev, eligibility: e.target.value }))}
-                    placeholder="Brief eligibility description"
-                    required
+                    id="application_url"
+                    type="url"
+                    value={formData.application_url}
+                    onChange={(e) => setFormData(prev => ({ ...prev, application_url: e.target.value }))}
+                    placeholder="https://example.com/apply"
                   />
                 </div>
 
@@ -305,29 +473,28 @@ export default function ScholarshipManagement() {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Detailed scholarship description"
                     rows={3}
-                    required
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="requirements">Requirements (one per line)</Label>
+                    <Label htmlFor="eligibility_requirements">Eligibility Requirements (JSON or text)</Label>
                     <Textarea
-                      id="requirements"
-                      value={formData.requirements}
-                      onChange={(e) => setFormData(prev => ({ ...prev, requirements: e.target.value }))}
-                      placeholder="SPM certificate with minimum 8A+&#10;Malaysian citizenship&#10;Family income below RM 5,000"
+                      id="eligibility_requirements"
+                      value={formData.eligibility_requirements}
+                      onChange={(e) => setFormData(prev => ({ ...prev, eligibility_requirements: e.target.value }))}
+                      placeholder='{"academic": "SPM: 5 credits", "income": "Below RM 5,000"}'
                       rows={4}
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="documentRequired">Required Documents (one per line)</Label>
+                    <Label htmlFor="benefits">Benefits (JSON or text)</Label>
                     <Textarea
-                      id="documentRequired"
-                      value={formData.documentRequired}
-                      onChange={(e) => setFormData(prev => ({ ...prev, documentRequired: e.target.value }))}
-                      placeholder="SPM certificate&#10;Birth certificate&#10;Income statement&#10;Bank statement"
+                      id="benefits"
+                      value={formData.benefits}
+                      onChange={(e) => setFormData(prev => ({ ...prev, benefits: e.target.value }))}
+                      placeholder='{"tuition": "Full coverage", "living": "RM 1,000/month"}'
                       rows={4}
                     />
                   </div>
@@ -342,11 +509,19 @@ export default function ScholarshipManagement() {
                       setEditingScholarship(null);
                       resetForm();
                     }}
+                    disabled={submitting}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                    {editingScholarship ? 'Update Scholarship' : 'Add Scholarship'}
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={submitting}>
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      editingScholarship ? 'Update Scholarship' : 'Add Scholarship'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -355,54 +530,42 @@ export default function ScholarshipManagement() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Scholarships</CardTitle>
               <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{scholarships.length}</div>
-              <p className="text-xs text-muted-foreground">+2 from last month</p>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Scholarships</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{scholarships.filter(s => s.status === 'Active').length}</div>
-              <p className="text-xs text-muted-foreground">Currently accepting applications</p>
+              <div className="text-2xl font-bold">{scholarships.filter(s => s.status === 'active').length}</div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Applicants</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{scholarships.reduce((sum, s) => sum + s.applicants, 0)}</div>
-              <p className="text-xs text-muted-foreground">Across all scholarships</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
+          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Value</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">RM 2.5M</div>
-              <p className="text-xs text-muted-foreground">Estimated annual value</p>
+              <div className="text-2xl font-bold">
+                RM {scholarships.reduce((sum, s) => sum + (s.amount || 0), 0).toLocaleString()}
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters and Search */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
           <CardHeader>
             <CardTitle>Search & Filter</CardTitle>
           </CardHeader>
@@ -426,9 +589,9 @@ export default function ScholarshipManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                  <SelectItem value="Expired">Expired</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -440,23 +603,16 @@ export default function ScholarshipManagement() {
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="Merit-based">Merit-based</SelectItem>
                   <SelectItem value="Need-based">Need-based</SelectItem>
-                  <SelectItem value="Sports">Sports</SelectItem>
                   <SelectItem value="Academic">Academic</SelectItem>
-                  <SelectItem value="Minority">Minority</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
-              
-              <Button variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
             </div>
           </CardContent>
         </Card>
 
         {/* Scholarships Table */}
-        <Card>
+        <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
           <CardHeader>
             <CardTitle>Scholarship Programs ({filteredScholarships.length})</CardTitle>
           </CardHeader>
@@ -471,30 +627,30 @@ export default function ScholarshipManagement() {
                     <TableHead>Type</TableHead>
                     <TableHead>Deadline</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Applicants</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredScholarships.map((scholarship) => (
+                  {paginatedScholarships.map((scholarship) => (
                     <TableRow key={scholarship.id}>
                       <TableCell className="font-medium">{scholarship.name}</TableCell>
-                      <TableCell>{scholarship.provider}</TableCell>
-                      <TableCell>{scholarship.amount}</TableCell>
+                      <TableCell>{scholarship.provider || '-'}</TableCell>
+                      <TableCell>
+                        {scholarship.amount ? `RM ${scholarship.amount.toLocaleString()}` : '-'}
+                      </TableCell>
                       <TableCell>
                         <Badge className={getTypeColor(scholarship.type)}>
-                          {scholarship.type}
+                          {scholarship.type || '-'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(scholarship.deadline).toLocaleDateString('en-GB')}
+                        {scholarship.deadline ? new Date(scholarship.deadline).toLocaleDateString('en-GB') : '-'}
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(scholarship.status)}>
-                          {scholarship.status}
+                          {scholarship.status || '-'}
                         </Badge>
                       </TableCell>
-                      <TableCell>{scholarship.applicants}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
@@ -507,7 +663,7 @@ export default function ScholarshipManagement() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDelete(scholarship.id)}
+                            onClick={() => handleDelete(scholarship)}
                             className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -520,14 +676,89 @@ export default function ScholarshipManagement() {
               </Table>
             </div>
             
-            {filteredScholarships.length === 0 && (
+            {paginatedScholarships.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 No scholarships found matching your criteria.
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 1) setCurrentPage(currentPage - 1);
+                    }}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(page);
+                          }}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  } else if (page === currentPage - 2 || page === currentPage + 2) {
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
+                })}
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                    }}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+
+        {/* Results Info */}
+        {filteredScholarships.length > 0 && (
+          <div className="text-center text-sm text-muted-foreground">
+            Showing {startIndex + 1} - {Math.min(endIndex, filteredScholarships.length)} of {filteredScholarships.length} scholarships
+          </div>
+        )}
       </div>
+
+      {/* Delete Dialog */}
+      <DeleteScholarshipDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        scholarship={selectedScholarship ? { id: selectedScholarship.id, name: selectedScholarship.name } : null}
+        onConfirm={handleDeleteSuccess}
+      />
     </AdminLayout>
   );
 }

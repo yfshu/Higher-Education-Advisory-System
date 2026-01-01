@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import { UserProvider } from "@/contexts/UserContext";
 import PasswordRecoveryHandler from "@/components/auth/PasswordRecoveryHandler";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +52,7 @@ export default function RootLayout({
         <UserProvider>
           <PasswordRecoveryHandler />
           <AuthModalProvider>{children}</AuthModalProvider>
+          <Toaster />
         </UserProvider>
       </body>
     </html>

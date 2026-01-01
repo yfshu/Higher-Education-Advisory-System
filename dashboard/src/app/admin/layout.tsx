@@ -39,27 +39,28 @@ export default async function AdminLayout({
       }
     );
 
-    // Get the current user session
+    // Get the current user - use getUser() instead of getSession() for security
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-    console.log('🔍 [AdminLayout Server] Session check:', {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      email: session?.user?.email,
+    console.log('🔍 [AdminLayout Server] User check:', {
+      hasUser: !!user,
+      userId: user?.id,
+      email: user?.email,
+      error: userError?.message,
     });
 
     // If not authenticated, redirect to login
-    if (!session?.user) {
-      console.log('❌ [AdminLayout Server] No session, redirecting to login');
+    if (!user || userError) {
+      console.log('❌ [AdminLayout Server] No user or error, redirecting to login');
       redirect('/auth/login');
     }
 
     // ✅ Get role from app_metadata (same pattern as backend)
-    const appMeta = parseAppMetadata(session.user.app_metadata);
-    const userMeta = parseUserMetadata(session.user.user_metadata);
+    const appMeta = parseAppMetadata(user.app_metadata);
+    const userMeta = parseUserMetadata(user.user_metadata);
 
     console.log('🔍 [AdminLayout Server] Parsed metadata:', {
       app_metadata_role: appMeta.role,
@@ -73,8 +74,8 @@ export default async function AdminLayout({
       app_metadata_role: appMeta.role,
       user_metadata_role: userMeta.role,
       final_role: finalRole,
-      userId: session.user.id,
-      email: session.user.email,
+      userId: user.id,
+      email: user.email,
     });
 
     // If not admin, redirect to student dashboard

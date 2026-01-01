@@ -12,18 +12,25 @@ export class AdminService {
 
   /**
    * Check if user is admin
+   * Checks the role from user's app_metadata (set in Supabase Auth)
    */
   private async isAdmin(userId: string): Promise<boolean> {
     try {
       const db = this.supabaseService.getClient();
-      const { data, error } = await db.rpc('is_admin', { uid: userId });
+      
+      // Use admin API to get user details
+      const { data: { user }, error } = await db.auth.admin.getUserById(userId);
 
-      if (error) {
-        this.logger.error('Error checking admin status:', error);
+      if (error || !user) {
+        this.logger.error('Error fetching user for admin check:', error);
         return false;
       }
 
-      return data === true;
+      // Check role from app_metadata (primary) or user_metadata (fallback)
+      const role = (user.app_metadata as any)?.role || (user.user_metadata as any)?.role || 'student';
+      
+      this.logger.log(`Admin check for user ${userId}: role=${role}`);
+      return role === 'admin';
     } catch (error) {
       this.logger.error('Exception in isAdmin:', error);
       return false;

@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Menu,
   X,
+  Building2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ interface AdminLayoutProps {
 
 const navigationItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/universities", icon: Building2, label: "University Management" },
   { href: "/admin/programs", icon: BookOpen, label: "Program Management" },
   { href: "/admin/scholarships", icon: Award, label: "Scholarship Management" },
   { href: "/admin/users", icon: Users, label: "User Management" },
@@ -114,7 +116,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
   };
 
   return (
-    <div className="flex min-h-screen text-foreground bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-950 dark:to-black">
+    <div className="flex h-screen text-foreground bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-950 dark:to-black overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -125,63 +127,62 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 border-r border-white/10 dark:border-slate-800/50 bg-white/95 dark:bg-slate-900/95 shadow-2xl backdrop-blur-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 h-screen flex flex-col border-r border-white/10 dark:border-slate-800/50 bg-white/95 dark:bg-slate-900/95 shadow-2xl backdrop-blur-2xl transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="p-6 border-b border-white/10 dark:border-slate-800/50">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                <span className="font-semibold text-foreground">
-                  BackToSchool Admin
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden"
-                onClick={() => setSidebarOpen(false)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <nav className="space-y-2">
-              {navigationItems.map(({ href, icon, label }) =>
-                renderNavItem(href, icon, label)
-              )}
-            </nav>
-          </div>
-
-          {/* Sidebar Footer */}
-          <div className="mt-auto border-t border-white/10 dark:border-slate-800/50 bg-white/5 dark:bg-slate-900/40 p-6 backdrop-blur-sm">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white shadow-lg">
-                {adminName.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground truncate">{adminName}</div>
-                <div className="text-sm text-muted-foreground">Administrator</div>
-              </div>
-            </div>
-            <div className="mb-3">
-              <ThemeToggle />
+        {/* Sidebar Header - Fixed */}
+        <div className="p-6 border-b border-white/10 dark:border-slate-800/50 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-foreground">
+                BackToSchool Admin
+              </span>
             </div>
             <Button
               variant="ghost"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push("/");
-              }}
-              className="w-full justify-start text-muted-foreground hover:bg-white/20 dark:hover:bg-slate-800/50 hover:text-foreground hover:backdrop-blur-sm hover:shadow-md"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(false)}
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <X className="h-5 w-5" />
             </Button>
           </div>
+        </div>
+
+        {/* Navigation Section - Scrollable */}
+        <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+          {navigationItems.map(({ href, icon, label }) =>
+            renderNavItem(href, icon, label)
+          )}
+        </nav>
+
+        {/* Sidebar Footer - Fixed at Bottom */}
+        <div className="border-t border-white/10 dark:border-slate-800/50 bg-white/5 dark:bg-slate-900/40 p-6 backdrop-blur-sm flex-shrink-0">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white shadow-lg flex-shrink-0">
+              {adminName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-foreground truncate">{adminName}</div>
+              <div className="text-sm text-muted-foreground">Administrator</div>
+            </div>
+          </div>
+          <div className="mb-3">
+            <ThemeToggle />
+          </div>
+          <Button
+            variant="ghost"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              router.push("/");
+            }}
+            className="w-full justify-start text-muted-foreground hover:bg-white/20 dark:hover:bg-slate-800/50 hover:text-foreground hover:backdrop-blur-sm hover:shadow-md"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
         </div>
       </aside>
 
