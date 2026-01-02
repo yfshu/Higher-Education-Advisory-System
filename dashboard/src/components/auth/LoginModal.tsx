@@ -32,6 +32,15 @@ export default function LoginModal() {
   const { setUserData } = useUser();
   const router = useRouter();
   const [view, setView] = useState<"login" | "forgot" | "update">("login");
+  
+  // Get redirect path from URL query params (client-side only)
+  const getRedirectPath = () => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('redirect');
+    }
+    return null;
+  };
   const [formData, setFormData] = useState<LoginFormState>({
     email: "",
     password: "",
@@ -93,8 +102,21 @@ export default function LoginModal() {
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
-        const msg =
-          errBody?.message || `Login failed with status ${res.status}`;
+        let msg = errBody?.message || `Login failed with status ${res.status}`;
+        
+        // Check for password-related errors and provide user-friendly message
+        const errorMsgLower = msg.toLowerCase();
+        if (
+          errorMsgLower.includes('password') ||
+          errorMsgLower.includes('wrong') ||
+          errorMsgLower.includes('invalid') ||
+          errorMsgLower.includes('incorrect')
+        ) {
+          msg = 'Password is wrong or invalid. Please check your password and try again.';
+        } else if (errorMsgLower.includes('email not found')) {
+          msg = 'Email not found. Please check your email address.';
+        }
+        
         setError(msg);
         setLoading(false);
         return;
@@ -215,15 +237,27 @@ export default function LoginModal() {
       // Small delay to ensure modal closes and cookies are fully written
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // Role-based redirect - go DIRECTLY to the correct dashboard
-      // Use window.location.href for a hard redirect to ensure cookies are read
-      if (finalRole === "admin") {
-        console.log("✅ [LoginModal] Redirecting ADMIN to /admin");
-        window.location.href = "/admin";
+      // Determine redirect path: check query param first, then role-based default
+      const redirectPath = getRedirectPath();
+      let targetPath: string;
+      
+      if (redirectPath) {
+        // Use redirect from query param if provided
+        targetPath = redirectPath;
+        console.log(`✅ [LoginModal] Redirecting to requested path: ${targetPath}`);
       } else {
-        console.log("📚 [LoginModal] Redirecting STUDENT to /student");
-        window.location.href = "/student";
+        // Role-based default redirect
+        if (finalRole === "admin") {
+          targetPath = "/admin";
+          console.log("✅ [LoginModal] Redirecting ADMIN to /admin");
+        } else {
+          targetPath = "/student";
+          console.log("📚 [LoginModal] Redirecting STUDENT to /student");
+        }
       }
+
+      // Use window.location.href for a hard redirect to ensure cookies are read
+      window.location.href = targetPath;
     } catch (e: unknown) {
       const msg =
         e instanceof Error ? e.message : "Unexpected error during login.";

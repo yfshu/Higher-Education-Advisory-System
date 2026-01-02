@@ -23,6 +23,7 @@ import {
   Filter,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ProgramWizardModal } from "@/components/admin/ProgramWizardModal";
 import { DeleteProgramDialog } from "@/components/admin/DeleteProgramDialog";
 import { useUser } from "@/contexts/UserContext";
@@ -63,6 +64,7 @@ type SortOption = "newest" | "tuition_asc" | "tuition_desc" | "duration_asc" | "
 
 export default function ProgramManagement() {
   const { userData } = useUser();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -468,12 +470,10 @@ export default function ProgramManagement() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  asChild
                                   className="h-8 w-8 p-0"
+                                  onClick={() => router.push(`/admin/programs/${program.id}`)}
                                 >
-                                  <Link href={`/student/program/${program.id}`}>
-                                    <Eye className="w-4 h-4" />
-                                  </Link>
+                                  <Eye className="w-4 h-4" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>View Program</TooltipContent>
@@ -571,11 +571,13 @@ export default function ProgramManagement() {
 
                   {/* Actions */}
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/student/program/${program.id}`}>
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </Link>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => router.push(`/admin/programs/${program.id}`)}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View
                     </Button>
                     <Button
                       variant="ghost"

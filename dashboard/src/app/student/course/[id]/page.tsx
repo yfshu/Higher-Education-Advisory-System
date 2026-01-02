@@ -173,39 +173,184 @@ export default function ProgramDetail() {
   };
 
   const getCurriculum = (): Array<{ year: number; subjects: string[] }> => {
-    if (!program?.curriculum) return [];
-    try {
-      if (Array.isArray(program.curriculum)) return program.curriculum;
-      if (typeof program.curriculum === 'string') {
-        const parsed = JSON.parse(program.curriculum);
-        // Convert object format to array format if needed
-        if (typeof parsed === 'object' && !Array.isArray(parsed)) {
-          return Object.entries(parsed).map(([key, value]: [string, unknown]) => {
-            const year = parseInt(key.replace(/\D/g, '')) || 1;
-            const subjects = Array.isArray(value) ? value as string[] : 
-                           typeof value === 'object' && value !== null ? Object.values(value).flat() as string[] : [];
-            return { year, subjects };
-          });
-        }
-        return parsed;
-      }
-      return [];
-    } catch {
+    if (!program?.curriculum) {
+      console.log('🔍 getCurriculum: No curriculum data');
       return [];
     }
+    
+    console.log('🔍 getCurriculum: Raw input type:', typeof program.curriculum);
+    console.log('🔍 getCurriculum: Raw input:', program.curriculum);
+    
+    let parsedData: any = program.curriculum;
+    
+    // Handle string (JSON)
+    if (typeof program.curriculum === 'string') {
+      try {
+        parsedData = JSON.parse(program.curriculum);
+        console.log('🔍 getCurriculum: Parsed from string:', parsedData);
+      } catch (error) {
+        console.error('🔍 getCurriculum: JSON parse error:', error);
+        return [];
+      }
+    }
+    
+    // Handle array format: [{year: 1, subjects: [...]}, ...]
+    if (Array.isArray(parsedData)) {
+      console.log('🔍 getCurriculum: Input is array, length:', parsedData.length);
+      return parsedData;
+    }
+    
+    // Handle object format: {year_1: [...], year_2: [...], ...}
+    if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+      console.log('🔍 getCurriculum: Input is object, converting to array format');
+      const converted: Array<{ year: number; subjects: string[] }> = [];
+      
+      // Get all keys and sort them
+      const keys = Object.keys(parsedData).sort();
+      
+      for (const key of keys) {
+        const value = parsedData[key];
+        
+        // Extract year number from key (year_1 -> 1, year_2 -> 2, etc.)
+        const yearMatch = key.match(/year[_\s]*(\d+)/i);
+        const year = yearMatch ? parseInt(yearMatch[1], 10) : parseInt(key.replace(/\D/g, '')) || converted.length + 1;
+        
+        // Handle subjects array
+        if (Array.isArray(value)) {
+          converted.push({
+            year,
+            subjects: value.map(s => String(s)),
+          });
+        } else if (typeof value === 'string') {
+          // If it's a string, try to parse it or split by comma
+          try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+              converted.push({
+                year,
+                subjects: parsed.map(s => String(s)),
+              });
+            }
+          } catch {
+            // If parsing fails, treat as comma-separated string
+            converted.push({
+              year,
+              subjects: value.split(',').map(s => s.trim()).filter(Boolean),
+            });
+          }
+        }
+      }
+      
+      console.log('🔍 getCurriculum: Converted result:', converted);
+      return converted;
+    }
+    
+    console.log('🔍 getCurriculum: Unknown format, returning empty array');
+    return [];
   };
 
   const getCareerOutcomes = (): Array<{ role: string; percentage: number }> => {
-    if (!program?.career_outcomes) return [];
-    try {
-      if (Array.isArray(program.career_outcomes)) return program.career_outcomes;
-      if (typeof program.career_outcomes === 'string') {
-        return JSON.parse(program.career_outcomes);
-      }
-      return [];
-    } catch {
+    if (!program?.career_outcomes) {
+      console.log('🔍 getCareerOutcomes: No outcomes data');
       return [];
     }
+    
+    console.log('🔍 getCareerOutcomes: Raw input type:', typeof program.career_outcomes);
+    console.log('🔍 getCareerOutcomes: Raw input:', program.career_outcomes);
+    
+    let extractedArray: any[] = [];
+    
+    // Handle array directly (most common case)
+    if (Array.isArray(program.career_outcomes)) {
+      console.log('🔍 getCareerOutcomes: Input is array, length:', program.career_outcomes.length);
+      extractedArray = program.career_outcomes;
+    }
+    // Handle string (JSON)
+    else if (typeof program.career_outcomes === 'string') {
+      try {
+        const parsed = JSON.parse(program.career_outcomes);
+        console.log('🔍 getCareerOutcomes: Parsed from string:', parsed);
+        
+        if (Array.isArray(parsed)) {
+          extractedArray = parsed;
+        } else if (parsed && typeof parsed === 'object' && 'outcomes' in parsed && Array.isArray(parsed.outcomes)) {
+          extractedArray = parsed.outcomes;
+        } else if (parsed && typeof parsed === 'object') {
+          // Try to find any array in the object
+          const keys = Object.keys(parsed);
+          for (const key of keys) {
+            if (Array.isArray(parsed[key])) {
+              extractedArray = parsed[key];
+              break;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('🔍 getCareerOutcomes: JSON parse error:', error);
+        return [];
+      }
+    }
+    // Handle object (might be wrapped in {outcomes: [...]})
+    else if (typeof program.career_outcomes === 'object' && program.career_outcomes !== null) {
+      console.log('🔍 getCareerOutcomes: Processing object');
+      const careerObj = program.career_outcomes as Record<string, any>;
+      
+      if ('outcomes' in careerObj && Array.isArray(careerObj.outcomes)) {
+        extractedArray = careerObj.outcomes;
+      } else {
+        // Check if object values are arrays
+        const keys = Object.keys(careerObj);
+        for (const key of keys) {
+          if (Array.isArray(careerObj[key])) {
+            extractedArray = careerObj[key];
+            break;
+          }
+        }
+      }
+    }
+    
+    // Now convert the extracted array to the expected format
+    if (extractedArray.length === 0) {
+      console.log('🔍 getCareerOutcomes: No array extracted');
+      return [];
+    }
+    
+    console.log('🔍 getCareerOutcomes: Extracted array:', extractedArray);
+    console.log('🔍 getCareerOutcomes: First item type:', typeof extractedArray[0]);
+    
+    // Check if array items are strings (like ["Chartered Accountant", ...])
+    if (typeof extractedArray[0] === 'string') {
+      console.log('🔍 getCareerOutcomes: Converting string array to role objects');
+      // Convert string array to objects with role and default percentage
+      const converted = extractedArray.map((role, index) => ({
+        role: role,
+        percentage: 100 / extractedArray.length, // Distribute evenly
+      }));
+      console.log('🔍 getCareerOutcomes: Converted result:', converted);
+      return converted;
+    }
+    
+    // Check if array items are objects with role/percentage
+    if (typeof extractedArray[0] === 'object' && extractedArray[0] !== null) {
+      // Validate and convert to expected format
+      const converted = extractedArray.map((item, index) => {
+        if (item && typeof item === 'object') {
+          return {
+            role: item.role || item.name || `Career ${index + 1}`,
+            percentage: typeof item.percentage === 'number' ? item.percentage : 0,
+          };
+        }
+        return {
+          role: `Career ${index + 1}`,
+          percentage: 0,
+        };
+      });
+      console.log('🔍 getCareerOutcomes: Converted object array:', converted);
+      return converted;
+    }
+    
+    console.log('🔍 getCareerOutcomes: Unknown array item format');
+    return [];
   };
 
   const getFacilities = (): string[] => {
@@ -510,14 +655,11 @@ export default function ProgramDetail() {
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-6">Career Paths</h3>
                 {programData.careerOutcomes.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-2">
                     {programData.careerOutcomes.map((career, index) => (
-                    <div key={index} className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-foreground">{career.role}</span>
-                        <span className="text-sm font-medium text-muted-foreground">{career.percentage}%</span>
-                      </div>
-                      <Progress value={career.percentage} className="h-2" />
+                    <div key={index} className="flex items-center gap-2 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span className="text-sm text-foreground">{career.role}</span>
                     </div>
                   ))}
                 </div>

@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabaseClient";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { getUserRole } from "@/lib/auth/role";
+import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -32,13 +34,14 @@ const navigationItems = [
   { href: "/admin/universities", icon: Building2, label: "University Management" },
   { href: "/admin/programs", icon: BookOpen, label: "Program Management" },
   { href: "/admin/scholarships", icon: Award, label: "Scholarship Management" },
-  { href: "/admin/users", icon: Users, label: "User Management" },
   { href: "/admin/content", icon: FileText, label: "Content Management" },
+  { href: "/admin/users", icon: Users, label: "User Management" },
 ];
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminName, setAdminName] = useState("Administrator");
 
@@ -160,7 +163,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
 
         {/* Sidebar Footer - Fixed at Bottom */}
         <div className="border-t border-white/10 dark:border-slate-800/50 bg-white/5 dark:bg-slate-900/40 p-6 backdrop-blur-sm flex-shrink-0">
-          <div className="mb-4 flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500/80 to-purple-500/80 text-white shadow-lg flex-shrink-0">
               {adminName.charAt(0).toUpperCase()}
             </div>
@@ -169,14 +172,28 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
               <div className="text-sm text-muted-foreground">Administrator</div>
             </div>
           </div>
-          <div className="mb-3">
-            <ThemeToggle />
-          </div>
           <Button
             variant="ghost"
             onClick={async () => {
-              await supabase.auth.signOut();
-              router.push("/");
+              try {
+                // Clear Supabase session
+                await supabase.auth.signOut();
+                
+                // Clear user context
+                await logout();
+                
+                // Show success message
+                toast.success("Logged out successfully!");
+                
+                // Small delay to show toast before redirect
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Redirect to homepage
+                router.push("/");
+              } catch (err) {
+                console.error("Logout error", err);
+                toast.error("Error during logout. Please try again.");
+              }
             }}
             className="w-full justify-start text-muted-foreground hover:bg-white/20 dark:hover:bg-slate-800/50 hover:text-foreground hover:backdrop-blur-sm hover:shadow-md"
           >
@@ -201,6 +218,9 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                 <Menu className="h-5 w-5" />
               </Button>
               <h1 className="text-xl sm:text-2xl font-semibold text-foreground">{title || "Admin Dashboard"}</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
             </div>
           </div>
         </header>

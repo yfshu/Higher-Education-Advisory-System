@@ -23,18 +23,78 @@ export class AuthService {
 
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
     const authClient = this.supabaseService.getAuthClient();
+    const dbClient = this.supabaseService.getClient();
+    
+    // First, check if user exists and is banned/inactive BEFORE attempting login
+    // This allows us to give a better error message
+    try {
+      const { data: { users }, error: listError } = await dbClient.auth.admin.listUsers();
+      
+      if (!listError && users && users.length > 0) {
+        const user = users.find((u: any) => u.email?.toLowerCase() === dto.email.toLowerCase());
+        
+        if (user) {
+          // Check if user is banned/inactive
+          const isBanned = (user as any).banned_at !== null && (user as any).banned_at !== undefined;
+          const statusFromMetadata = (user.app_metadata as any)?.status;
+          const isInactive = isBanned || statusFromMetadata === 'inactive';
+          
+          if (isInactive) {
+            throw new UnauthorizedException('Your account is inactive. Please contact support for assistance.');
+          }
+        }
+      }
+    } catch (error) {
+      // If it's our custom inactive error, re-throw it
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      // Otherwise, continue with normal login flow (user might not exist, etc.)
+    }
+    
+    // Attempt login
     const { data, error } = await authClient.auth.signInWithPassword({
       email: dto.email,
       password: dto.password,
     });
 
     if (error || !data.user) {
+      // Check for specific password-related errors
+      const errorMessage = error?.message?.toLowerCase() || '';
+      
+      // Check if error is due to banned/inactive account
+      if (
+        errorMessage.includes('banned') ||
+        errorMessage.includes('inactive') ||
+        errorMessage.includes('disabled')
+      ) {
+        throw new UnauthorizedException('Your account is inactive. Please contact support for assistance.');
+      }
+      
+      // Common Supabase password error messages
+      if (
+        errorMessage.includes('invalid login credentials') ||
+        errorMessage.includes('invalid password') ||
+        errorMessage.includes('wrong password') ||
+        errorMessage.includes('incorrect password') ||
+        errorMessage.includes('email not confirmed') ||
+        error?.status === 400
+      ) {
+        throw new UnauthorizedException('Password is wrong or invalid. Please check your password and try again.');
+      }
+      
+      // Email not found
+      if (
+        errorMessage.includes('user not found')
+      ) {
+        throw new UnauthorizedException('Email not found. Please check your email address.');
+      }
+      
+      // Generic fallback
       throw new UnauthorizedException(
         error?.message ?? 'Invalid email or password.',
       );
     }
-
-    const dbClient = this.supabaseService.getClient();
     const userId = data.user.id;
     // Read role from app_metadata (set by Supabase Admin API), fallback to user_metadata, then default to 'student'
     const role = (data.user.app_metadata?.role as string) ?? (data.user.user_metadata?.role as string) ?? 'student';

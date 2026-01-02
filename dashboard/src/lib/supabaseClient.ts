@@ -26,7 +26,15 @@ function initializeClient(): Promise<SupabaseClient> {
       const { createBrowserClient } = module;
       supabaseInstance = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+          },
+        }
       );
       return supabaseInstance;
     }).catch((error) => {
@@ -48,6 +56,7 @@ export const supabase = new Proxy({} as Record<string, unknown>, {
         return {
           getSession: async () => ({ data: { session: null }, error: null }),
           getUser: async () => ({ data: { user: null }, error: null }),
+          refreshSession: async () => ({ data: { session: null }, error: null }),
           signOut: async () => ({ error: null }),
           onAuthStateChange: () => ({ data: { subscription: null }, error: null }),
           setSession: async () => ({ data: { session: null }, error: null }),
@@ -66,6 +75,10 @@ export const supabase = new Proxy({} as Record<string, unknown>, {
         getUser: async () => {
           const client = await initializeClient();
           return client.auth.getUser();
+        },
+        refreshSession: async () => {
+          const client = await initializeClient();
+          return client.auth.refreshSession();
         },
         signOut: async () => {
           const client = await initializeClient();

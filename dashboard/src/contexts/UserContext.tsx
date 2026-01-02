@@ -78,25 +78,37 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   // Sync with Supabase session and update role
   useEffect(() => {
     const syncSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Use getUser() instead of getSession() to verify token validity
+      const { data: { user }, error } = await supabase.auth.getUser();
       
-      if (session?.user) {
+      if (user && !error) {
         // Get role from app_metadata
-        const role = getUserRole(session.user);
+        const role = getUserRole(user);
         
-        // Update userData with current role from Supabase
+        // Get current session for tokens
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // Update userData with current role and tokens from Supabase
         setUserDataState((prev) => {
-          if (prev) {
+          if (prev && session) {
             return {
               ...prev,
               user: {
                 ...prev.user,
                 role,
+                id: user.id,
+                email: user.email || prev.user.email,
               },
+              accessToken: session.access_token,
+              refreshToken: session.refresh_token,
             };
           }
           return prev;
         });
+      } else if (error) {
+        // Token is invalid, clear user data
+        setUserDataState(null);
+        localStorage.removeItem("userData");
       }
     };
 
@@ -161,7 +173,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Clear Supabase session
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out from Supabase:', error);
+    }
+    // Clear local state
     setUserDataState(null);
     localStorage.removeItem("userData");
   };

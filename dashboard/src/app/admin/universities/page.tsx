@@ -173,7 +173,7 @@ export default function UniversityManagement() {
               Add, edit, and manage universities from Malaysian institutions.
             </p>
           </div>
-          <Button onClick={handleAddNew} className="bg-slate-700 hover:bg-slate-800 text-white">
+          <Button onClick={handleAddNew} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
             Add New University
           </Button>

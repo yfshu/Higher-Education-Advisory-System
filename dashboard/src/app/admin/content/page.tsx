@@ -27,6 +27,7 @@ import {
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import { DeleteContentDialog } from "@/components/admin/DeleteContentDialog";
+import { apiCall } from "@/lib/auth/apiClient";
 
 interface HelpSupportItem {
   id: number;
@@ -57,29 +58,33 @@ export default function ContentManagement() {
   });
 
   const handleRefresh = useCallback(async () => {
-    if (!userData?.accessToken) {
-      setError("User not authenticated. Please log in.");
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
-      const response = await fetch(`${backendUrl}/api/help/content?category=FAQ&t=${Date.now()}`, {
-        headers: {
-          Authorization: `Bearer ${userData.accessToken}`,
-          'Cache-Control': 'no-cache',
-        },
-        cache: 'no-store',
-      });
+      const result = await apiCall<{ success: boolean; data: HelpSupportItem[] }>(
+        `${backendUrl}/api/help/content?category=FAQ&t=${Date.now()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+          cache: 'no-store',
+        }
+      );
 
-      const result = await response.json();
+      if (result.error) {
+        if (result.error.code === 'SESSION_EXPIRED') {
+          // Session expiry is handled by SessionExpiredHandler
+          return;
+        }
+        setError(result.error.message);
+        return;
+      }
 
-      if (result.success && result.data) {
-        setFaqs(result.data);
+      if (result.data?.success && result.data.data) {
+        setFaqs(result.data.data);
       }
     } catch (err) {
       console.error("Error fetching FAQs:", err);
@@ -87,7 +92,7 @@ export default function ContentManagement() {
     } finally {
       setLoading(false);
     }
-  }, [userData?.accessToken]);
+  }, []);
 
   useEffect(() => {
     handleRefresh();
@@ -95,11 +100,6 @@ export default function ContentManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!userData?.accessToken) {
-      toast.error("Please log in to perform this action.");
-      return;
-    }
 
     try {
       setSubmitting(true);
@@ -111,30 +111,27 @@ export default function ContentManagement() {
         category: formData.category,
       };
 
-      let response;
-      if (editingItem) {
-        response = await fetch(`${backendUrl}/api/help/content/${editingItem.id}`, {
-          method: "PUT",
+      const url = editingItem 
+        ? `${backendUrl}/api/help/content/${editingItem.id}`
+        : `${backendUrl}/api/help/content`;
+      
+      const result = await apiCall<{ success: boolean; data: HelpSupportItem }>(
+        url,
+        {
+          method: editingItem ? "PUT" : "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${userData.accessToken}`,
           },
           body: JSON.stringify(payload),
-        });
-      } else {
-        response = await fetch(`${backendUrl}/api/help/content`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userData.accessToken}`,
-          },
-          body: JSON.stringify(payload),
-        });
-      }
+        }
+      );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save content");
+      if (result.error) {
+        if (result.error.code === 'SESSION_EXPIRED') {
+          // Session expiry is handled by SessionExpiredHandler
+          return;
+        }
+        throw new Error(result.error.message || "Failed to save FAQ");
       }
 
       toast.success(editingItem ? "FAQ updated successfully!" : "FAQ created successfully!");
@@ -146,8 +143,8 @@ export default function ContentManagement() {
         handleRefresh();
       }, 300);
     } catch (error) {
-      console.error("Error saving content:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to save content");
+      console.error("Error saving FAQ:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save FAQ");
     } finally {
       setSubmitting(false);
     }
@@ -252,7 +249,7 @@ export default function ContentManagement() {
           >
             <DialogTrigger asChild>
               <Button 
-                className="bg-slate-700 hover:bg-slate-800 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => {
                   resetForm();
                   setFormData(prev => ({ ...prev, category: 'FAQ' }));

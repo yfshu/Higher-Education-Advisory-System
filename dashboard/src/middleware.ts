@@ -41,32 +41,33 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // Get session
+  // Use getUser() instead of getSession() to verify token validity
   const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  console.log('[Middleware] Session check:', {
+  console.log('[Middleware] User check:', {
     pathname,
-    hasSession: !!session,
-    hasUser: !!session?.user,
-    error: sessionError?.message,
-    userId: session?.user?.id,
-    email: session?.user?.email,
+    hasUser: !!user,
+    error: userError?.message,
+    userId: user?.id,
+    email: user?.email,
   });
 
   // Admin route protection
   if (pathname.startsWith('/admin')) {
-    // If not authenticated, redirect to login
-    if (!session?.user) {
-      console.log('❌ [Middleware] No session for /admin, redirecting to login');
-      return NextResponse.redirect(new URL('/auth/login', req.url));
+    // If not authenticated, redirect to login with redirect param
+    if (!user || userError) {
+      console.log('❌ [Middleware] No user for /admin, redirecting to login');
+      const loginUrl = new URL('/auth/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
 
     // ✅ Get role from app_metadata (same pattern as backend)
-    const appMeta = parseAppMetadata(session.user.app_metadata);
-    const userMeta = parseUserMetadata(session.user.user_metadata);
+    const appMeta = parseAppMetadata(user.app_metadata);
+    const userMeta = parseUserMetadata(user.user_metadata);
 
     console.log('[Middleware] Parsed metadata:', {
       app_metadata_role: appMeta.role,
@@ -78,8 +79,8 @@ export async function middleware(req: NextRequest) {
 
     console.log('[Middleware] Role detection:', {
       role,
-      userId: session.user.id,
-      email: session.user.email,
+      userId: user.id,
+      email: user.email,
     });
 
     // Only admin can access /admin routes
@@ -94,21 +95,33 @@ export async function middleware(req: NextRequest) {
 
   // Student route protection (redirect admin users to /admin)
   if (pathname.startsWith('/student')) {
-    // If not authenticated, redirect to login
-    if (!session?.user) {
-      console.log('❌ [Middleware] No session for /student, redirecting to login');
-      return NextResponse.redirect(new URL('/auth/login', req.url));
+    // If not authenticated, redirect to login with redirect param
+    if (!user || userError) {
+      console.log('❌ [Middleware] No user for /student, redirecting to login');
+      const loginUrl = new URL('/auth/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
 
     // ✅ Get role from app_metadata
-    const appMeta = parseAppMetadata(session.user.app_metadata);
-    const userMeta = parseUserMetadata(session.user.user_metadata);
+    const appMeta = parseAppMetadata(user.app_metadata);
+    const userMeta = parseUserMetadata(user.user_metadata);
     const role = appMeta.role || userMeta.role || 'student';
 
-    // Admin users should go to /admin, not /student
-    if (role === 'admin') {
+    // Allow admin users to access program detail pages for viewing
+    // This allows admins to preview what students see
+    const isProgramDetailPage = pathname.startsWith('/student/program/') || 
+                                pathname.startsWith('/student/course/');
+    
+    if (role === 'admin' && !isProgramDetailPage) {
       console.log('❌ [Middleware] Admin user trying to access /student, redirecting to /admin');
       return NextResponse.redirect(new URL('/admin', req.url));
+    }
+
+    // If admin is accessing program detail page, allow it
+    if (role === 'admin' && isProgramDetailPage) {
+      console.log('✅ [Middleware] Admin viewing program detail page, allowing access');
+      return res;
     }
 
     console.log('✅ [Middleware] Student access granted to /student');

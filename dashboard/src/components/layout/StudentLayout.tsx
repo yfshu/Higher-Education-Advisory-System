@@ -29,6 +29,7 @@ import { supabase } from "@/lib/supabaseClient";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useUser } from "@/contexts/UserContext";
 import { getUserRole } from "@/lib/auth/role";
+import { toast } from "sonner";
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -58,13 +59,18 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
       }
       // Use role helper to get role from app_metadata
       const role = getUserRole(user);
-      if (role === "admin") {
-        // Admin users should not access student pages - redirect to admin
+      
+      // Allow admin users to view program detail pages
+      const isProgramDetailPage = pathname?.startsWith('/student/program/') || 
+                                  pathname?.startsWith('/student/course/');
+      
+      if (role === "admin" && !isProgramDetailPage) {
+        // Admin users should not access student pages (except program details) - redirect to admin
         router.replace("/admin");
       }
     };
     void ensureStudent();
-  }, [router]);
+  }, [router, pathname]);
 
   const userName = userData?.user?.fullName || "Student";
   const userEmail = userData?.user?.email || "";
@@ -111,8 +117,15 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map(name => caches.delete(name)));
       }
+      
+      // Show success message
+      toast.success("Logged out successfully!");
+      
+      // Small delay to show toast before redirect
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (err) {
       console.warn("Logout error", err);
+      toast.error("Error during logout. Please try again.");
     } finally {
       // Force redirect to homepage
       window.location.href = "/";

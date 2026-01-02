@@ -2,8 +2,11 @@ import {
   Controller,
   Get,
   Patch,
+  Put,
+  Delete,
   Param,
   Query,
+  Body,
   Req,
   HttpException,
   HttpStatus,
@@ -11,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { Request } from 'express';
 import { AuthGuard } from '../../guards/auth.guard';
 import { AuthenticatedRequest } from '../../supabase/types/express.d';
@@ -152,6 +156,109 @@ export class AdminController {
         {
           success: false,
           message: error.message || 'Failed to fetch recent programs',
+        },
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('users')
+  @ApiOperation({ summary: 'Get all users with pagination (admin only)' })
+  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  async getAllUsers(
+    @Req() req: Request,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    try {
+      const userId = this.extractUserId(req);
+      const userLimit = limit ? parseInt(limit, 10) : 50;
+      const userOffset = offset ? parseInt(offset, 10) : 0;
+      const result = await this.adminService.getAllUsers(userId, userLimit, userOffset);
+      return {
+        success: true,
+        data: result.users,
+        total: result.total,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to fetch users',
+        },
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('users/:id')
+  @ApiOperation({ summary: 'Get user by ID (admin only)' })
+  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  async getUserById(@Req() req: Request, @Param('id') id: string) {
+    try {
+      const userId = this.extractUserId(req);
+      const user = await this.adminService.getUserById(userId, id);
+      return {
+        success: true,
+        data: user,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to fetch user',
+        },
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put('users/:id')
+  @ApiOperation({ summary: 'Update user (admin only)' })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  async updateUser(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() updateDto: UpdateUserDto,
+  ) {
+    try {
+      const userId = this.extractUserId(req);
+      const user = await this.adminService.updateUser(userId, id, updateDto);
+      return {
+        success: true,
+        data: user,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to update user',
+        },
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Delete user (admin only)' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 403, description: 'Admin access required' })
+  async deleteUser(@Req() req: Request, @Param('id') id: string) {
+    try {
+      const userId = this.extractUserId(req);
+      const result = await this.adminService.deleteUser(userId, id);
+      return {
+        success: true,
+        data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message || 'Failed to delete user',
         },
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );

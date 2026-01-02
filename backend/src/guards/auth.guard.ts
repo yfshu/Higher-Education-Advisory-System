@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing or invalid authorization header');
+      throw new UnauthorizedException('SESSION_EXPIRED');
     }
 
     const token = authHeader.substring('Bearer '.length);
@@ -42,7 +42,7 @@ export class AuthGuard implements CanActivate {
       } = await userClient.auth.getUser();
 
       if (error || !user) {
-        throw new UnauthorizedException('Invalid or expired token');
+        throw new UnauthorizedException('SESSION_EXPIRED');
       }
 
       // Attach user to request object
@@ -52,7 +52,7 @@ export class AuthGuard implements CanActivate {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new UnauthorizedException('Authentication failed');
+      throw new UnauthorizedException('SESSION_EXPIRED');
     }
   }
 }

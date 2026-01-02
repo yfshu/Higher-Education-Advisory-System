@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/contexts/UserContext";
+import { toast } from "sonner";
 
 export default function LogoutPage() {
   const router = useRouter();
@@ -36,8 +37,15 @@ export default function LogoutPage() {
           const cacheNames = await caches.keys();
           await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
+        
+        // Show success message
+        toast.success("Logged out successfully!");
+        
+        // Small delay to show toast before redirect
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (err) {
         console.warn("Logout error", err);
+        toast.error("Error during logout. Please try again.");
       } finally {
         // Force redirect to homepage
         window.location.href = "/";
