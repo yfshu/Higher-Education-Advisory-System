@@ -23,8 +23,12 @@ import {
   Award,
   Globe,
   Phone,
-  Mail
+  Mail,
+  ArrowLeft,
+  Search
 } from "lucide-react";
+import Link from "next/link";
+import { ReactNode } from "react";
 import { useSavedItems } from "@/hooks/useSavedItems";
 
 interface Program {
@@ -157,7 +161,7 @@ export default function ProgramDetail() {
     }
   };
 
-  const getEntryRequirements = (): Record<string, string> => {
+  const getEntryRequirements = (): Record<string, any> => {
     if (!program?.entry_requirements) return {};
     try {
       if (typeof program.entry_requirements === 'string') {
@@ -170,6 +174,36 @@ export default function ProgramDetail() {
     } catch {
       return {};
     }
+  };
+
+  const renderRequirementValue = (value: any): ReactNode => {
+    if (typeof value === 'string' || typeof value === 'number') {
+      return String(value);
+    }
+    if (typeof value === 'object' && value !== null) {
+      if (Array.isArray(value)) {
+        return (
+          <ul className="list-disc list-inside ml-4 space-y-1">
+            {value.map((item, idx) => (
+              <li key={idx} className="text-sm">
+                {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      // Handle nested objects
+      return (
+        <ul className="list-disc list-inside ml-4 space-y-1">
+          {Object.entries(value).map(([key, val]) => (
+            <li key={key} className="text-sm">
+              <span className="font-medium">{key}:</span> {renderRequirementValue(val)}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    return String(value);
   };
 
   const getCurriculum = (): Array<{ year: number; subjects: string[] }> => {
@@ -354,16 +388,60 @@ export default function ProgramDetail() {
   };
 
   const getFacilities = (): string[] => {
-    if (!program?.facilities) return [];
-    try {
-      if (Array.isArray(program.facilities)) return program.facilities;
-      if (typeof program.facilities === 'string') {
-        return JSON.parse(program.facilities);
-      }
-      return [];
-    } catch {
+    if (!program?.facilities) {
+      console.log('🔍 getFacilities: No facilities data');
       return [];
     }
+    
+    console.log('🔍 getFacilities: Raw input type:', typeof program.facilities);
+    console.log('🔍 getFacilities: Raw input:', program.facilities);
+    
+    let parsedData: any = program.facilities;
+    
+    // Handle string (JSON)
+    if (typeof program.facilities === 'string') {
+      try {
+        parsedData = JSON.parse(program.facilities);
+        console.log('🔍 getFacilities: Parsed from string:', parsedData);
+      } catch {
+        // If JSON parsing fails, treat as comma-separated string
+        console.log('🔍 getFacilities: JSON parse failed, splitting by comma');
+        const split = program.facilities.split(',').map(f => f.trim()).filter(Boolean);
+        console.log('🔍 getFacilities: Split result:', split);
+        return split;
+      }
+    }
+    
+    // Handle array directly
+    if (Array.isArray(parsedData)) {
+      console.log('🔍 getFacilities: Input is array, length:', parsedData.length);
+      return parsedData.map(f => String(f));
+    }
+    
+    // Handle object format: {libraries: [...], laboratories: [...], ...}
+    if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData)) {
+      console.log('🔍 getFacilities: Input is object, extracting all facilities');
+      const allFacilities: string[] = [];
+      
+      // Iterate through all categories
+      Object.keys(parsedData).forEach((category) => {
+        const categoryFacilities = parsedData[category];
+        if (Array.isArray(categoryFacilities)) {
+          // Add all facilities from this category
+          categoryFacilities.forEach((facility: any) => {
+            if (facility && String(facility).trim()) {
+              allFacilities.push(String(facility).trim());
+            }
+          });
+        }
+      });
+      
+      console.log('🔍 getFacilities: Extracted facilities:', allFacilities);
+      return allFacilities;
+    }
+    
+    console.log('🔍 getFacilities: Unknown format, returning empty array');
+    return [];
   };
 
   const calculateMatchPercentage = (): number => {
@@ -434,17 +512,53 @@ export default function ProgramDetail() {
     }
   };
 
-  const handleShare = () => {
-    navigator.share?.({
-      title: programData.title,
-      text: `Check out this ${programData.type} program at ${programData.university}`,
-      url: window.location.href
-    });
+  const handleShare = async () => {
+    if (!navigator.share) {
+      // Fallback: copy to clipboard if Web Share API is not available
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        // You could show a toast here if you have a toast system
+        console.log('Link copied to clipboard');
+      } catch (err) {
+        console.error('Failed to copy link:', err);
+      }
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: programData.title,
+        text: `Check out this ${programData.type} program at ${programData.university}`,
+        url: window.location.href
+      });
+    } catch (err: any) {
+      // User canceled the share dialog - this is normal, not an error
+      if (err.name === 'AbortError' || err.message === 'Share canceled') {
+        // Silently handle cancel - this is expected behavior
+        return;
+      }
+      // Log other errors but don't show to user
+      console.error('Error sharing:', err);
+    }
   };
 
   return (
-    <StudentLayout title={programData.title}>
+    <StudentLayout>
       <div className="space-y-6">
+        {/* Back to Search Button */}
+        <div className="flex items-center">
+          <Button
+            asChild
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-800/50"
+          >
+            <Link href="/student/search">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Search Programs
+            </Link>
+          </Button>
+        </div>
+
         {/* Program Header */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg overflow-hidden">
           <div className="p-8">
@@ -541,12 +655,37 @@ export default function ProgramDetail() {
 
         {/* Program Details Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="backdrop-blur-sm bg-white/50 border border-white/20">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="requirements">Requirements</TabsTrigger>
-            <TabsTrigger value="careers">Career Outcomes</TabsTrigger>
-            <TabsTrigger value="facilities">Facilities</TabsTrigger>
+          <TabsList className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/20">
+            <TabsTrigger 
+              value="overview"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="curriculum"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              Curriculum
+            </TabsTrigger>
+            <TabsTrigger 
+              value="requirements"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              Requirements
+            </TabsTrigger>
+            <TabsTrigger 
+              value="careers"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              Career Outcomes
+            </TabsTrigger>
+            <TabsTrigger 
+              value="facilities"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              Facilities
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -632,13 +771,15 @@ export default function ProgramDetail() {
                     {Object.entries(programData.requirements).map(([key, value]) => (
                     <div key={key} className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4">
                       <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <div>
+                        <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-foreground mb-1 capitalize">
-                            {key.replace(/([A-Z])/g, ' $1')}
+                            {key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()}
                           </h4>
-                            <p className="text-muted-foreground">{value as string}</p>
+                          <div className="text-muted-foreground">
+                            {renderRequirementValue(value)}
                           </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -674,18 +815,29 @@ export default function ProgramDetail() {
             <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-6">Facilities & Resources</h3>
-                {programData.facilities.length > 0 ? (
-                <div className="grid md:grid-cols-2 gap-3">
-                    {programData.facilities.map((facility, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-muted-foreground">{facility}</span>
-                    </div>
-                  ))}
-                </div>
-                ) : (
-                  <p className="text-muted-foreground">No facilities information available.</p>
-                )}
+                {(() => {
+                  // Debug logging
+                  console.log('🔍 [Facilities Tab] Rendering facilities');
+                  console.log('  programData.facilities:', programData.facilities);
+                  console.log('  programData.facilities.length:', programData.facilities.length);
+                  console.log('  Raw program.facilities:', program?.facilities);
+                  
+                  if (programData.facilities.length > 0) {
+                    return (
+                      <div className="grid md:grid-cols-2 gap-3">
+                        {programData.facilities.map((facility, index) => (
+                          <div key={index} className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
+                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                            <span className="text-muted-foreground">{facility}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className="text-muted-foreground">No facilities information available.</p>
+                  );
+                })()}
               </div>
             </Card>
           </TabsContent>
@@ -711,12 +863,21 @@ export default function ProgramDetail() {
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
-                <Globe className="w-5 h-5 text-blue-600" />
-                <div>
+                <Globe className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
                   <p className="text-sm text-muted-foreground">Website</p>
-                  <a href={programData.contact.website} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline">
-                    {programData.contact.website}
-                  </a>
+                  {programData.contact.website !== 'Not Available' ? (
+                    <a 
+                      href={programData.contact.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="font-medium text-blue-600 hover:underline break-all word-break break-words"
+                    >
+                      {programData.contact.website}
+                    </a>
+                  ) : (
+                    <p className="font-medium text-foreground">Not Available</p>
+                  )}
                 </div>
               </div>
             </div>

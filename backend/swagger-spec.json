@@ -1681,6 +1681,45 @@
           "Fields"
         ]
       }
+    },
+    "/api/compare/ai-explain": {
+      "post": {
+        "operationId": "CompareController_generateAIExplanation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI explanation generated successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Generate AI explanation comparing two programs",
+        "tags": [
+          "Compare"
+        ]
+      }
     }
   },
   "info": {
@@ -3084,6 +3123,10 @@
             "example": true
           }
         }
+      },
+      "CompareRequestDto": {
+        "type": "object",
+        "properties": {}
       }
     }
   }

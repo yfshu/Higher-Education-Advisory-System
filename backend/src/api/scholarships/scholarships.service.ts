@@ -46,7 +46,8 @@ export class ScholarshipsService {
 
       // Apply filters
       if (filters?.studyLevel) {
-        query = query.contains('study_levels', [filters.studyLevel]);
+        // Filter by level field (lowercase: foundation, diploma, degree)
+        query = query.eq('level', filters.studyLevel.toLowerCase());
       }
 
       if (filters?.type) {
@@ -134,7 +135,7 @@ export class ScholarshipsService {
         .from('scholarships')
         .select('*')
         .eq('status', 'active')
-        .contains('study_levels', [level])
+        .eq('level', level.toLowerCase())
         .order('deadline', { ascending: true });
 
       if (error) {

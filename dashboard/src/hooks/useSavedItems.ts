@@ -52,14 +52,27 @@ export function useSavedItems(): UseSavedItemsReturn {
       }
 
       const result = await response.json();
-      if (result.success && result.data) {
+      if (result.success) {
         // Create a map with composite keys: `${itemType}:${itemId}`
         const savedMap = new Map<string, boolean>();
-        result.data.forEach((item: { item_type: ItemType; item_id: number }) => {
-          const key = getKey(item.item_type, item.item_id);
-          savedMap.set(key, true);
+        if (result.data && Array.isArray(result.data)) {
+          result.data.forEach((item: { item_type: ItemType; item_id: number }) => {
+            const key = getKey(item.item_type, item.item_id);
+            savedMap.set(key, true);
+          });
+        }
+        console.log('🔍 useSavedItems: Fetched saved items:', {
+          success: result.success,
+          dataLength: result.data?.length || 0,
+          items: result.data || [],
+          mapKeys: Array.from(savedMap.keys()),
+          scholarshipCount: Array.from(savedMap.keys()).filter(k => k.startsWith('scholarship:')).length
         });
         setSavedItems(savedMap);
+      } else {
+        // If unsuccessful, set empty map
+        console.log('🔍 useSavedItems: Unsuccessful response:', result);
+        setSavedItems(new Map());
       }
     } catch (error) {
       console.error('Error fetching saved items:', error);

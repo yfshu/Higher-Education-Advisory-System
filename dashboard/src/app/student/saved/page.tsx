@@ -30,7 +30,10 @@ import {
   AlertCircle,
   Search,
   Award,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import { supabase } from "@/lib/supabaseClient";
 import { useSavedItems } from "@/hooks/useSavedItems";
 
@@ -88,6 +91,9 @@ export default function SavedItems() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [programPage, setProgramPage] = useState(1);
+  const [scholarshipPage, setScholarshipPage] = useState(1);
+  const itemsPerPage = 5;
   const { toggleSave, refreshSavedItems } = useSavedItems();
 
   // Fetch saved items on mount
@@ -279,6 +285,18 @@ export default function SavedItems() {
     }
   });
 
+  // Pagination for programs
+  const totalProgramPages = Math.ceil(sortedPrograms.length / itemsPerPage);
+  const paginatedPrograms = sortedPrograms.slice(
+    (programPage - 1) * itemsPerPage,
+    programPage * itemsPerPage
+  );
+
+  // Reset program page when sort changes
+  useEffect(() => {
+    setProgramPage(1);
+  }, [programSortBy]);
+
   const sortedScholarships = [...savedScholarships].sort((a, b) => {
     switch (scholarshipSortBy) {
       case "deadline":
@@ -324,6 +342,18 @@ export default function SavedItems() {
     return true;
   });
 
+  // Pagination for scholarships
+  const totalScholarshipPages = Math.ceil(filteredScholarships.length / itemsPerPage);
+  const paginatedScholarships = filteredScholarships.slice(
+    (scholarshipPage - 1) * itemsPerPage,
+    scholarshipPage * itemsPerPage
+  );
+
+  // Reset scholarship page when sort or filter changes
+  useEffect(() => {
+    setScholarshipPage(1);
+  }, [scholarshipSortBy, scholarshipFilterBy]);
+
   return (
     <StudentLayout title="Saved Items">
       <div className="space-y-6">
@@ -347,8 +377,7 @@ export default function SavedItems() {
               <div className="flex items-center gap-3">
                 <Button
                   asChild
-                  variant="outline"
-                  className="backdrop-blur-sm bg-white/50 border-white/30"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
                 >
                   <Link href="/student/search">
                     <Search className="w-4 h-4 mr-2" />
@@ -357,7 +386,7 @@ export default function SavedItems() {
                 </Button>
                 <Button
                   asChild
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all"
                 >
                   <Link href="/student/scholarships">
                     <Award className="w-4 h-4 mr-2" />
@@ -370,36 +399,42 @@ export default function SavedItems() {
         </Card>
 
         {/* Summary Statistics */}
-        <div className="grid md:grid-cols-4 gap-4">
-          <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-4">
-            <div className="flex items-center gap-3">
-              <GraduationCap className="w-8 h-8 text-blue-600" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-lg hover:shadow-xl transition-all p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
               <div>
-                <p className="text-2xl font-semibold text-foreground">
+                <p className="text-3xl font-bold text-foreground">
                   {savedPrograms.length}
                 </p>
-                <p className="text-sm text-muted-foreground">Saved Programs</p>
+                <p className="text-sm text-muted-foreground font-medium">Saved Programs</p>
               </div>
             </div>
           </Card>
-          <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-4">
-            <div className="flex items-center gap-3">
-              <Award className="w-8 h-8 text-yellow-600" />
+          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-lg hover:shadow-xl transition-all p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center">
+                <Award className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
               <div>
-                <p className="text-2xl font-semibold text-foreground">
+                <p className="text-3xl font-bold text-foreground">
                   {savedScholarships.length}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-medium">
                   Saved Scholarships
                 </p>
               </div>
             </div>
           </Card>
-          <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-4">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-8 h-8 text-red-600" />
+          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-lg hover:shadow-xl transition-all p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
               <div>
-                <p className="text-2xl font-semibold text-foreground">
+                <p className="text-3xl font-bold text-foreground">
                   {
                     [...savedPrograms, ...savedScholarships].filter((item) => {
                       if (!item.deadline) return false;
@@ -412,17 +447,19 @@ export default function SavedItems() {
                     }).length
                   }
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-medium">
                   Urgent Deadlines
                 </p>
               </div>
             </div>
           </Card>
-          <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg p-4">
-            <div className="flex items-center gap-3">
-              <Star className="w-8 h-8 text-purple-600" />
+          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-lg hover:shadow-xl transition-all p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                <Star className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
               <div>
-                <p className="text-2xl font-semibold text-foreground">
+                <p className="text-3xl font-bold text-foreground">
                   {(() => {
                     const allRatings = [
                       ...savedPrograms
@@ -439,7 +476,7 @@ export default function SavedItems() {
                     return avgRating.toFixed(1);
                   })()}
                 </p>
-                <p className="text-sm text-muted-foreground">Avg Rating</p>
+                <p className="text-sm text-muted-foreground font-medium">Avg Rating</p>
               </div>
             </div>
           </Card>
@@ -505,7 +542,13 @@ export default function SavedItems() {
 
             {/* Programs List */}
             <div className="space-y-4">
-              {sortedPrograms.length === 0 ? (
+              {paginatedPrograms.length === 0 && sortedPrograms.length > 0 ? (
+                <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-lg">
+                  <div className="p-12 text-center">
+                    <p className="text-muted-foreground">No programs on this page.</p>
+                  </div>
+                </Card>
+              ) : sortedPrograms.length === 0 ? (
                 <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
                   <div className="p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -530,7 +573,7 @@ export default function SavedItems() {
                   </div>
                 </Card>
               ) : (
-                sortedPrograms.map((program) => {
+                paginatedPrograms.map((program) => {
                   const location = program.university
                     ? [program.university.city, program.university.state]
                         .filter(Boolean)
@@ -633,22 +676,94 @@ export default function SavedItems() {
                 })
               )}
             </div>
+
+            {/* Programs Pagination */}
+            {totalProgramPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (programPage > 1) setProgramPage(programPage - 1);
+                        }}
+                        className={programPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalProgramPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalProgramPages ||
+                        (page >= programPage - 1 && page <= programPage + 1)
+                      ) {
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setProgramPage(page);
+                              }}
+                              isActive={programPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      } else if (
+                        page === programPage - 2 ||
+                        page === programPage + 2
+                      ) {
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (programPage < totalProgramPages) setProgramPage(programPage + 1);
+                        }}
+                        className={programPage === totalProgramPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+
+            {/* Programs count */}
+            {paginatedPrograms.length > 0 && (
+              <div className="text-center text-sm text-muted-foreground mt-4">
+                Showing {(programPage - 1) * itemsPerPage + 1} -{" "}
+                {Math.min(programPage * itemsPerPage, sortedPrograms.length)}{" "}
+                of {sortedPrograms.length} program{sortedPrograms.length !== 1 ? 's' : ''}
+              </div>
+            )}
           </TabsContent>
 
           {/* Scholarships Tab */}
           <TabsContent value="scholarships" className="space-y-6 mt-6">
             {/* Scholarship Controls */}
-            <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+            <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-lg">
+              <div className="p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                     <div className="flex items-center gap-2">
-                      <SortAsc className="w-4 h-4 text-gray-500" />
+                      <SortAsc className="w-5 h-5 text-muted-foreground" />
                       <Select
                         value={scholarshipSortBy}
                         onValueChange={setScholarshipSortBy}
                       >
-                        <SelectTrigger className="w-48 backdrop-blur-sm bg-white/50 border-white/30">
+                        <SelectTrigger className="w-48 sm:w-56 h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -666,12 +781,12 @@ export default function SavedItems() {
                       </Select>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 text-muted-foreground" />
+                      <Filter className="w-5 h-5 text-muted-foreground" />
                       <Select
                         value={scholarshipFilterBy}
                         onValueChange={setScholarshipFilterBy}
                       >
-                        <SelectTrigger className="w-48 backdrop-blur-sm bg-white/50 border-white/30">
+                        <SelectTrigger className="w-48 sm:w-56 h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -689,23 +804,30 @@ export default function SavedItems() {
                       </Select>
                     </div>
                   </div>
-                  {selectedScholarships.length > 0 && (
-                    <Button
-                      variant="destructive"
-                      onClick={removeSelectedScholarships}
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Remove Selected ({selectedScholarships.length})
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {selectedScholarships.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        onClick={removeSelectedScholarships}
+                        className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
+                        size="sm"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Remove ({selectedScholarships.length})
+                      </Button>
+                    )}
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {filteredScholarships.length} scholarship
+                      {filteredScholarships.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
                 </div>
               </div>
             </Card>
 
             {/* Scholarships List */}
             <div className="space-y-4">
-              {filteredScholarships.length === 0 ? (
+              {paginatedScholarships.length === 0 ? (
                 <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
                   <div className="p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -731,7 +853,7 @@ export default function SavedItems() {
                   </div>
                 </Card>
               ) : (
-                filteredScholarships.map((scholarship) => {
+                paginatedScholarships.map((scholarship) => {
                   const formatAmount = (amount: number | null): string => {
                     if (!amount) return "Not specified";
                     return `RM ${amount.toLocaleString()}`;
@@ -783,20 +905,20 @@ export default function SavedItems() {
                               </Button>
                             </div>
 
-                            <div className="flex items-center gap-2 text-muted-foreground mb-3">
-                              <Building2 className="w-4 h-4" />
-                              <span>
-                                {scholarship.organization_name ||
-                                  "Not specified"}
-                              </span>
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-muted-foreground mb-3">
+                              <div className="flex items-center gap-1.5">
+                                <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <span className="font-medium">
+                                  {scholarship.organization_name ||
+                                    "Not specified"}
+                                </span>
+                              </div>
                               {scholarship.type && (
                                 <>
-                                  <span className="text-muted-foreground">
-                                    •
-                                  </span>
+                                  <span className="text-muted-foreground">•</span>
                                   <Badge
                                     variant="secondary"
-                                    className="text-xs"
+                                    className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
                                   >
                                     {scholarship.type}
                                   </Badge>
@@ -805,31 +927,31 @@ export default function SavedItems() {
                             </div>
 
                             {scholarship.description && (
-                              <p className="text-muted-foreground mb-4">
+                              <p className="text-muted-foreground mb-4 text-sm line-clamp-2">
                                 {scholarship.description}
                               </p>
                             )}
 
-                            <div className="grid md:grid-cols-4 gap-4 mb-4">
-                              <div className="flex items-center gap-2">
-                                <DollarSign className="w-4 h-4 text-green-600" />
-                                <div>
-                                  <p className="text-sm text-muted-foreground">
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                              <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-muted-foreground">
                                     Amount
                                   </p>
-                                  <p className="font-medium text-foreground">
+                                  <p className="font-semibold text-foreground text-sm">
                                     {formatAmount(scholarship.amount)}
                                   </p>
                                 </div>
                               </div>
                               {scholarship.deadline && (
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="w-4 h-4 text-red-600" />
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                                  <Calendar className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-xs text-muted-foreground">
                                       Deadline
                                     </p>
-                                    <p className="font-medium text-foreground">
+                                    <p className="font-semibold text-foreground text-sm">
                                       {new Date(
                                         scholarship.deadline
                                       ).toLocaleDateString()}
@@ -838,26 +960,26 @@ export default function SavedItems() {
                                 </div>
                               )}
                               {scholarship.location && (
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="w-4 h-4 text-purple-600" />
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                  <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-xs text-muted-foreground">
                                       Location
                                     </p>
-                                    <p className="font-medium text-foreground">
+                                    <p className="font-semibold text-foreground text-sm truncate">
                                       {scholarship.location}
                                     </p>
                                   </div>
                                 </div>
                               )}
                               {scholarship.applicant_count !== null && (
-                                <div className="flex items-center gap-2">
-                                  <Users className="w-4 h-4 text-blue-600" />
-                                  <div>
-                                    <p className="text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-xs text-muted-foreground">
                                       Applicants
                                     </p>
-                                    <p className="font-medium text-foreground">
+                                    <p className="font-semibold text-foreground text-sm">
                                       {scholarship.applicant_count.toLocaleString()}
                                       +
                                     </p>
@@ -866,34 +988,37 @@ export default function SavedItems() {
                               )}
                             </div>
 
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-gray-200 dark:border-slate-700">
+                              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                                 {scholarship.rating !== null &&
                                   scholarship.rating !== undefined && (
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1.5">
                                       <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                                      <span className="text-sm font-medium text-foreground">
+                                      <span className="text-sm font-semibold text-foreground">
                                         {scholarship.rating.toFixed(1)}
                                       </span>
                                       {scholarship.review_count && (
-                                        <span className="text-sm text-muted-foreground">
+                                        <span className="text-xs text-muted-foreground">
                                           ({scholarship.review_count} reviews)
                                         </span>
                                       )}
                                     </div>
                                   )}
                                 {scholarship.saved_at && (
-                                  <span className="text-sm text-muted-foreground">
-                                    Saved on{" "}
-                                    {new Date(
-                                      scholarship.saved_at
-                                    ).toLocaleDateString()}
-                                  </span>
+                                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>
+                                      Saved on{" "}
+                                      {new Date(
+                                        scholarship.saved_at
+                                      ).toLocaleDateString()}
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                               <Button
                                 asChild
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
                               >
                                 <Link
                                   href={`/student/scholarship/${scholarship.id}`}
@@ -911,6 +1036,78 @@ export default function SavedItems() {
                 })
               )}
             </div>
+
+            {/* Scholarships Pagination */}
+            {totalScholarshipPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (scholarshipPage > 1) setScholarshipPage(scholarshipPage - 1);
+                        }}
+                        className={scholarshipPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalScholarshipPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalScholarshipPages ||
+                        (page >= scholarshipPage - 1 && page <= scholarshipPage + 1)
+                      ) {
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setScholarshipPage(page);
+                              }}
+                              isActive={scholarshipPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      } else if (
+                        page === scholarshipPage - 2 ||
+                        page === scholarshipPage + 2
+                      ) {
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (scholarshipPage < totalScholarshipPages) setScholarshipPage(scholarshipPage + 1);
+                        }}
+                        className={scholarshipPage === totalScholarshipPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+
+            {/* Scholarships count */}
+            {paginatedScholarships.length > 0 && (
+              <div className="text-center text-sm text-muted-foreground mt-4">
+                Showing {(scholarshipPage - 1) * itemsPerPage + 1} -{" "}
+                {Math.min(scholarshipPage * itemsPerPage, filteredScholarships.length)}{" "}
+                of {filteredScholarships.length} scholarship{filteredScholarships.length !== 1 ? 's' : ''}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

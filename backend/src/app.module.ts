@@ -11,6 +11,7 @@ import { SavedItemsModule } from './api/saved-items/saved-items.module';
 import { HelpModule } from './api/help/help.module';
 import { AdminModule } from './api/admin/admin.module';
 import { FieldsModule } from './api/fields/fields.module';
+import { CompareModule } from './api/compare/compare.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { FieldsModule } from './api/fields/fields.module';
     HelpModule,
     AdminModule,
     FieldsModule,
+    CompareModule,
   ],
   controllers: [AppController],
   providers: [AppService],

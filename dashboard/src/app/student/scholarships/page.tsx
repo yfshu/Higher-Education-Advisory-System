@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import StudentLayout from "@/components/layout/StudentLayout";
 import { Card } from "@/components/ui/card";
@@ -21,8 +22,13 @@ import {
   Bookmark,
   BookmarkCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Filter,
+  X,
+  Award,
+  BookMarked,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { useSavedItems } from "@/hooks/useSavedItems";
 
 interface Scholarship {
@@ -60,45 +66,73 @@ export default function ScholarshipSearch() {
   const [filters, setFilters] = useState({
     type: 'all',
     level: 'all',
-    field: 'all',
-    amount: 'all',
-    organization: 'all',
-    location: 'all'
+    amount: 'all'
   });
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [mounted, setMounted] = useState(false);
   const scholarshipsPerPage = 5;
-  const { isItemSaved, toggleSave, savedItems } = useSavedItems();
+  const { isItemSaved, toggleSave, savedItems, isLoading: savedItemsLoading, refreshSavedItems } = useSavedItems();
   
-  // Count saved scholarships
-  const savedScholarshipsCount = Array.from(savedItems.keys()).filter(key => key.startsWith('scholarship:')).length;
+  // Count saved scholarships - only count when mounted and items are loaded
+  const savedScholarshipsCount = useMemo(() => {
+    // Always return 0 if not mounted or still loading
+    if (!mounted || savedItemsLoading) {
+      return 0;
+    }
+    // Return 0 if savedItems is empty, undefined, or null
+    if (!savedItems || savedItems.size === 0 || !(savedItems instanceof Map)) {
+      return 0;
+    }
+    // Filter for scholarship keys only and count them
+    try {
+      const allKeys = Array.from(savedItems.keys());
+      const scholarshipKeys = allKeys.filter(key => {
+        if (!key || typeof key !== 'string') return false;
+        return key.startsWith('scholarship:');
+      });
+      const count = scholarshipKeys.length;
+      // Always log for debugging
+      console.log('🔍 ScholarshipSearch: Saved items count calculation:', {
+        mounted,
+        savedItemsLoading,
+        savedItemsSize: savedItems.size,
+        allKeys,
+        scholarshipKeys,
+        count
+      });
+      return count;
+    } catch (error) {
+      console.error('Error counting saved scholarships:', error);
+      return 0;
+    }
+  }, [savedItems, mounted, savedItemsLoading]);
+  
+  // Fix hydration issue
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Refresh saved items when component mounts to get latest data from database
+  useEffect(() => {
+    if (mounted && !savedItemsLoading) {
+      console.log('🔄 Refreshing saved items to get latest data...');
+      refreshSavedItems();
+    }
+  }, [mounted]); // Only run when mounted changes, not on every savedItemsLoading change
 
   const scholarshipTypes = [
     'Merit-based',
     'Need-based',
-    'Academic',
-    'Other'
+    'Academic'
   ];
 
   const educationLevels = [
     'Foundation',
     'Diploma', 
     'Bachelor\'s Degree'
-  ];
-
-  const fieldOptions = [
-    'Computer Science & IT',
-    'Engineering', 
-    'Medicine & Health Sciences',
-    'Business & Management',
-    'Pure Sciences',
-    'Arts & Humanities',
-    'Social Sciences',
-    'Education',
-    'Law',
-    'Architecture & Built Environment'
   ];
 
   // Fetch scholarships from backend
@@ -126,10 +160,6 @@ export default function ScholarshipSearch() {
             params.append('studyLevel', levelMap[filters.level]);
           }
         }
-        if (filters.location !== 'all') {
-          params.append('location', filters.location);
-        }
-        
         const queryString = params.toString();
         const url = `${backendUrl}/api/scholarships${queryString ? `?${queryString}` : ''}`;
         
@@ -158,7 +188,7 @@ export default function ScholarshipSearch() {
 
     fetchScholarships();
     setCurrentPage(1); // Reset to first page when filters change
-  }, [filters.type, filters.level, filters.location]);
+  }, [filters.type, filters.level, filters.amount]);
 
   // Helper functions
   const formatAmount = (amount: number | null): string => {
@@ -203,27 +233,31 @@ export default function ScholarshipSearch() {
     // Type filter (already handled by backend API)
     const matchesType = filters.type === 'all' || scholarship.type === filters.type;
     
-    // Level filter (already handled by backend API, skip client-side check)
-    const matchesLevel = true; // Backend already filters by study level
+    // Level filter - check the level field (singular, lowercase)
+    const matchesLevel = filters.level === 'all' || (() => {
+      if (!scholarship.level) {
+        return false; // If no level specified, don't show unless "all" is selected
+      }
+      const levelMap: Record<string, string> = {
+        'Foundation': 'foundation',
+        'Diploma': 'diploma',
+        'Bachelor\'s Degree': 'degree'
+      };
+      const backendLevel = levelMap[filters.level];
+      if (!backendLevel) return true; // If level not in map, show it
+      return scholarship.level.toLowerCase() === backendLevel.toLowerCase();
+    })();
     
-    // Field filter (not yet implemented in backend, skip for now)
-    const matchesField = true; // filters.field === 'all' || ...
-    
-    // Amount filter
+    // Amount filter - simplified
     const matchesAmount = filters.amount === 'all' || (() => {
-      if (!scholarship.amount) return false;
+      if (!scholarship.amount) return filters.amount === 'any'; // Show scholarships without amount if "Any" is selected
       if (filters.amount === 'partial') return scholarship.amount < 100000;
       if (filters.amount === 'full') return scholarship.amount >= 100000;
-      if (filters.amount === '50k') return scholarship.amount > 0 && scholarship.amount <= 50000;
-      if (filters.amount === '100k') return scholarship.amount > 50000 && scholarship.amount <= 100000;
-      if (filters.amount === '150k') return scholarship.amount > 100000;
+      if (filters.amount === 'any') return true; // Show all including those without amount
       return true;
     })();
     
-    // Location filter (already handled by backend API, skip client-side check)
-    const matchesLocation = true; // Backend already filters by location
-    
-    return matchesSearch && matchesType && matchesLevel && matchesField && matchesAmount && matchesLocation;
+    return matchesSearch && matchesType && matchesLevel && matchesAmount;
   });
 
   // Pagination
@@ -233,128 +267,152 @@ export default function ScholarshipSearch() {
     currentPage * scholarshipsPerPage
   );
 
+  const resetFilters = () => {
+    setFilters({
+      type: 'all',
+      level: 'all',
+      amount: 'all'
+    });
+  };
+
   return (
     <StudentLayout title="Scholarship Search">
       <div className="space-y-6">
         {/* Search Header */}
-        <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-foreground">Scholarship Opportunities</h1>
-                <p className="text-muted-foreground">Discover funding opportunities from Malaysian organizations</p>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="flex gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <Input
-                  type="text"
-                  placeholder="Search scholarships, organizations, or fields..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 backdrop-blur-sm bg-white/50 border-white/30"
-                />
-              </div>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Search className="w-4 h-4 mr-2" />
-                Search
-              </Button>
-            </div>
-
-            {/* Filters */}
-            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <Select value={filters.type} onValueChange={(value) => setFilters({...filters, type: value})}>
-                <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
-                  <SelectValue placeholder="Scholarship Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {scholarshipTypes.map(type => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={filters.level} onValueChange={(value) => setFilters({...filters, level: value})}>
-                <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
-                  <SelectValue placeholder="Education Level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Levels</SelectItem>
-                  {educationLevels.map(level => (
-                    <SelectItem key={level} value={level}>{level}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={filters.field} onValueChange={(value) => setFilters({...filters, field: value})}>
-                <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
-                  <SelectValue placeholder="Field of Study" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Fields</SelectItem>
-                  {fieldOptions.map(field => (
-                    <SelectItem key={field} value={field}>{field}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={filters.amount} onValueChange={(value) => setFilters({...filters, amount: value})}>
-                <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
-                  <SelectValue placeholder="Amount Range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any Amount</SelectItem>
-                  <SelectItem value="partial">Partial Coverage</SelectItem>
-                  <SelectItem value="full">Full Coverage</SelectItem>
-                  <SelectItem value="50k">Up to RM 50,000</SelectItem>
-                  <SelectItem value="100k">Up to RM 100,000</SelectItem>
-                  <SelectItem value="150k">RM 100,000+</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filters.location} onValueChange={(value) => setFilters({...filters, location: value})}>
-                <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
-                  <SelectValue placeholder="Study Location" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Any Location</SelectItem>
-                  <SelectItem value="local">Malaysia Only</SelectItem>
-                  <SelectItem value="overseas">Overseas Only</SelectItem>
-                  <SelectItem value="both">Local & Overseas</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button 
-                variant="outline" 
-                onClick={() => setFilters({type: 'all', level: 'all', field: 'all', amount: 'all', organization: 'all', location: 'all'})}
-                className="backdrop-blur-sm bg-white/50 border-white/30"
-              >
-                Clear Filters
-              </Button>
-            </div>
+        <div className="backdrop-blur-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-white/20 rounded-2xl p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">
+            Find Your Perfect Scholarship Opportunity
+          </h2>
+          <div className="relative">
+            <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
+            <Input
+              type="text"
+              placeholder="Search scholarships, organizations, or fields..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 backdrop-blur-sm bg-white/50 border-white/30"
+            />
           </div>
-        </Card>
-
-        {/* Results Summary */}
-        <div className="flex items-center justify-between">
-          <p className="text-muted-foreground">
-            Showing {filteredScholarships.length} scholarship{filteredScholarships.length !== 1 ? 's' : ''}
-            {searchQuery && ` for "${searchQuery}"`}
-          </p>
-          <Button asChild variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
-            <Link href="/student/saved">
-              <Bookmark className="w-4 h-4 mr-2" />
-              Saved ({savedScholarshipsCount})
-            </Link>
-          </Button>
         </div>
+
+        {/* Main Content: Sidebar + Results */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Sidebar - Filters */}
+          <aside className="w-full lg:w-80 flex-shrink-0">
+            <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-xl sticky top-6">
+              <div className="p-5 sm:p-6">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-slate-700">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Filter className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    Filters
+                  </h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={resetFilters} 
+                    className="text-xs h-7 px-2 hover:bg-gray-100 dark:hover:bg-slate-800"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear All
+                  </Button>
+                </div>
+
+                {mounted && (
+                  <div className="space-y-5">
+                    {/* Scholarship Type Filter */}
+                    <div className="space-y-2.5">
+                      <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        Scholarship Type
+                      </Label>
+                      <Select value={filters.type} onValueChange={(value) => setFilters({...filters, type: value})}>
+                        <SelectTrigger className="h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                          <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          {scholarshipTypes.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Education Level Filter */}
+                    <div className="space-y-2.5">
+                      <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        Education Level
+                      </Label>
+                      <Select value={filters.level} onValueChange={(value) => setFilters({...filters, level: value})}>
+                        <SelectTrigger className="h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                          <SelectValue placeholder="All Levels" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Levels</SelectItem>
+                          {educationLevels.map(level => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Amount Filter */}
+                    <div className="space-y-2.5">
+                      <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        Scholarship Amount
+                      </Label>
+                      <Select value={filters.amount} onValueChange={(value) => setFilters({...filters, amount: value})}>
+                        <SelectTrigger className="h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                          <SelectValue placeholder="Any Amount" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Any Amount</SelectItem>
+                          <SelectItem value="partial">Partial Coverage</SelectItem>
+                          <SelectItem value="full">Full Coverage</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                )}
+              </div>
+            </Card>
+          </aside>
+
+          {/* Right Side - Results */}
+          <div className="flex-1 space-y-6">
+            {/* Results Summary */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
+              <div className="flex items-center gap-2">
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Total <span className="font-bold text-foreground text-lg">{filteredScholarships.length}</span> scholarship{filteredScholarships.length !== 1 ? 's' : ''}
+                  {searchQuery && ` for "${searchQuery}"`}
+                </p>
+              </div>
+              {mounted && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      console.log('🔄 Manually refreshing saved items...');
+                      refreshSavedItems();
+                    }}
+                    className="h-8 px-2 text-xs"
+                    title="Refresh saved items"
+                  >
+                    ↻
+                  </Button>
+                  <Button asChild variant="outline" className="backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800">
+                    <Link href="/student/saved">
+                      <Bookmark className="w-4 h-4 mr-2" />
+                      Saved ({savedScholarshipsCount})
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
 
         {/* Loading State */}
         {loading && (
@@ -561,7 +619,7 @@ export default function ScholarshipSearch() {
               <Button 
                 onClick={() => {
                   setSearchQuery('');
-                  setFilters({type: 'all', level: 'all', field: 'all', amount: 'all', organization: 'all', location: 'all'});
+                  resetFilters();
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
@@ -570,6 +628,8 @@ export default function ScholarshipSearch() {
             </div>
           </Card>
         )}
+          </div>
+        </div>
       </div>
     </StudentLayout>
   );

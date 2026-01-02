@@ -23,8 +23,14 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
+  X,
+  Filter,
+  DollarSign,
+  BookMarked,
 } from "lucide-react";
 import { useSavedItems } from "@/hooks/useSavedItems";
+import { useCompare } from "@/contexts/CompareContext";
+import { Scale } from "lucide-react";
 
 interface Program {
   id: number;
@@ -51,21 +57,27 @@ interface Program {
 
 export default function SearchPrograms() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [filters, setFilters] = useState({
     location: 'all',
     programType: 'all',
     field: 'all',
     duration: '',
-    tuitionRange: [0, 5000],
+    tuitionRange: [0, 200000],
     startDate: ''
   });
-  const [programs, setPrograms] = useState<Program[]>([]);
+  
+  // Calculate max tuition from programs to set proper default range
+  const maxTuition = programs.length > 0 
+    ? Math.max(...programs.map(p => p.tuition_fee_amount || 0), 200000)
+    : 200000;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('relevance');
   const programsPerPage = 6;
   const { isItemSaved, toggleSave } = useSavedItems();
+  const { addProgram, isSelected, canCompare, selectedPrograms } = useCompare();
 
   // Fetch programs from backend
   useEffect(() => {
@@ -85,6 +97,7 @@ export default function SearchPrograms() {
         
         if (result.success && result.data) {
           console.log(`✅ Fetched ${result.data.length} programs from backend`);
+          console.log('Sample program data:', result.data[0]);
           setPrograms(result.data);
         } else {
           throw new Error('Invalid response format');
@@ -168,8 +181,8 @@ export default function SearchPrograms() {
     // Enhanced search: search in name, university, description, and tags
     const searchLower = searchTerm.toLowerCase().trim();
     const matchesSearch = !searchLower || (() => {
-      const nameMatch = program.name.toLowerCase().includes(searchLower);
-      const universityMatch = program.university?.name.toLowerCase().includes(searchLower) ?? false;
+      const nameMatch = program.name?.toLowerCase().includes(searchLower) ?? false;
+      const universityMatch = program.university?.name?.toLowerCase().includes(searchLower) ?? false;
       const descriptionMatch = program.description?.toLowerCase().includes(searchLower) ?? false;
       const tags = getTags(program);
       const tagsMatch = tags.some(tag => tag.toLowerCase().includes(searchLower));
@@ -195,8 +208,10 @@ export default function SearchPrograms() {
       return tags.some(tag => tag.toLowerCase().includes(filters.field.toLowerCase()));
     })();
     
-    // Tuition fee range filter
-    const matchesTuition = !program.tuition_fee_amount || 
+    // Tuition fee range filter - only apply if range is not at default (0 to max)
+    // If range is at default (0 to max), don't filter by tuition (show all programs)
+    const isDefaultRange = filters.tuitionRange[0] === 0 && filters.tuitionRange[1] >= 200000;
+    const matchesTuition = isDefaultRange || !program.tuition_fee_amount || 
       (program.tuition_fee_amount >= filters.tuitionRange[0] && 
        program.tuition_fee_amount <= filters.tuitionRange[1]);
 
@@ -234,7 +249,7 @@ export default function SearchPrograms() {
       programType: 'all',
       field: 'all',
       duration: '',
-      tuitionRange: [0, 5000],
+      tuitionRange: [0, maxTuition],
       startDate: ''
     });
   };
@@ -263,24 +278,33 @@ export default function SearchPrograms() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Sidebar - Filters */}
           <aside className="w-full lg:w-80 flex-shrink-0">
-            <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg sticky top-6">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
+            <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-xl sticky top-6">
+              <div className="p-5 sm:p-6">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-slate-700">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <SlidersHorizontal className="w-5 h-5" />
+                    <Filter className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     Filters
                   </h3>
-                  <Button variant="ghost" size="sm" onClick={resetFilters} className="text-xs">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={resetFilters} 
+                    className="text-xs h-7 px-2 hover:bg-gray-100 dark:hover:bg-slate-800"
+                  >
+                    <X className="w-3 h-3 mr-1" />
                     Clear All
                   </Button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {/* Location Filter */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Location</Label>
+                  <div className="space-y-2.5">
+                    <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      Location
+                    </Label>
                     <Select value={filters.location || "all"} onValueChange={(value) => setFilters({...filters, location: value})}>
-                      <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
+                      <SelectTrigger className="h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
                         <SelectValue placeholder="Any location" />
                       </SelectTrigger>
                       <SelectContent>
@@ -299,10 +323,13 @@ export default function SearchPrograms() {
                   </div>
 
                   {/* Program Type Filter */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Program Type</Label>
+                  <div className="space-y-2.5">
+                    <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      Program Type
+                    </Label>
                     <Select value={filters.programType || "all"} onValueChange={(value) => setFilters({...filters, programType: value})}>
-                      <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
+                      <SelectTrigger className="h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
                         <SelectValue placeholder="Any type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -310,17 +337,18 @@ export default function SearchPrograms() {
                         <SelectItem value="Foundation">Foundation</SelectItem>
                         <SelectItem value="Diploma">Diploma</SelectItem>
                         <SelectItem value="Bachelor">Bachelor</SelectItem>
-                        <SelectItem value="Master">Master</SelectItem>
-                        <SelectItem value="PhD">PhD</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Field of Study Filter */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Field of Study</Label>
+                  <div className="space-y-2.5">
+                    <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <BookMarked className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      Field of Study
+                    </Label>
                     <Select value={filters.field || "all"} onValueChange={(value) => setFilters({...filters, field: value})}>
-                      <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
+                      <SelectTrigger className="h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
                         <SelectValue placeholder="Any field" />
                       </SelectTrigger>
                       <SelectContent>
@@ -342,19 +370,23 @@ export default function SearchPrograms() {
                   </div>
 
                   {/* Tuition Fee Range */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Tuition Fee Range</Label>
-                    <div className="px-2">
+                  <div className="space-y-2.5">
+                    <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      Tuition Fee Range
+                    </Label>
+                    <div className="px-2 py-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700">
                       <Slider
                         value={filters.tuitionRange}
                         onValueChange={(value) => setFilters({...filters, tuitionRange: value})}
-                        max={5000}
-                        step={100}
+                        max={maxTuition}
+                        step={1000}
                         className="w-full"
                       />
-                      <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                        <span>RM {filters.tuitionRange[0].toLocaleString()}</span>
-                        <span>RM {filters.tuitionRange[1].toLocaleString()}</span>
+                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-200 dark:border-slate-700">
+                        <span className="text-sm font-medium text-foreground">RM {filters.tuitionRange[0].toLocaleString()}</span>
+                        <span className="text-xs text-muted-foreground">to</span>
+                        <span className="text-sm font-medium text-foreground">RM {filters.tuitionRange[1].toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -366,22 +398,37 @@ export default function SearchPrograms() {
           {/* Right Side - Results */}
           <div className="flex-1 space-y-6">
             {/* Results Summary and Sort */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <p className="text-muted-foreground">
-                Found <span className="font-semibold text-foreground">{sortedPrograms.length}</span> programs matching your criteria
-              </p>
-              <Select value={sortBy || "relevance"} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-48 backdrop-blur-sm bg-white/50 border-white/30">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Most Relevant</SelectItem>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
-                  <SelectItem value="tuition-low">Lowest Tuition</SelectItem>
-                  <SelectItem value="tuition-high">Highest Tuition</SelectItem>
-                  <SelectItem value="deadline">Application Deadline</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
+              <div className="flex items-center gap-2 flex-1">
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Found <span className="font-bold text-foreground text-lg">{sortedPrograms.length}</span> programs matching your criteria
+                </p>
+                {canCompare && (
+                  <Link href={`/student/compare?ids=${selectedPrograms.join(',')}`}>
+                    <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all whitespace-nowrap">
+                      <Scale className="w-4 h-4 mr-2" />
+                      Compare Now ({selectedPrograms.length})
+                    </Button>
+                  </Link>
+                )}
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Label htmlFor="sort-select" className="text-sm text-muted-foreground whitespace-nowrap hidden sm:block">
+                  Sort by:
+                </Label>
+                <Select value={sortBy || "relevance"} onValueChange={setSortBy}>
+                  <SelectTrigger id="sort-select" className="w-full sm:w-48 h-10 backdrop-blur-sm bg-white/70 dark:bg-slate-800/70 border-gray-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="relevance">Most Relevant</SelectItem>
+                    <SelectItem value="rating">Highest Rated</SelectItem>
+                    <SelectItem value="tuition-low">Lowest Tuition</SelectItem>
+                    <SelectItem value="tuition-high">Highest Tuition</SelectItem>
+                    <SelectItem value="deadline">Application Deadline</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Loading State */}
@@ -501,8 +548,13 @@ export default function SearchPrograms() {
                           View Details
                         </Button>
                       </Link>
-                      <Button variant="outline" className="backdrop-blur-sm bg-white/50">
-                        Compare
+                      <Button 
+                        variant="outline" 
+                        className={`backdrop-blur-sm ${isSelected(program.id) ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white/50'}`}
+                        onClick={() => addProgram(program.id)}
+                      >
+                        <Scale className="w-4 h-4 mr-2" />
+                        {isSelected(program.id) ? 'Selected' : 'Compare'}
                       </Button>
                     </div>
                   </div>

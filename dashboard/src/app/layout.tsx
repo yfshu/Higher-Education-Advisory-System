@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthModalProvider } from "@/components/auth/AuthModalProvider";
 import { UserProvider } from "@/contexts/UserContext";
+import { CompareProvider } from "@/contexts/CompareContext";
 import PasswordRecoveryHandler from "@/components/auth/PasswordRecoveryHandler";
 import { SessionExpiredHandler } from "@/components/auth/SessionExpiredHandler";
 import { Toaster } from "@/components/ui/sonner";
@@ -51,10 +52,12 @@ export default function RootLayout({
           }}
         />
         <UserProvider>
-          <PasswordRecoveryHandler />
-          <SessionExpiredHandler />
-          <AuthModalProvider>{children}</AuthModalProvider>
-          <Toaster />
+          <CompareProvider>
+            <PasswordRecoveryHandler />
+            <SessionExpiredHandler />
+            <AuthModalProvider>{children}</AuthModalProvider>
+            <Toaster />
+          </CompareProvider>
         </UserProvider>
       </body>
     </html>

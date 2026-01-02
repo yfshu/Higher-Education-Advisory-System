@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
@@ -49,6 +49,12 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { userData, logout } = useUser();
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration issue
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const ensureStudent = async () => {
@@ -183,67 +189,69 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
 
             <div className="flex items-center gap-1">
               <ThemeToggle />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar 
-                      className="h-10 w-10 border-2 border-blue-200"
-                      key={avatarUrl || "no-avatar"}
-                    >
-                      <AvatarImage 
-                        src={avatarUrl || undefined} 
-                        alt={userName}
-                        className="object-cover"
-                      />
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-56 backdrop-blur-2xl bg-white/15 border-white/10 shadow-2xl"
-                  align="end"
-                >
-                  <div className="flex items-center gap-2 p-2">
-                    <Avatar 
-                      className="h-8 w-8"
-                      key={avatarUrl || "no-avatar"}
-                    >
-                      <AvatarImage 
-                        src={avatarUrl || undefined} 
-                        alt={userName}
-                        className="object-cover"
-                      />
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{userName}</p>
-                      <p className="text-xs text-muted-foreground">{userEmail}</p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/student/profile" className="flex items-center gap-2 w-full">
-                      <User className="w-4 h-4" />
-                      Profile &amp; Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      handleLogout();
-                    }}
-                    className="flex items-center gap-2 text-red-600 focus:text-red-600"
+              {mounted && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar 
+                        className="h-10 w-10 border-2 border-blue-200"
+                        key={avatarUrl || "no-avatar"}
+                      >
+                        <AvatarImage 
+                          src={avatarUrl || undefined} 
+                          alt={userName}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className="w-56 backdrop-blur-2xl bg-white/15 border-white/10 shadow-2xl"
+                    align="end"
                   >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <div className="flex items-center gap-2 p-2">
+                      <Avatar 
+                        className="h-8 w-8"
+                        key={avatarUrl || "no-avatar"}
+                      >
+                        <AvatarImage 
+                          src={avatarUrl || undefined} 
+                          alt={userName}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{userName}</p>
+                        <p className="text-xs text-muted-foreground">{userEmail}</p>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/student/profile" className="flex items-center gap-2 w-full">
+                        <User className="w-4 h-4" />
+                        Profile &amp; Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        handleLogout();
+                      }}
+                      className="flex items-center gap-2 text-red-600 focus:text-red-600"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
@@ -259,11 +267,11 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
 
       <div className="flex-1">
         {title && (
-          <div className="max-w-7xl mx-auto px-6 py-6 backdrop-blur-xl bg-white/5 dark:bg-slate-900/30">
+          <div className="max-w-7xl mx-auto px-6 pt-6 pb-2 backdrop-blur-xl bg-white/5 dark:bg-slate-900/30">
             <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
           </div>
         )}
-        <div className="max-w-7xl mx-auto px-6 pb-8">{children}</div>
+        <div className="max-w-7xl mx-auto px-6 pt-2 pb-8">{children}</div>
       </div>
     </div>
   );

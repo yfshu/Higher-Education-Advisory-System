@@ -22,6 +22,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useSavedItems } from "@/hooks/useSavedItems";
+import { useCompare } from "@/contexts/CompareContext";
+import { Scale } from "lucide-react";
 
 interface Program {
   id: number;
@@ -53,6 +55,7 @@ export default function ProgramRecommendations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isItemSaved, toggleSave } = useSavedItems();
+  const { addProgram, isSelected, canCompare, selectedPrograms } = useCompare();
 
   // Fetch programs from backend
   useEffect(() => {
@@ -280,6 +283,14 @@ export default function ProgramRecommendations() {
               />
             </div>
           </div>
+          {canCompare && (
+            <Link href={`/student/compare?ids=${selectedPrograms.join(',')}`}>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all">
+                <Scale className="w-4 h-4 mr-2" />
+                Compare Now ({selectedPrograms.length})
+              </Button>
+            </Link>
+          )}
           <div className="flex gap-2">
             <Button
               variant={selectedFilter === "all" ? "default" : "outline"}
@@ -466,16 +477,21 @@ export default function ProgramRecommendations() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="backdrop-blur-sm bg-white/50"
+                          className={`backdrop-blur-sm ${isItemSaved('program', program.id) ? 'bg-red-100 border-red-500 text-red-700' : 'bg-white/50'}`}
+                          onClick={async () => {
+                            await toggleSave('program', program.id);
+                          }}
                         >
-                          <Bookmark className="w-4 h-4 mr-2" />
-                          Save Program
+                          <Heart className={`w-4 h-4 mr-2 ${isItemSaved('program', program.id) ? 'fill-current' : ''}`} />
+                          {isItemSaved('program', program.id) ? 'Saved' : 'Save'}
                         </Button>
                         <Button
                           variant="outline"
-                          className="backdrop-blur-sm bg-white/50"
+                          className={`backdrop-blur-sm ${isSelected(program.id) ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white/50'}`}
+                          onClick={() => addProgram(program.id)}
                         >
-                          Compare
+                          <Scale className="w-4 h-4 mr-2" />
+                          {isSelected(program.id) ? 'Selected' : 'Compare'}
                         </Button>
                       </div>
                     </div>
