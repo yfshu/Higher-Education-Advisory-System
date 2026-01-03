@@ -12,6 +12,7 @@ import { HelpModule } from './api/help/help.module';
 import { AdminModule } from './api/admin/admin.module';
 import { FieldsModule } from './api/fields/fields.module';
 import { CompareModule } from './api/compare/compare.module';
+import { AIModule } from './api/ai/ai.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { CompareModule } from './api/compare/compare.module';
     AdminModule,
     FieldsModule,
     CompareModule,
+    AIModule,
   ],
   controllers: [AppController],
   providers: [AppService],

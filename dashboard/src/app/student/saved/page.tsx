@@ -358,7 +358,7 @@ export default function SavedItems() {
     <StudentLayout title="Saved Items">
       <div className="space-y-6">
         {/* Header */}
-        <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+        <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -487,7 +487,7 @@ export default function SavedItems() {
           <TabsList className="grid w-full grid-cols-2 backdrop-blur-xl bg-white/60 border border-white/30 shadow-lg p-1 h-12">
             <TabsTrigger
               value="programs"
-              className="flex items-center gap-2 h-10 rounded-lg backdrop-blur-sm bg-white/20 border border-transparent hover:bg-white/40 hover:border-blue-200/50 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-blue-600 data-[state=active]:shadow-md transition-all duration-200 font-medium"
+              className="flex items-center gap-2 h-10 rounded-lg backdrop-blur-sm bg-white/20 border border-transparent hover:bg-white/40 hover:border-blue-200/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:border-blue-500 data-[state=active]:shadow-md transition-all duration-200 font-medium"
             >
               <GraduationCap className="w-4 h-4" />
               Programs ({savedPrograms.length})
@@ -504,7 +504,7 @@ export default function SavedItems() {
           {/* Programs Tab */}
           <TabsContent value="programs" className="space-y-6 mt-6">
             {/* Program Controls */}
-            <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+            <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -549,9 +549,9 @@ export default function SavedItems() {
                   </div>
                 </Card>
               ) : sortedPrograms.length === 0 ? (
-                <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+                <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
                   <div className="p-12 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                       <GraduationCap className="w-8 h-8 text-muted-foreground" />
                     </div>
                     <h3 className="text-lg font-medium text-foreground mb-2">
@@ -598,7 +598,7 @@ export default function SavedItems() {
                   return (
                     <Card
                       key={program.id}
-                      className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <div className="p-6">
                         <div className="flex items-start justify-between">
@@ -753,7 +753,7 @@ export default function SavedItems() {
           {/* Scholarships Tab */}
           <TabsContent value="scholarships" className="space-y-6 mt-6">
             {/* Scholarship Controls */}
-            <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/30 dark:border-slate-700/30 shadow-lg">
+            <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
               <div className="p-4 sm:p-5">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4">
@@ -828,9 +828,9 @@ export default function SavedItems() {
             {/* Scholarships List */}
             <div className="space-y-4">
               {paginatedScholarships.length === 0 ? (
-                <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+                <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
                   <div className="p-12 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Award className="w-8 h-8 text-muted-foreground" />
                     </div>
                     <h3 className="text-lg font-medium text-foreground mb-2">
@@ -862,7 +862,7 @@ export default function SavedItems() {
                   return (
                     <Card
                       key={scholarship.id}
-                      className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                       <div className="p-6">
                         <div className="flex items-start gap-4">
@@ -1112,9 +1112,9 @@ export default function SavedItems() {
         </Tabs>
 
         {/* Action Card */}
-        <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+        <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
           <div className="p-6 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-foreground mb-2">
               Keep Exploring
             </h3>
             <p className="text-muted-foreground mb-4">

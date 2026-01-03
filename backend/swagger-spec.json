@@ -1720,6 +1720,159 @@
           "Compare"
         ]
       }
+    },
+    "/api/ai/recommend/fields": {
+      "post": {
+        "description": "Returns ranked field categories based on student profile. This is the first step - user must select a field before getting programs.",
+        "operationId": "AIController_getFieldRecommendations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Field recommendations generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldRecommendationResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - authentication required"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get field-level recommendations (STEP 1)",
+        "tags": [
+          "AI Recommendations"
+        ]
+      }
+    },
+    "/api/ai/recommend/programs-by-field": {
+      "post": {
+        "description": "Returns top 3 most suitable programs for a selected field using OpenAI analysis. Field must be selected from field recommendations first.",
+        "operationId": "AIController_getProgramsByField",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramsByFieldRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Program recommendations generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalRecommendationResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - authentication required"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get top 3 programs for selected field (STEP 2)",
+        "tags": [
+          "AI Recommendations"
+        ]
+      }
+    },
+    "/api/ai/recommendations": {
+      "post": {
+        "description": "Legacy endpoint - use /recommend/fields and /recommend/programs-by-field instead",
+        "operationId": "AIController_getRecommendations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Recommendations generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalRecommendationResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - authentication required"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[DEPRECATED] Get AI-based program recommendations",
+        "tags": [
+          "AI Recommendations"
+        ]
+      }
+    },
+    "/api/ai/recommendations/history": {
+      "get": {
+        "description": "Returns the history of AI-generated field and program recommendations for the authenticated user",
+        "operationId": "AIController_getRecommendationHistory",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recommendation history retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized - authentication required"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get AI recommendation history",
+        "tags": [
+          "AI Recommendations"
+        ]
+      }
     }
   },
   "info": {
@@ -3127,6 +3280,129 @@
       "CompareRequestDto": {
         "type": "object",
         "properties": {}
+      },
+      "FieldRecommendationDto": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "example": "Computer Science & IT"
+          },
+          "probability": {
+            "type": "number",
+            "example": 0.6509,
+            "description": "Interest score between 0 and 1"
+          }
+        },
+        "required": [
+          "field_name",
+          "probability"
+        ]
+      },
+      "FieldRecommendationResponseDto": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldRecommendationDto"
+            }
+          },
+          "powered_by": {
+            "example": [
+              "ML Model"
+            ],
+            "description": "List of AI systems used to generate field recommendations",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "fields",
+          "powered_by"
+        ]
+      },
+      "ProgramsByFieldRequestDto": {
+        "type": "object",
+        "properties": {
+          "field_name": {
+            "type": "string",
+            "example": "Computer Science & IT",
+            "description": "Selected field name from field recommendations"
+          }
+        },
+        "required": [
+          "field_name"
+        ]
+      },
+      "FinalRecommendationDto": {
+        "type": "object",
+        "properties": {
+          "program_id": {
+            "type": "number",
+            "example": 37
+          },
+          "rank": {
+            "type": "number",
+            "example": 1,
+            "description": "Ranking position (1 = best match)"
+          },
+          "explanation": {
+            "type": "string",
+            "example": "Matches budget, preferred location, and accounting focus.",
+            "description": "Natural language explanation of why this program is recommended"
+          },
+          "match_score": {
+            "type": "number",
+            "example": 0.93,
+            "description": "ML model match score (0-1)"
+          },
+          "reasons": {
+            "example": [
+              "Matches Accounting field",
+              "Within tuition budget",
+              "Degree level preferred"
+            ],
+            "description": "List of specific reasons why this program matches",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "program_id",
+          "rank",
+          "explanation"
+        ]
+      },
+      "FinalRecommendationResponseDto": {
+        "type": "object",
+        "properties": {
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FinalRecommendationDto"
+            }
+          },
+          "powered_by": {
+            "example": [
+              "ML Model",
+              "OpenAI Validation"
+            ],
+            "description": "List of AI systems used to generate recommendations",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "recommendations",
+          "powered_by"
+        ]
       }
     }
   }

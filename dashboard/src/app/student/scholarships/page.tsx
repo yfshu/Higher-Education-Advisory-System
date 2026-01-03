@@ -440,14 +440,14 @@ export default function ScholarshipSearch() {
         {!loading && !error && (
           <div className="grid gap-6">
             {paginatedScholarships.map((scholarship) => (
-              <Card key={scholarship.id} className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+              <Card key={scholarship.id} className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold text-foreground">{scholarship.name}</h3>
                         {scholarship.type && (
-                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                          <Badge variant="secondary" className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300">
                             {scholarship.type}
                           </Badge>
                         )}
@@ -607,9 +607,9 @@ export default function ScholarshipSearch() {
         )}
 
         {!loading && !error && filteredScholarships.length === 0 && (
-          <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+          <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
             <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-medium text-foreground mb-2">No scholarships found</h3>

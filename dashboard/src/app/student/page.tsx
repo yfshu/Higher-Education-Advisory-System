@@ -22,36 +22,8 @@ import {
   Search,
 } from "lucide-react";
 import { useSavedItems } from "@/hooks/useSavedItems";
-
-const recentRecommendations = [
-  {
-    id: 1,
-    title: "Computer Science",
-    university: "University of Malaya",
-    location: "Kuala Lumpur, Malaysia",
-    matchPercentage: 95,
-    deadline: "2024-03-15",
-    type: "Bachelor",
-  },
-  {
-    id: 2,
-    title: "Software Engineering",
-    university: "Universiti Teknologi Malaysia",
-    location: "Johor Bahru, Malaysia",
-    matchPercentage: 88,
-    deadline: "2024-02-28",
-    type: "Bachelor",
-  },
-  {
-    id: 3,
-    title: "Information Technology",
-    university: "Universiti Putra Malaysia",
-    location: "Serdang, Malaysia",
-    matchPercentage: 92,
-    deadline: "2024-04-01",
-    type: "Bachelor",
-  },
-];
+import { getRecommendationHistory, type RecommendationHistoryItem } from "@/lib/api/recommendations";
+import { apiCall } from "@/lib/auth/apiClient";
 
 interface SavedProgram {
   id: number;
@@ -69,6 +41,16 @@ interface SavedScholarship {
   saved_at: string;
 }
 
+interface LatestRecommendation {
+  program_id: number;
+  program_name: string;
+  university_name: string;
+  location: string;
+  matchPercentage: number;
+  deadline: string | null;
+  level: string | null;
+}
+
 const deadlineFormatter = new Intl.DateTimeFormat("en-MY", {
   day: "numeric",
   month: "short",
@@ -76,11 +58,13 @@ const deadlineFormatter = new Intl.DateTimeFormat("en-MY", {
 });
 
 export default function StudentDashboardPage() {
-  const { savedItems, isLoading: savedItemsLoading } = useSavedItems();
+  const { savedItems, isLoading: savedItemsLoading, refreshSavedItems } = useSavedItems();
   const [mounted, setMounted] = useState(false);
   const [savedPrograms, setSavedPrograms] = useState<SavedProgram[]>([]);
   const [savedScholarships, setSavedScholarships] = useState<SavedScholarship[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
+  const [latestRecommendations, setLatestRecommendations] = useState<LatestRecommendation[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -99,44 +83,65 @@ export default function StudentDashboardPage() {
         }
 
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+        const cacheBuster = `?t=${Date.now()}`;
 
-        // Fetch saved programs
+        // Fetch saved programs with cache-busting
         const programsResponse = await fetch(
-          `${backendUrl}/api/saved-items/programs`,
+          `${backendUrl}/api/saved-items/programs${cacheBuster}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
+              'Cache-Control': 'no-cache',
             },
+            cache: 'no-store',
           }
         );
 
         if (programsResponse.ok) {
           const programsResult = await programsResponse.json();
           if (programsResult.success && programsResult.data) {
+            console.log(`✅ Fetched ${programsResult.data.length} saved programs from API`);
             // Get only the first 3 for dashboard
             setSavedPrograms(programsResult.data.slice(0, 3));
+          } else {
+            console.warn('⚠️ Programs response missing data:', programsResult);
+            setSavedPrograms([]);
           }
+        } else {
+          console.error('❌ Failed to fetch saved programs:', programsResponse.status);
+          setSavedPrograms([]);
         }
 
-        // Fetch saved scholarships
+        // Fetch saved scholarships with cache-busting
         const scholarshipsResponse = await fetch(
-          `${backendUrl}/api/saved-items/scholarships`,
+          `${backendUrl}/api/saved-items/scholarships${cacheBuster}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
+              'Cache-Control': 'no-cache',
             },
+            cache: 'no-store',
           }
         );
 
         if (scholarshipsResponse.ok) {
           const scholarshipsResult = await scholarshipsResponse.json();
           if (scholarshipsResult.success && scholarshipsResult.data) {
+            console.log(`✅ Fetched ${scholarshipsResult.data.length} saved scholarships from API`);
             // Get only the first 3 for dashboard
             setSavedScholarships(scholarshipsResult.data.slice(0, 3));
+          } else {
+            console.warn('⚠️ Scholarships response missing data:', scholarshipsResult);
+            setSavedScholarships([]);
           }
+        } else {
+          console.error('❌ Failed to fetch saved scholarships:', scholarshipsResponse.status);
+          setSavedScholarships([]);
         }
       } catch (error) {
         console.error('Error fetching saved items:', error);
+        setSavedPrograms([]);
+        setSavedScholarships([]);
       } finally {
         setLoadingSaved(false);
       }
@@ -144,8 +149,10 @@ export default function StudentDashboardPage() {
 
     if (mounted) {
       fetchSavedItems();
+      // Also refresh the useSavedItems hook cache
+      refreshSavedItems().catch(err => console.error('Error refreshing saved items:', err));
     }
-  }, [mounted]);
+  }, [mounted, refreshSavedItems]);
 
   // Calculate saved items count
   const savedItemsCount = useMemo(() => {
@@ -184,6 +191,103 @@ export default function StudentDashboardPage() {
     
     return 0; // Placeholder until we have deadline data
   }, [savedPrograms, savedScholarships]);
+
+  // Fetch latest program recommendations
+  useEffect(() => {
+    const fetchLatestRecommendations = async () => {
+      try {
+        setLoadingRecommendations(true);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) {
+          setLoadingRecommendations(false);
+          return;
+        }
+
+        // Fetch latest 3 program recommendations
+        const { data, error } = await getRecommendationHistory('program', 3);
+        
+        if (error || !data || !data.data) {
+          setLatestRecommendations([]);
+          setLoadingRecommendations(false);
+          return;
+        }
+
+        const programRecs = data.data.filter(r => r.recommendation_type === 'program' && r.program_id);
+        
+        if (programRecs.length === 0) {
+          setLatestRecommendations([]);
+          setLoadingRecommendations(false);
+          return;
+        }
+
+        // Fetch full program details for each recommendation
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+        const programIds = programRecs.map(r => r.program_id).filter((id): id is number => id !== null);
+        
+        if (programIds.length === 0) {
+          setLatestRecommendations([]);
+          setLoadingRecommendations(false);
+          return;
+        }
+
+        // Fetch all programs to get details
+        const programsResponse = await fetch(
+          `${backendUrl}/api/programs?all=true`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (!programsResponse.ok) {
+          setLatestRecommendations([]);
+          setLoadingRecommendations(false);
+          return;
+        }
+
+        const programsData = await programsResponse.json();
+        const allPrograms = programsData.data || [];
+        const programMap = new Map(allPrograms.map((p: any) => [p.id, p]));
+
+        // Map recommendations to program details
+        const recommendations: LatestRecommendation[] = programRecs
+          .map((rec) => {
+            const program = programMap.get(rec.program_id!);
+            if (!program) return null;
+
+            const matchScore = rec.final_score || rec.ml_confidence_score || 0;
+            const location = program.university?.state && program.university?.city
+              ? `${program.university.city}, ${program.university.state}`
+              : program.university?.state || program.university?.city || 'Location not specified';
+
+            return {
+              program_id: rec.program_id!,
+              program_name: rec.program_name || program.name || `Program #${rec.program_id}`,
+              university_name: program.university?.name || 'University not specified',
+              location: location,
+              matchPercentage: Math.round(matchScore * 100),
+              deadline: program.deadline || null,
+              level: program.level || null,
+            };
+          })
+          .filter((r): r is LatestRecommendation => r !== null)
+          .slice(0, 3); // Ensure only top 3
+
+        setLatestRecommendations(recommendations);
+      } catch (err: any) {
+        console.error('Error fetching latest recommendations:', err);
+        setLatestRecommendations([]);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+    };
+
+    if (mounted) {
+      fetchLatestRecommendations();
+    }
+  }, [mounted]);
 
   return (
     <StudentLayout title="Dashboard">
@@ -260,46 +364,67 @@ export default function StudentDashboardPage() {
               </div>
             </div>
             <div className="p-6">
-              <div className="space-y-4">
-                {recentRecommendations.map((program) => (
-                  <div
-                    key={program.id}
-                    className="flex items-start gap-4 rounded-lg border border-white/20 dark:border-slate-700/20 bg-white/40 dark:bg-slate-800/40 p-4 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="mb-1 flex items-center gap-2">
-                        <h4 className="font-medium text-foreground">{program.title}</h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {program.matchPercentage}% match
-                        </Badge>
-                      </div>
-                      <p className="mb-2 text-sm text-muted-foreground">{program.university}</p>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {program.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Deadline: {deadlineFormatter.format(new Date(program.deadline))}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Award className="h-3 w-3" />
-                          {program.type}
-                        </span>
-                      </div>
-                    </div>
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="outline"
-                      className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-blue-200 dark:border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                    >
-                      <Link href={`/student/program/${program.id}`}>View</Link>
-                    </Button>
+              {loadingRecommendations ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <p className="text-sm text-muted-foreground">Loading recommendations...</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : latestRecommendations.length === 0 ? (
+                <div className="text-center py-8">
+                  <TrendingUp className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">No recommendations yet</p>
+                  <Button asChild variant="outline" size="sm" className="mt-4">
+                    <Link href="/student/recommendations">Get Recommendations</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {latestRecommendations.map((program) => (
+                    <div
+                      key={program.program_id}
+                      className="flex items-start gap-4 rounded-lg border border-white/20 dark:border-slate-700/20 bg-white/40 dark:bg-slate-800/40 p-4 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="mb-1 flex items-center gap-2">
+                          <h4 className="font-medium text-foreground">{program.program_name}</h4>
+                          <Badge variant="secondary" className="text-xs">
+                            {program.matchPercentage}% match
+                          </Badge>
+                        </div>
+                        <p className="mb-2 text-sm text-muted-foreground">{program.university_name}</p>
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {program.location}
+                          </span>
+                          {program.deadline && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Deadline: {deadlineFormatter.format(new Date(program.deadline))}
+                            </span>
+                          )}
+                          {program.level && (
+                            <span className="flex items-center gap-1">
+                              <Award className="h-3 w-3" />
+                              {program.level}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="outline"
+                        className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-blue-200 dark:border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      >
+                        <Link href={`/student/program/${program.program_id}`}>View</Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
 

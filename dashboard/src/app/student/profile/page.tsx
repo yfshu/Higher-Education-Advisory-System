@@ -30,10 +30,15 @@ import {
   Save,
   X,
   Upload,
+  Calendar,
+  TrendingUp,
+  Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { AvatarCropModal } from "@/components/ui/avatar-crop-modal";
+import { getRecommendationHistory, type RecommendationHistoryItem } from "@/lib/api/recommendations";
 
 // Subject mapping for display
 const SUBJECTS = [
@@ -83,10 +88,8 @@ export default function StudentProfile() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   
-  // Edit states for different sections
-  const [editingAcademic, setEditingAcademic] = useState(false);
-  const [editingInterests, setEditingInterests] = useState(false);
-  const [editingPreferences, setEditingPreferences] = useState(false);
+  // Unified edit state for all sections
+  const [isEditing, setIsEditing] = useState(false);
   
   // Form data states
   const [academicData, setAcademicData] = useState<Record<string, string | undefined>>({});
@@ -98,6 +101,12 @@ export default function StudentProfile() {
   const [showCropModal, setShowCropModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [cropPreview, setCropPreview] = useState<string | null>(null);
+
+  // Recommendation history state
+  const [recommendationHistory, setRecommendationHistory] = useState<RecommendationHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'field' | 'program'>('all');
 
   const user = userData?.user;
   const profile = userData?.profile;
@@ -124,6 +133,35 @@ export default function StudentProfile() {
       console.log("⚠️ Profile data:", profile);
     }
   }, [profile?.avatarUrl]);
+  
+  // Fetch recommendation history
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!user?.id) return;
+      
+      setHistoryLoading(true);
+      setHistoryError(null);
+      
+      try {
+        const type = historyFilter === 'all' ? undefined : historyFilter;
+        const { data, error } = await getRecommendationHistory(type, 100);
+        
+        if (error) {
+          setHistoryError(error);
+          setRecommendationHistory([]);
+        } else if (data) {
+          setRecommendationHistory(data.data || []);
+        }
+      } catch (err: any) {
+        setHistoryError(err.message || 'Failed to fetch recommendation history');
+        setRecommendationHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [user?.id, historyFilter]);
   
   // Fetch latest profile data on mount
   useEffect(() => {
@@ -219,42 +257,6 @@ export default function StudentProfile() {
       });
     }
   }, [profile, preferences]);
-
-  // Calculate profile completion percentage
-  const completionPercentage = useMemo(() => {
-    if (!profile) return 0;
-
-    let completed = 0;
-    let total = 0;
-
-    // Personal Information (30%)
-    total += 3;
-    if (user?.fullName) completed += 1;
-    if (user?.email) completed += 1;
-    if (profile.phoneNumber) completed += 1;
-
-    // Academic Background (30%)
-    total += 3;
-    if (profile.studyLevel) completed += 1;
-    const hasGrades = SUBJECTS.some((s) => profile[s.key as keyof typeof profile]);
-    if (hasGrades) completed += 1;
-    if (profile.extracurricular !== undefined) completed += 1;
-
-    // Interests & Skills (25%)
-    total += 2.5;
-    const hasInterests = INTERESTS.some((i) => profile[i.key as keyof typeof profile]);
-    if (hasInterests) completed += 1.25;
-    const hasSkills = SKILLS.some((s) => profile[s.key as keyof typeof profile]);
-    if (hasSkills) completed += 1.25;
-
-    // Preferences (15%)
-    total += 1.5;
-    if (preferences?.budgetRange) completed += 0.5;
-    if (preferences?.preferredLocation) completed += 0.5;
-    if (preferences?.preferredCountry || preferences?.studyMode) completed += 0.5;
-
-    return Math.round((completed / total) * 100);
-  }, [profile, user, preferences]);
 
   const formatGrade = (grade: string | undefined | null): string => {
     if (!grade || grade === "0") return "Not Taken";
@@ -427,7 +429,7 @@ export default function StudentProfile() {
     }
   };
 
-  const handleSaveAcademic = async () => {
+  const handleSaveAll = async () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -439,66 +441,54 @@ export default function StudentProfile() {
         throw new Error("Not authenticated");
       }
 
+      // Convert extracurricular from "yes"/"no" string to boolean
+      const academicPayload = {
+        ...academicData,
+        extracurricular: academicData.extracurricular === "yes" ? true : academicData.extracurricular === "no" ? false : undefined,
+      };
+
+      // Combine all data into one payload
+      const payload = {
+        ...academicPayload,
+        ...interestsData,
+        ...preferencesData,
+      };
+
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
-      const res = await fetch(`${backendUrl}/api/profile/update`, {
+      
+      // Save academic and interests (profile update)
+      const profileRes = await fetch(`${backendUrl}/api/profile/update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(academicData),
+        body: JSON.stringify({
+          ...academicPayload,
+          ...interestsData,
+        }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
+      if (!profileRes.ok) {
+        const errorData = await profileRes.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to update profile");
       }
 
-      // Update local state
-      if (userData) {
-        setUserData({
-          ...userData,
-          profile: {
-            ...userData.profile,
-            ...academicData,
+      // Save preferences separately
+      if (Object.keys(preferencesData).length > 0) {
+        const preferencesRes = await fetch(`${backendUrl}/api/profile/update`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
+          body: JSON.stringify(preferencesData),
         });
-      }
 
-      setSuccess("Academic background updated successfully!");
-      setEditingAcademic(false);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update profile");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveInterests = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const sessionRes = await supabase.auth.getSession();
-      const accessToken = sessionRes.data.session?.access_token;
-      if (!accessToken) {
-        throw new Error("Not authenticated");
-      }
-
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
-      const res = await fetch(`${backendUrl}/api/profile/update`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(interestsData),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to update profile");
+        if (!preferencesRes.ok) {
+          const errorData = await preferencesRes.json().catch(() => ({}));
+          throw new Error(errorData.message || "Failed to update preferences");
+        }
       }
 
       // Update local state
@@ -507,51 +497,9 @@ export default function StudentProfile() {
           ...userData,
           profile: {
             ...userData.profile,
+            ...academicPayload,
             ...interestsData,
           },
-        });
-      }
-
-      setSuccess("Interests and skills updated successfully!");
-      setEditingInterests(false);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update profile");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSavePreferences = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const sessionRes = await supabase.auth.getSession();
-      const accessToken = sessionRes.data.session?.access_token;
-      if (!accessToken) {
-        throw new Error("Not authenticated");
-      }
-
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
-      const res = await fetch(`${backendUrl}/api/profile/update`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(preferencesData),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to update preferences");
-      }
-
-      // Update local state
-      if (userData) {
-        setUserData({
-          ...userData,
           preferences: {
             ...userData.preferences,
             ...preferencesData,
@@ -559,12 +507,67 @@ export default function StudentProfile() {
         });
       }
 
-      setSuccess("Preferences updated successfully!");
-      setEditingPreferences(false);
+      setSuccess("Profile updated successfully!");
+      setIsEditing(false);
+      
+      // Dispatch event to clear recommendations cache
+      window.dispatchEvent(new CustomEvent("profileUpdated"));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update preferences");
+      setError(err instanceof Error ? err.message : "Failed to update profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // Reset to original values
+    if (profile) {
+      setAcademicData({
+        studyLevel: profile.studyLevel || "",
+        extracurricular: profile.extracurricular ? "yes" : "no",
+        bm: profile.bm || "0",
+        english: profile.english || "0",
+        history: profile.history || "0",
+        mathematics: profile.mathematics || "0",
+        islamicEducationMoralEducation: profile.islamicEducationMoralEducation || "0",
+        physics: profile.physics || "0",
+        chemistry: profile.chemistry || "0",
+        biology: profile.biology || "0",
+        additionalMathematics: profile.additionalMathematics || "0",
+        geography: profile.geography || "0",
+        economics: profile.economics || "0",
+        accounting: profile.accounting || "0",
+        chinese: profile.chinese || "0",
+        tamil: profile.tamil || "0",
+        ict: profile.ict || "0",
+      });
+      
+      setInterestsData({
+        mathsInterest: profile.mathsInterest || 1,
+        scienceInterest: profile.scienceInterest || 1,
+        computerInterest: profile.computerInterest || 1,
+        writingInterest: profile.writingInterest || 1,
+        artInterest: profile.artInterest || 1,
+        businessInterest: profile.businessInterest || 1,
+        socialInterest: profile.socialInterest || 1,
+        logicalThinking: profile.logicalThinking || 1,
+        problemSolving: profile.problemSolving || 1,
+        creativity: profile.creativity || 1,
+        communication: profile.communication || 1,
+        teamwork: profile.teamwork || 1,
+        leadership: profile.leadership || 1,
+        attentionToDetail: profile.attentionToDetail || 1,
+      });
+    }
+    
+    if (preferences) {
+      setPreferencesData({
+        budgetRange: preferences.budgetRange || "",
+        preferredLocation: preferences.preferredLocation || "",
+        preferredCountry: preferences.preferredCountry || "",
+        studyMode: preferences.studyMode || "",
+      });
     }
   };
 
@@ -572,10 +575,10 @@ export default function StudentProfile() {
     <StudentLayout title="Profile & Settings">
       <div className="space-y-6">
         {/* Profile Header */}
-        <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+        <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
           <div className="p-6">
             {error && (
-              <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="mb-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-3">
                 {error}
               </div>
             )}
@@ -655,39 +658,28 @@ export default function StudentProfile() {
             </div>
             
             {success && (
-              <div className="mb-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="mb-4 text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 rounded-lg p-3">
                 {success}
               </div>
             )}
 
-            {/* Profile Completion */}
-            <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-foreground">Profile Completion</span>
-                <span className="text-sm text-muted-foreground">{completionPercentage}%</span>
-              </div>
-              <Progress value={completionPercentage} className="mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Complete your profile to get better program recommendations.
-              </p>
-            </div>
           </div>
         </Card>
 
         {/* Tabbed Content */}
-        <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+        <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-100/50 backdrop-blur-sm border-b border-gray-200/50 rounded-t-lg p-1 gap-1">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100/50 dark:bg-slate-700/50 backdrop-blur-sm border-b border-gray-200/50 dark:border-slate-700/50 rounded-t-lg p-1 gap-1">
               <TabsTrigger 
                 value="profile" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md text-gray-600 hover:text-gray-900 transition-all duration-200 rounded-lg font-medium"
+                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-200 rounded-lg font-medium"
               >
                 <User className="w-4 h-4" />
                 Profile
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md text-gray-600 hover:text-gray-900 transition-all duration-200 rounded-lg font-medium"
+                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-all duration-200 rounded-lg font-medium"
               >
                 <History className="w-4 h-4" />
                 History
@@ -696,53 +688,89 @@ export default function StudentProfile() {
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="p-6 space-y-8">
+              {/* Edit Button */}
+              <div className="flex justify-end mb-4">
+                {!isEditing ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit Profile
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                      disabled={loading}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveAll}
+                      disabled={loading}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save All
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               {/* Personal Information */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-foreground flex items-center gap-2">
                     <User className="w-5 h-5" />
                     Personal Information
                   </h3>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                   Personal information cannot be edited. Contact support if you need to update these details.
                 </p>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Full Name
                     </label>
-                    <div className="backdrop-blur-sm bg-gray-100/50 border border-gray-200/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
-                      <span className="text-gray-700">
+                    <div className="backdrop-blur-sm bg-gray-100/50 dark:bg-slate-700/50 border border-gray-200/50 dark:border-slate-600/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
+                      <span className="text-gray-700 dark:text-gray-300">
                         {user?.fullName || "Not provided"}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Email Address
                     </label>
-                    <div className="backdrop-blur-sm bg-gray-100/50 border border-gray-200/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
-                      <span className="text-gray-700">{user?.email || "Not provided"}</span>
+                    <div className="backdrop-blur-sm bg-gray-100/50 dark:bg-slate-700/50 border border-gray-200/50 dark:border-slate-600/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
+                      <span className="text-gray-700 dark:text-gray-300">{user?.email || "Not provided"}</span>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Phone Number
                     </label>
-                    <div className="backdrop-blur-sm bg-gray-100/50 border border-gray-200/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
-                      <span className="text-gray-700">
+                    <div className="backdrop-blur-sm bg-gray-100/50 dark:bg-slate-700/50 border border-gray-200/50 dark:border-slate-600/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
+                      <span className="text-gray-700 dark:text-gray-300">
                         {profile?.phoneNumber || "Not provided"}
                       </span>
                     </div>
                   </div>
                   {profile?.countryCode && (
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                         Country Code
                       </label>
-                      <div className="backdrop-blur-sm bg-gray-100/50 border border-gray-200/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
-                        <span className="text-gray-700">{profile.countryCode}</span>
+                      <div className="backdrop-blur-sm bg-gray-100/50 dark:bg-slate-700/50 border border-gray-200/50 dark:border-slate-600/50 rounded-lg p-3 min-h-[42px] flex items-center opacity-75">
+                        <span className="text-gray-700 dark:text-gray-300">{profile.countryCode}</span>
                       </div>
                     </div>
                   )}
@@ -752,80 +780,24 @@ export default function StudentProfile() {
               {/* Academic Background */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-foreground flex items-center gap-2">
                     <GraduationCap className="w-5 h-5" />
                     Academic Background
                   </h3>
-                  {!editingAcademic ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingAcademic(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingAcademic(false);
-                          // Reset to original values
-                          if (profile) {
-                            setAcademicData({
-                              studyLevel: profile.studyLevel || "",
-                              extracurricular: profile.extracurricular ? "yes" : "no",
-                              bm: profile.bm || "0",
-                              english: profile.english || "0",
-                              history: profile.history || "0",
-                              mathematics: profile.mathematics || "0",
-                              islamicEducationMoralEducation: profile.islamicEducationMoralEducation || "0",
-                              physics: profile.physics || "0",
-                              chemistry: profile.chemistry || "0",
-                              biology: profile.biology || "0",
-                              additionalMathematics: profile.additionalMathematics || "0",
-                              geography: profile.geography || "0",
-                              economics: profile.economics || "0",
-                              accounting: profile.accounting || "0",
-                              chinese: profile.chinese || "0",
-                              tamil: profile.tamil || "0",
-                              ict: profile.ict || "0",
-                            });
-                          }
-                        }}
-                        disabled={loading}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSaveAcademic}
-                        disabled={loading}
-                        className="flex items-center gap-2"
-                      >
-                        <Save className="w-4 h-4" />
-                        Save
-                      </Button>
-                    </div>
-                  )}
                 </div>
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Study Level
                     </Label>
-                    {editingAcademic ? (
+                    {isEditing ? (
                       <Select
                         value={academicData.studyLevel}
                         onValueChange={(value) =>
                           setAcademicData({ ...academicData, studyLevel: value })
                         }
                       >
-                        <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
+                        <SelectTrigger className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -834,25 +806,25 @@ export default function StudentProfile() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3 min-h-[42px] flex items-center">
-                        <span className="text-gray-900">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3 min-h-[42px] flex items-center">
+                        <span className="text-gray-900 dark:text-foreground">
                           {profile?.studyLevel || "Not provided"}
                         </span>
                       </div>
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Extracurricular Activities
                     </Label>
-                    {editingAcademic ? (
+                    {isEditing ? (
                       <Select
                         value={academicData.extracurricular || "no"}
                         onValueChange={(value) =>
                           setAcademicData({ ...academicData, extracurricular: value })
                         }
                       >
-                        <SelectTrigger className="backdrop-blur-sm bg-white/50 border-white/30">
+                        <SelectTrigger className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -861,8 +833,8 @@ export default function StudentProfile() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3 min-h-[42px] flex items-center">
-                        <span className="text-gray-900">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3 min-h-[42px] flex items-center">
+                        <span className="text-gray-900 dark:text-foreground">
                           {profile?.extracurricular !== undefined
                             ? profile.extracurricular
                               ? "Yes"
@@ -876,22 +848,22 @@ export default function StudentProfile() {
 
                 {/* Subject Grades */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-3 block">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
                     Subject Grades
                   </label>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {SUBJECTS.map((subject) => {
-                      const grade = editingAcademic
+                      const grade = isEditing
                         ? academicData[subject.key]
                         : (profile?.[subject.key as keyof typeof profile] as string | undefined);
                       return (
                         <div
                           key={subject.key}
-                          className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3"
+                          className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700">{subject.label}</span>
-                            {editingAcademic ? (
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{subject.label}</span>
+                            {isEditing ? (
                               <Select
                                 value={grade || "0"}
                                 onValueChange={(value) =>
@@ -930,80 +902,27 @@ export default function StudentProfile() {
               {/* Interests & Skills */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-foreground flex items-center gap-2">
                     <Target className="w-5 h-5" />
                     Interests & Skills
                   </h3>
-                  {!editingInterests ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingInterests(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingInterests(false);
-                          // Reset to original values
-                          if (profile) {
-                            setInterestsData({
-                              mathsInterest: profile.mathsInterest || 1,
-                              scienceInterest: profile.scienceInterest || 1,
-                              computerInterest: profile.computerInterest || 1,
-                              writingInterest: profile.writingInterest || 1,
-                              artInterest: profile.artInterest || 1,
-                              businessInterest: profile.businessInterest || 1,
-                              socialInterest: profile.socialInterest || 1,
-                              logicalThinking: profile.logicalThinking || 1,
-                              problemSolving: profile.problemSolving || 1,
-                              creativity: profile.creativity || 1,
-                              communication: profile.communication || 1,
-                              teamwork: profile.teamwork || 1,
-                              leadership: profile.leadership || 1,
-                              attentionToDetail: profile.attentionToDetail || 1,
-                            });
-                          }
-                        }}
-                        disabled={loading}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSaveInterests}
-                        disabled={loading}
-                        className="flex items-center gap-2"
-                      >
-                        <Save className="w-4 h-4" />
-                        Save
-                      </Button>
-                    </div>
-                  )}
                 </div>
 
                 {/* Interests */}
                 <div className="mb-6">
-                  <label className="text-sm font-medium text-gray-700 mb-3 block">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
                     Interests (1-5 scale)
                   </label>
                   <div className="space-y-3">
                     {INTERESTS.map((interest) => {
-                      const value = editingInterests
+                      const value = isEditing
                         ? interestsData[interest.key]
                         : (profile?.[interest.key as keyof typeof profile] as number | undefined);
                       return (
                         <div key={interest.key} className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700">{interest.label}</span>
-                            {editingInterests ? (
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{interest.label}</span>
+                            {isEditing ? (
                               <Select
                                 value={String(value || 1)}
                                 onValueChange={(val) =>
@@ -1022,7 +941,7 @@ export default function StudentProfile() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <span className="text-sm text-gray-500">{getInterestLevel(typeof value === 'number' ? value : undefined)}</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">{getInterestLevel(typeof value === 'number' ? value : undefined)}</span>
                             )}
                           </div>
                           <Progress
@@ -1037,19 +956,19 @@ export default function StudentProfile() {
 
                 {/* Skills */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-3 block">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
                     Skills (1-5 scale)
                   </label>
                   <div className="space-y-3">
                     {SKILLS.map((skill) => {
-                      const value = editingInterests
+                      const value = isEditing
                         ? interestsData[skill.key]
                         : (profile?.[skill.key as keyof typeof profile] as number | undefined);
                       return (
                         <div key={skill.key} className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700">{skill.label}</span>
-                            {editingInterests ? (
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{skill.label}</span>
+                            {isEditing ? (
                               <Select
                                 value={String(value || 1)}
                                 onValueChange={(val) =>
@@ -1068,7 +987,7 @@ export default function StudentProfile() {
                                 </SelectContent>
                               </Select>
                             ) : (
-                              <span className="text-sm text-gray-500">{getSkillLevel(typeof value === 'number' ? value : undefined)}</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400">{getSkillLevel(typeof value === 'number' ? value : undefined)}</span>
                             )}
                           </div>
                           <Progress
@@ -1085,81 +1004,38 @@ export default function StudentProfile() {
               {/* Preferences */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-foreground flex items-center gap-2">
                     <MapPin className="w-5 h-5" />
                     Preferences
                   </h3>
-                  {!editingPreferences ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingPreferences(true)}
-                      className="flex items-center gap-2"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingPreferences(false);
-                          // Reset to original values
-                          if (preferences) {
-                            setPreferencesData({
-                              budgetRange: preferences.budgetRange || "",
-                              preferredLocation: preferences.preferredLocation || "",
-                              preferredCountry: preferences.preferredCountry || "",
-                              studyMode: preferences.studyMode || "",
-                            });
-                          }
-                        }}
-                        disabled={loading}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSavePreferences}
-                        disabled={loading}
-                        className="flex items-center gap-2"
-                      >
-                        <Save className="w-4 h-4" />
-                        Save
-                      </Button>
-                    </div>
-                  )}
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Budget Range
                     </Label>
-                    {editingPreferences ? (
+                    {isEditing ? (
                       <Input
                         value={preferencesData.budgetRange || ""}
                         onChange={(e) =>
                           setPreferencesData({ ...preferencesData, budgetRange: e.target.value })
                         }
                         placeholder="e.g., RM 50,000 - RM 100,000"
-                        className="backdrop-blur-sm bg-white/50 border-white/30"
+                        className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50"
                       />
                     ) : (
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3 min-h-[42px] flex items-center">
-                        <span className="text-gray-900">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3 min-h-[42px] flex items-center">
+                        <span className="text-gray-900 dark:text-foreground">
                           {preferences?.budgetRange || "Not provided"}
                         </span>
                       </div>
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Preferred Location
                     </Label>
-                    {editingPreferences ? (
+                    {isEditing ? (
                       <Input
                         value={preferencesData.preferredLocation || ""}
                         onChange={(e) =>
@@ -1169,21 +1045,21 @@ export default function StudentProfile() {
                           })
                         }
                         placeholder="e.g., Kuala Lumpur"
-                        className="backdrop-blur-sm bg-white/50 border-white/30"
+                        className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50"
                       />
                     ) : (
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3 min-h-[42px] flex items-center">
-                        <span className="text-gray-900">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3 min-h-[42px] flex items-center">
+                        <span className="text-gray-900 dark:text-foreground">
                           {preferences?.preferredLocation || "Not provided"}
                         </span>
                       </div>
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Preferred Country
                     </Label>
-                    {editingPreferences ? (
+                    {isEditing ? (
                       <Input
                         value={preferencesData.preferredCountry || ""}
                         onChange={(e) =>
@@ -1193,32 +1069,32 @@ export default function StudentProfile() {
                           })
                         }
                         placeholder="e.g., Malaysia"
-                        className="backdrop-blur-sm bg-white/50 border-white/30"
+                        className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50"
                       />
                     ) : (
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3 min-h-[42px] flex items-center">
-                        <span className="text-gray-900">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3 min-h-[42px] flex items-center">
+                        <span className="text-gray-900 dark:text-foreground">
                           {preferences?.preferredCountry || "Not provided"}
                         </span>
                       </div>
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                       Study Mode
                     </Label>
-                    {editingPreferences ? (
+                    {isEditing ? (
                       <Input
                         value={preferencesData.studyMode || ""}
                         onChange={(e) =>
                           setPreferencesData({ ...preferencesData, studyMode: e.target.value })
                         }
                         placeholder="e.g., Full-time"
-                        className="backdrop-blur-sm bg-white/50 border-white/30"
+                        className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50"
                       />
                     ) : (
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3 min-h-[42px] flex items-center">
-                        <span className="text-gray-900">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3 min-h-[42px] flex items-center">
+                        <span className="text-gray-900 dark:text-foreground">
                           {preferences?.studyMode || "Not provided"}
                         </span>
                       </div>
@@ -1230,23 +1106,245 @@ export default function StudentProfile() {
 
             {/* History Tab */}
             <TabsContent value="history" className="p-6 space-y-6">
-              <div className="backdrop-blur-sm bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-white/20 rounded-lg p-6">
-                <div className="flex items-center gap-3">
-                  <History className="w-8 h-8 text-purple-600" />
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground">
-                      Recommendation History
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Track your AI recommendations over time
-                    </p>
+              <div className="backdrop-blur-sm bg-gradient-to-r from-purple-500/20 to-blue-500/20 dark:from-purple-500/30 dark:to-blue-500/30 border border-white/20 dark:border-slate-700/50 rounded-lg p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <History className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">
+                        Recommendation History
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Track your AI recommendations over time
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Filter Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant={historyFilter === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setHistoryFilter('all')}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={historyFilter === 'field' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setHistoryFilter('field')}
+                    >
+                      Fields
+                    </Button>
+                    <Button
+                      variant={historyFilter === 'program' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setHistoryFilter('program')}
+                    >
+                      Programs
+                    </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-6 text-center">
-                <p className="text-muted-foreground">No recommendation history available yet.</p>
-              </div>
+              {/* Loading State */}
+              {historyLoading && (
+                <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-6 text-center">
+                  <p className="text-muted-foreground">Loading recommendation history...</p>
+                </div>
+              )}
+
+              {/* Error State */}
+              {!historyLoading && historyError && (
+                <div className="backdrop-blur-sm bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                  <p className="text-red-600">Error: {historyError}</p>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!historyLoading && !historyError && recommendationHistory.length === 0 && (
+                <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-6 text-center">
+                  <p className="text-muted-foreground">No recommendation history available yet.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Start getting recommendations to see your history here.
+                  </p>
+                </div>
+              )}
+
+              {/* Recommendation History List */}
+              {!historyLoading && !historyError && recommendationHistory.length > 0 && (
+                <div className="space-y-4">
+                  {(() => {
+                    // Group recommendations by session
+                    const groupedBySession = recommendationHistory.reduce((acc, rec) => {
+                      const sessionId = rec.recommendation_session_id || 'no-session';
+                      if (!acc[sessionId]) {
+                        acc[sessionId] = [];
+                      }
+                      acc[sessionId].push(rec);
+                      return acc;
+                    }, {} as Record<string, RecommendationHistoryItem[]>);
+
+                    return Object.entries(groupedBySession).map(([sessionId, recs]) => {
+                      // Get the date from the first recommendation in the session
+                      const sessionDate = recs[0]?.created_at 
+                        ? new Date(recs[0].created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Unknown date';
+
+                      // Separate field and program recommendations
+                      const fieldRecs = recs.filter(r => r.recommendation_type === 'field');
+                      const programRecs = recs.filter(r => r.recommendation_type === 'program');
+                      
+                      // Calculate counts
+                      const fieldCount = fieldRecs.length;
+                      const programCount = programRecs.length;
+                      const totalCount = recs.length;
+
+                      return (
+                        <div
+                          key={sessionId}
+                          className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-6 space-y-4"
+                        >
+                          {/* Session Header */}
+                          <div className="flex items-center justify-between border-b border-white/20 pb-3">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-purple-600" />
+                              <span className="text-sm font-medium text-foreground">
+                                {sessionDate}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Field Recommendations */}
+                          {fieldRecs.length > 0 && (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                <TrendingUp className="w-4 h-4 text-purple-600" />
+                                Field Recommendations
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {fieldRecs
+                                  .sort((a, b) => (a.final_rank || 0) - (b.final_rank || 0))
+                                  .map((rec) => (
+                                    <div
+                                      key={rec.recommendation_id}
+                                      className="backdrop-blur-sm bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border border-purple-200/50 dark:border-purple-800/50 rounded-lg p-4"
+                                    >
+                                      <div className="flex items-start justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <GraduationCap className="w-4 h-4 text-purple-600" />
+                                          <span className="font-medium text-sm text-foreground">
+                                            {rec.field_name || 'Unknown Field'}
+                                          </span>
+                                        </div>
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs bg-purple-100 text-purple-700"
+                                        >
+                                          #{rec.final_rank || 'N/A'}
+                                        </Badge>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="text-muted-foreground">Match Score:</span>
+                                          <span className="font-semibold text-purple-600">
+                                            {((rec.final_score || rec.ml_confidence_score) * 100).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                        {rec.openai_validated && (
+                                          <div className="flex items-center gap-1 text-xs">
+                                            <Sparkles className="w-3 h-3 text-blue-500" />
+                                            <span className="text-muted-foreground">
+                                              OpenAI Validated
+                                            </span>
+                                          </div>
+                                        )}
+                                        {rec.powered_by && rec.powered_by.length > 0 && (
+                                          <div className="text-xs text-muted-foreground">
+                                            Powered by: {rec.powered_by.join(', ')}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Program Recommendations */}
+                          {programRecs.length > 0 && (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                <BookOpen className="w-4 h-4 text-blue-600" />
+                                Program Recommendations
+                              </div>
+                              <div className="space-y-3">
+                                {programRecs
+                                  .sort((a, b) => (a.final_rank || 0) - (b.final_rank || 0))
+                                  .map((rec) => (
+                                    <div
+                                      key={rec.recommendation_id}
+                                      className="backdrop-blur-sm bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200/50 dark:border-blue-800/50 rounded-lg p-4"
+                                    >
+                                      <div className="flex items-start justify-between mb-2">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <GraduationCap className="w-4 h-4 text-blue-600" />
+                                            <span className="font-medium text-foreground">
+                                              {rec.program_name || `Program #${rec.program_id}`}
+                                            </span>
+                                          </div>
+                                          {rec.field_name && (
+                                            <Badge variant="outline" className="text-xs">
+                                              {rec.field_name}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs bg-blue-100 text-blue-700 ml-2"
+                                        >
+                                          #{rec.final_rank || 'N/A'}
+                                        </Badge>
+                                      </div>
+                                      <div className="space-y-2 mt-3">
+                                        <div className="flex items-center justify-between text-xs">
+                                          <span className="text-muted-foreground">Match Score:</span>
+                                          <span className="font-semibold text-blue-600">
+                                            {((rec.final_score || rec.ml_confidence_score) * 100).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                        {rec.openai_explanation && (
+                                          <p className="text-xs text-muted-foreground line-clamp-2">
+                                            {rec.openai_explanation}
+                                          </p>
+                                        )}
+                                        {rec.openai_validated && (
+                                          <div className="flex items-center gap-1 text-xs">
+                                            <Sparkles className="w-3 h-3 text-blue-500" />
+                                            <span className="text-muted-foreground">
+                                              OpenAI Validated
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </Card>

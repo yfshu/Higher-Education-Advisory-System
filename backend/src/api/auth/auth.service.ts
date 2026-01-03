@@ -28,11 +28,16 @@ export class AuthService {
     // First, check if user exists and is banned/inactive BEFORE attempting login
     // This allows us to give a better error message
     try {
-      const { data: { users }, error: listError } = await dbClient.auth.admin.listUsers();
+      const {
+        data: { users },
+        error: listError,
+      } = await dbClient.auth.admin.listUsers();
       
       if (!listError && users && users.length > 0) {
-        const user = users.find((u: any) => u.email?.toLowerCase() === dto.email.toLowerCase());
-        
+        const user = users.find(
+          (u: any) => u.email?.toLowerCase() === dto.email.toLowerCase()
+        );
+
         if (user) {
           // Check if user is banned/inactive
           const isBanned = (user as any).banned_at !== null && (user as any).banned_at !== undefined;

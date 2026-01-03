@@ -375,15 +375,15 @@ export default function SearchPrograms() {
                       <DollarSign className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       Tuition Fee Range
                     </Label>
-                    <div className="px-2 py-3 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700">
+                    <div className="px-2 py-3 bg-gray-50 dark:bg-slate-900/80 rounded-lg border border-gray-200 dark:border-slate-800">
                       <Slider
                         value={filters.tuitionRange}
                         onValueChange={(value) => setFilters({...filters, tuitionRange: value})}
                         max={maxTuition}
                         step={1000}
-                        className="w-full"
+                        className="w-full [&_[data-slot=slider-track]]:dark:bg-slate-700 [&_[data-slot=slider-range]]:dark:bg-slate-500"
                       />
-                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-200 dark:border-slate-700">
+                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-200 dark:border-slate-800">
                         <span className="text-sm font-medium text-foreground">RM {filters.tuitionRange[0].toLocaleString()}</span>
                         <span className="text-xs text-muted-foreground">to</span>
                         <span className="text-sm font-medium text-foreground">RM {filters.tuitionRange[1].toLocaleString()}</span>
@@ -518,14 +518,14 @@ export default function SearchPrograms() {
 
                     {/* Program Details */}
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3">
                         <p className="text-xs text-muted-foreground mb-1">Duration</p>
                         <p className="font-medium text-foreground flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {formatDuration(program)}
                         </p>
                       </div>
-                      <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
+                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3">
                         <p className="text-xs text-muted-foreground mb-1">Tuition Fee</p>
                         <p className="font-medium text-foreground">{formatTuitionFee(program)}</p>
                       </div>

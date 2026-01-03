@@ -39,10 +39,13 @@ export function useSavedItems(): UseSavedItemsReturn {
       }
 
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
-      const response = await fetch(`${backendUrl}/api/saved-items`, {
+      // Add cache-busting timestamp to ensure fresh data
+      const response = await fetch(`${backendUrl}/api/saved-items?t=${Date.now()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
         },
+        cache: 'no-store',
       });
 
       if (!response.ok) {

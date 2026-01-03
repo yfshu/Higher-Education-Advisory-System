@@ -155,9 +155,9 @@ export default function StudentHelp() {
     <StudentLayout title="Help & Support">
       <div className="space-y-6">
         {/* Header */}
-        <div className="backdrop-blur-xl bg-gradient-to-r from-blue-500/20 to-green-500/20 border border-white/20 rounded-2xl p-6">
+        <div className="backdrop-blur-xl bg-gradient-to-r from-blue-500/20 to-green-500/20 dark:from-blue-500/30 dark:to-green-500/30 border border-white/20 dark:border-slate-700/50 rounded-2xl p-6">
           <div className="flex items-center gap-3 mb-4">
-            <HelpCircle className="w-8 h-8 text-blue-600" />
+            <HelpCircle className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             <div>
               <h2 className="text-xl font-semibold text-foreground">How can we help you?</h2>
               <p className="text-muted-foreground">Find answers to common questions about Malaysian university applications and our platform</p>
@@ -167,17 +167,17 @@ export default function StudentHelp() {
 
         {/* Tabs for FAQ and AI Chat */}
         <Tabs defaultValue="faq" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 backdrop-blur-xl bg-white/60 border border-white/30 shadow-lg p-1 h-12">
+          <TabsList className="grid w-full grid-cols-2 backdrop-blur-xl bg-white/60 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/50 shadow-lg p-1 h-12">
             <TabsTrigger 
               value="faq" 
-              className="flex items-center gap-2 h-10 rounded-lg backdrop-blur-sm bg-white/20 border border-transparent hover:bg-white/40 hover:border-blue-200/50 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-blue-600 data-[state=active]:shadow-md transition-all duration-200 font-medium"
+              className="flex items-center gap-2 h-10 rounded-lg backdrop-blur-sm bg-white/20 dark:bg-slate-700/50 border border-transparent hover:bg-white/40 dark:hover:bg-slate-600/50 hover:border-blue-200/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:border-blue-500 data-[state=active]:shadow-md transition-all duration-200 font-medium"
             >
               <HelpCircle className="w-4 h-4" />
               FAQ
             </TabsTrigger>
             <TabsTrigger 
               value="chat" 
-              className="flex items-center gap-2 h-10 rounded-lg backdrop-blur-sm bg-white/20 border border-transparent hover:bg-white/40 hover:border-purple-200/50 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:border-purple-600 data-[state=active]:shadow-md transition-all duration-200 font-medium"
+              className="flex items-center gap-2 h-10 rounded-lg backdrop-blur-sm bg-white/20 dark:bg-slate-700/50 border border-transparent hover:bg-white/40 dark:hover:bg-slate-600/50 hover:border-purple-200/50 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:border-purple-500 data-[state=active]:shadow-md transition-all duration-200 font-medium"
             >
               <Bot className="w-4 h-4" />
               AI Assistant
@@ -187,7 +187,7 @@ export default function StudentHelp() {
           {/* FAQ Tab */}
           <TabsContent value="faq" className="space-y-6 mt-6">
             {/* Search Bar */}
-            <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+            <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
               <div className="p-4">
                 <div className="relative">
                   <Search className="w-5 h-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -196,14 +196,14 @@ export default function StudentHelp() {
                     placeholder="Search FAQs about Malaysian universities, programs, scholarships..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 backdrop-blur-sm bg-white/50 border-white/30"
+                    className="pl-10 backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50"
                   />
                 </div>
               </div>
             </Card>
 
             {/* FAQs List */}
-            <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+            <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
               <div className="p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4">
                   Frequently Asked Questions
@@ -245,10 +245,10 @@ export default function StudentHelp() {
 
           {/* AI Chat Tab */}
           <TabsContent value="chat" className="space-y-6 mt-6">
-            <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+            <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 shadow-lg">
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <Bot className="w-6 h-6 text-purple-600" />
+                  <Bot className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">AI Academic Assistant</h3>
                     <p className="text-sm text-muted-foreground">
@@ -258,7 +258,7 @@ export default function StudentHelp() {
                 </div>
 
                 {/* Chat Messages */}
-                <div className="border border-white/30 rounded-lg bg-white/20 backdrop-blur-sm h-96 overflow-y-auto p-4 mb-4 space-y-4">
+                <div className="border border-white/30 dark:border-slate-700/50 rounded-lg bg-white/20 dark:bg-slate-900/50 backdrop-blur-sm h-96 overflow-y-auto p-4 mb-4 space-y-4">
                   {chatMessages.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-center">
                       <div className="text-muted-foreground">
@@ -284,8 +284,8 @@ export default function StudentHelp() {
                           <div
                             className={`max-w-[80%] rounded-lg p-3 ${
                               msg.role === 'user'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white/60 backdrop-blur-sm text-foreground border border-white/30'
+                                ? 'bg-blue-600 dark:bg-blue-700 text-white'
+                                : 'bg-white/60 dark:bg-slate-800/70 backdrop-blur-sm text-foreground border border-white/30 dark:border-slate-700/50'
                             }`}
                           >
                             <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
@@ -302,8 +302,8 @@ export default function StudentHelp() {
                           <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
                             <Bot className="w-5 h-5 text-white" />
                           </div>
-                          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-white/30">
-                            <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                          <div className="bg-white/60 dark:bg-slate-800/70 backdrop-blur-sm rounded-lg p-3 border border-white/30 dark:border-slate-700/50">
+                            <Loader2 className="w-5 h-5 animate-spin text-purple-600 dark:text-purple-400" />
                           </div>
                         </div>
                       )}
@@ -314,7 +314,7 @@ export default function StudentHelp() {
 
                 {/* Error Message */}
                 {chatError && (
-                  <div className="mb-4 flex items-center gap-2 text-red-600 text-sm bg-red-50/50 border border-red-200/30 rounded-lg p-3">
+                  <div className="mb-4 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50/50 dark:bg-red-900/20 border border-red-200/30 dark:border-red-800/50 rounded-lg p-3">
                     <AlertCircle className="w-4 h-4" />
                     <span>{chatError}</span>
                   </div>
@@ -333,13 +333,13 @@ export default function StudentHelp() {
                       }
                     }}
                     placeholder="Ask about Malaysian education, programs, scholarships, or how to use BackToSchool..."
-                    className="backdrop-blur-sm bg-white/50 border-white/30"
+                    className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/70 border-white/30 dark:border-slate-700/50"
                     disabled={chatLoading}
                   />
                   <Button
                     onClick={handleSendMessage}
                     disabled={!chatInput.trim() || chatLoading}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6"
+                    className="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-600 text-white px-6"
                   >
                     {chatLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />

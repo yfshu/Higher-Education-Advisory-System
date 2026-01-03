@@ -859,6 +859,84 @@ export type Database = {
           },
         ];
       };
+      ai_recommendations: {
+        Row: {
+          recommendation_id: string;
+          user_id: string;
+          recommendation_type: 'field' | 'program';
+          field_of_interest_id: number | null;
+          field_name: string | null;
+          program_id: number | null;
+          program_name: string | null;
+          ml_confidence_score: number;
+          ml_rank: number | null;
+          openai_validated: boolean;
+          openai_adjusted_score: number | null;
+          openai_explanation: string | null;
+          final_rank: number | null;
+          final_score: number | null;
+          powered_by: string[] | null;
+          recommendation_session_id: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          recommendation_id?: string;
+          user_id: string;
+          recommendation_type: 'field' | 'program';
+          field_of_interest_id?: number | null;
+          field_name?: string | null;
+          program_id?: number | null;
+          program_name?: string | null;
+          ml_confidence_score: number;
+          ml_rank?: number | null;
+          openai_validated?: boolean;
+          openai_adjusted_score?: number | null;
+          openai_explanation?: string | null;
+          final_rank?: number | null;
+          final_score?: number | null;
+          powered_by?: string[] | null;
+          recommendation_session_id?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          recommendation_id?: string;
+          user_id?: string;
+          recommendation_type?: 'field' | 'program';
+          field_of_interest_id?: number | null;
+          field_name?: string | null;
+          program_id?: number | null;
+          program_name?: string | null;
+          ml_confidence_score?: number;
+          ml_rank?: number | null;
+          openai_validated?: boolean;
+          openai_adjusted_score?: number | null;
+          openai_explanation?: string | null;
+          final_rank?: number | null;
+          final_score?: number | null;
+          powered_by?: string[] | null;
+          recommendation_session_id?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_recommendations_field_of_interest_id_fkey';
+            columns: ['field_of_interest_id'];
+            isOneToOne: false;
+            referencedRelation: 'field_of_interest';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ai_recommendations_program_id_fkey';
+            columns: ['program_id'];
+            isOneToOne: false;
+            referencedRelation: 'programs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

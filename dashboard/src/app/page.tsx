@@ -19,8 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 const metrics = [
-  { label: 'Programs', value: '5,000+' },
-  { label: 'Malaysian Universities', value: '150+' },
+  { label: 'Programs', value: '1000+' },
+  { label: 'Universities', value: '100+' },
   { label: 'Student Satisfaction', value: '98%' },
 ];
 
@@ -83,32 +83,14 @@ export default function LandingPage() {
           <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-24 text-center text-white">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 text-sm">
               <CheckCircle className="h-4 w-4 text-emerald-300" />
-              AI-powered Malaysian university guidance
+              AI-powered university guidance
             </span>
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
-              Discover Your Ideal University Programme in Malaysia
+              Discover Your Ideal University Programme
             </h1>
             <p className="max-w-2xl text-lg leading-relaxed text-blue-100">
-              Explore curated recommendations based on your grades, interests, and career aspirations.
-              Compare universities, stay on top of deadlines, and uncover scholarship opportunities—all in one place.
+              AI-powered recommendations based on your profile. Compare programmes, track deadlines, and find scholarships—all in one place.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Button
-                onClick={openRegister}
-                size="lg"
-                className="h-12 rounded-lg bg-white text-blue-700 shadow-xl transition-all duration-200 hover:bg-blue-50"
-              >
-                Start Free Assessment
-              </Button>
-              <Button
-                onClick={openLogin}
-                size="lg"
-                variant="outline"
-                className="h-12 rounded-lg border-white/60 bg-white/10 text-white backdrop-blur hover:bg-white/20"
-              >
-                Sign In
-              </Button>
-            </div>
 
             <div className="grid w-full max-w-3xl grid-cols-1 gap-6 rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur md:grid-cols-3">
               {metrics.map((metric) => (
@@ -121,72 +103,47 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-6xl gap-6 px-6 py-16 md:grid-cols-3">
-          {benefits.map(({ title, description, icon: Icon }) => (
-            <Card
-              key={title}
-              className="border-blue-100 bg-white/90 p-6 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
-                <Icon className="h-6 w-6" />
-              </div>
-              <h3 className="mb-2 text-lg font-semibold text-slate-900">{title}</h3>
-              <p className="text-sm text-slate-600">{description}</p>
-            </Card>
-          ))}
-        </section>
-
         <section className="bg-slate-50">
-          <div className="mx-auto grid max-w-6xl gap-12 px-6 py-16 md:grid-cols-[1.1fr_0.9fr] md:items-center">
-            <div className="space-y-6">
-              <h2 className="text-3xl font-semibold text-slate-900">
-                Why Malaysian students choose BackToSchool
-              </h2>
-              <p className="text-slate-600">
-                We bring together complete programme details, scholarship insights, and personalised guidance so you can
-                make confident decisions about your higher education journey.
-              </p>
-              <ul className="space-y-3 text-sm text-slate-600">
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="mt-1 h-4 w-4 text-blue-600" />
-                  Personalised dashboards to monitor application progress and deadlines.
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="mt-1 h-4 w-4 text-blue-600" />
-                  Scholarship and financial aid recommendations based on your academic profile.
-                </li>
-                <li className="flex items-start gap-3">
-                  <CheckCircle className="mt-1 h-4 w-4 text-blue-600" />
-                  Access to detailed programme insights including entry requirements and campus life.
-                </li>
-              </ul>
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={openRegister} className="bg-blue-600 text-white hover:bg-blue-700">
-                  Create free account
-                </Button>
-                <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" asChild>
-                  <Link href="/student/search">Browse programmes</Link>
-                </Button>
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <div className="grid gap-8 md:grid-cols-2 md:items-center">
+              <div className="space-y-6">
+                <h2 className="text-3xl font-semibold text-slate-900">
+                  Everything you need to make the right choice
+                </h2>
+                <ul className="space-y-4 text-slate-600">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 flex-shrink-0 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-slate-900">Personalised dashboards</p>
+                      <p className="text-sm">Monitor application progress and deadlines</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 flex-shrink-0 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-slate-900">Scholarship recommendations</p>
+                      <p className="text-sm">Based on your academic profile and financial goals</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="mt-1 h-5 w-5 flex-shrink-0 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-slate-900">Detailed programme insights</p>
+                      <p className="text-sm">Entry requirements, curriculum, and career outcomes</p>
+                    </div>
+                  </li>
+                </ul>
               </div>
-            </div>
 
-            <Card className="border-blue-100 bg-white p-6 shadow-lg">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
-                <Users className="h-5 w-5 text-blue-600" />
-                Support at every step
-              </h3>
-              <div className="space-y-4 text-sm text-slate-600">
-                <p>
-                  Our advisory tools help you shortlist universities, prepare application documents, and stay ahead of
-                  critical dates.
+              <Card className="border-blue-100 bg-white p-6 shadow-lg">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  Need guidance?
+                </h3>
+                <p className="mb-4 text-sm text-slate-600">
+                  Visit the help centre or chat with our advisors for personalised support.
                 </p>
-                <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
-                  <p className="mb-2 text-sm font-semibold text-blue-800">Need guidance?</p>
-                  <p className="text-sm text-blue-700">
-                    Visit the help centre or chat with our advisors for personalised support.
-                  </p>
-                </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2 text-slate-700">
                     <Phone className="h-4 w-4 text-blue-600" />
                     +60 3-2345-6789
@@ -196,31 +153,30 @@ export default function LandingPage() {
                     support@backtoschool.my
                   </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </div>
         </section>
 
         <section className="bg-blue-600">
-          <div className="mx-auto max-w-6xl px-6 py-16 text-white">
-            <div className="max-w-3xl space-y-4">
-              <h2 className="text-3xl font-semibold">Plan your university journey with confidence</h2>
-              <p className="text-blue-100">
-                Join thousands of Malaysian students who trust BackToSchool to discover the right programmes, manage
-                their applications, and unlock scholarship opportunities nationwide.
-              </p>
-            </div>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mx-auto max-w-6xl px-6 py-16 text-center text-white">
+            <h2 className="mb-4 text-3xl font-semibold">Plan your university journey with confidence</h2>
+            <p className="mx-auto mb-8 max-w-2xl text-blue-100">
+              Join thousands of students who trust BackToSchool to discover the right programmes and unlock scholarship opportunities.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4">
               <Button
                 onClick={openRegister}
+                size="lg"
                 className="bg-white text-blue-700 transition-colors duration-200 hover:bg-blue-50"
               >
                 Get Started Now
               </Button>
               <Button
                 variant="outline"
+                size="lg"
                 onClick={openLogin}
-                className="border-white/80 text-white hover:bg-white/10"
+                className="border border-white/70 bg-white/5 text-white backdrop-blur-sm hover:bg-white/15 hover:border-white/90 shadow-sm"
               >
                 I already have an account
               </Button>
@@ -236,7 +192,7 @@ export default function LandingPage() {
                 <span className="text-xl font-semibold">BackToSchool</span>
               </div>
               <p className="text-sm text-slate-300">
-                Empowering Malaysian students to explore, compare, and apply to the best programmes across the country.
+                Empowering students to explore, compare, and apply to the best programmes.
               </p>
             </div>
 
