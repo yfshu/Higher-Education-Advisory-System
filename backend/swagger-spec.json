@@ -190,6 +190,101 @@
         ]
       }
     },
+    "/api/auth/check-email": {
+      "get": {
+        "operationId": "AuthController_checkEmail",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email check completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "exists": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email."
+          }
+        },
+        "summary": "Check if email already exists",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/auth/reverse-geocode": {
+      "get": {
+        "operationId": "AuthController_reverseGeocode",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lon",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Location retrieved successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    },
+                    "country": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid coordinates."
+          }
+        },
+        "summary": "Reverse geocode coordinates to location",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/api/profile/me": {
       "get": {
         "operationId": "ProfileController_getMe",

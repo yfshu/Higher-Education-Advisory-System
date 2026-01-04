@@ -531,33 +531,33 @@ export default function ScholarshipManagement() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+          <Card className="backdrop-blur-xl bg-gradient-to-br from-white/80 to-blue-50/80 dark:from-slate-900/80 dark:to-blue-950/40 border-2 border-blue-300/50 dark:border-blue-600/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-blue-400 dark:hover:border-blue-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Scholarships</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">Total Scholarships</CardTitle>
+              <Award className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{scholarships.length}</div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{scholarships.length}</div>
             </CardContent>
           </Card>
           
-          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+          <Card className="backdrop-blur-xl bg-gradient-to-br from-white/80 to-amber-50/80 dark:from-slate-900/80 dark:to-amber-950/40 border-2 border-amber-300/50 dark:border-amber-600/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-amber-400 dark:hover:border-amber-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Scholarships</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">Active Scholarships</CardTitle>
+              <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{scholarships.filter(s => s.status === 'active').length}</div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{scholarships.filter(s => s.status === 'active').length}</div>
             </CardContent>
           </Card>
           
-          <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+          <Card className="backdrop-blur-xl bg-gradient-to-br from-white/80 to-emerald-50/80 dark:from-slate-900/80 dark:to-emerald-950/40 border-2 border-emerald-300/50 dark:border-emerald-600/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-emerald-400 dark:hover:border-emerald-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">Total Value</CardTitle>
+              <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                 RM {scholarships.reduce((sum, s) => sum + (s.amount || 0), 0).toLocaleString()}
               </div>
             </CardContent>
@@ -565,9 +565,9 @@ export default function ScholarshipManagement() {
         </div>
 
         {/* Filters and Search */}
-        <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+        <Card className="backdrop-blur-xl bg-gradient-to-br from-white/80 to-purple-50/60 dark:from-slate-900/80 dark:to-purple-950/40 border-2 border-purple-300/50 dark:border-purple-600/50 shadow-lg">
           <CardHeader>
-            <CardTitle>Search & Filter</CardTitle>
+            <CardTitle className="text-slate-700 dark:text-slate-200">Search & Filter</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row gap-4">
@@ -612,30 +612,30 @@ export default function ScholarshipManagement() {
         </Card>
 
         {/* Scholarships Table */}
-        <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+        <Card className="backdrop-blur-xl bg-gradient-to-br from-white/80 to-slate-50/80 dark:from-slate-900/80 dark:to-slate-950/60 border-2 border-slate-300/50 dark:border-slate-700/50 shadow-lg">
           <CardHeader>
-            <CardTitle>Scholarship Programs ({filteredScholarships.length})</CardTitle>
+            <CardTitle className="text-slate-700 dark:text-slate-200">Scholarship Programs ({filteredScholarships.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Scholarship Name</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Deadline</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                  <TableRow className="border-b-2 border-slate-300/50 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/30">
+                    <TableHead className="font-semibold text-slate-700 dark:text-slate-200">Scholarship Name</TableHead>
+                    <TableHead className="font-semibold text-slate-700 dark:text-slate-200">Provider</TableHead>
+                    <TableHead className="font-semibold text-slate-700 dark:text-slate-200">Amount</TableHead>
+                    <TableHead className="font-semibold text-slate-700 dark:text-slate-200">Type</TableHead>
+                    <TableHead className="font-semibold text-slate-700 dark:text-slate-200">Deadline</TableHead>
+                    <TableHead className="font-semibold text-slate-700 dark:text-slate-200">Status</TableHead>
+                    <TableHead className="font-semibold text-slate-700 dark:text-slate-200">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedScholarships.map((scholarship) => (
-                    <TableRow key={scholarship.id}>
-                      <TableCell className="font-medium">{scholarship.name}</TableCell>
-                      <TableCell>{scholarship.provider || '-'}</TableCell>
-                      <TableCell>
+                    <TableRow key={scholarship.id} className="border-b border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <TableCell className="font-medium text-slate-700 dark:text-slate-200">{scholarship.name}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300">{scholarship.provider || '-'}</TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300 font-medium">
                         {scholarship.amount ? `RM ${scholarship.amount.toLocaleString()}` : '-'}
                       </TableCell>
                       <TableCell>
@@ -643,7 +643,7 @@ export default function ScholarshipManagement() {
                           {scholarship.type || '-'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-slate-600 dark:text-slate-300">
                         {scholarship.deadline ? new Date(scholarship.deadline).toLocaleDateString('en-GB') : '-'}
                       </TableCell>
                       <TableCell>

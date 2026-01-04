@@ -17,6 +17,7 @@ import {
 import { useAuthModals } from '@/components/auth/AuthModalProvider';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import Aurora from '@/components/Aurora';
 
 const metrics = [
   { label: 'Programs', value: '1000+' },
@@ -78,9 +79,9 @@ export default function LandingPage() {
       </nav>
 
       <main>
-        <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.25),_transparent_60%)]" />
-          <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-24 text-center text-white">
+        <section className="relative overflow-hidden bg-slate-900">
+          <Aurora color1="#66c4ff" color3="#2d4ffb" />
+          <div className="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-8 px-6 py-24 text-center text-white">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 text-sm">
               <CheckCircle className="h-4 w-4 text-emerald-300" />
               AI-powered university guidance

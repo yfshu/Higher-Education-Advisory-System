@@ -23,6 +23,7 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import { getUserRole } from "@/lib/auth/role";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
+import Particles from "@/components/Particles";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -226,8 +227,25 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 relative">
+          {/* Particles Background Effect - Only in main content area */}
+          <div className="absolute inset-0 pointer-events-none z-0">
+            <Particles
+              particleCount={300}
+              particleSpread={15}
+              speed={0.15}
+              particleColors={["#d35cff","#1100ff","#ffffff","#fbff14"]}
+              moveParticlesOnHover={false}
+              particleHoverFactor={1}
+              alphaParticles
+              particleBaseSize={100}
+              sizeRandomness={1}
+              cameraDistance={17}
+              disableRotation={false}
+              className=""
+            />
+          </div>
+          <div className="relative z-10 max-w-7xl mx-auto">
             {children}
           </div>
         </main>

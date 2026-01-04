@@ -106,6 +106,7 @@ export interface RecommendationHistoryItem {
   ml_confidence_score: number;
   openai_validated: boolean;
   openai_adjusted_score: number | null;
+  openai_explanation: string | null;
   final_rank: number | null;
   final_score: number | null;
   powered_by: string[] | null;

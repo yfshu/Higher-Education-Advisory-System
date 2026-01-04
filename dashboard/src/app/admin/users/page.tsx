@@ -442,7 +442,7 @@ export default function UserManagement() {
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-blue-500/60 dark:border-blue-400/60 shadow-md hover:shadow-lg transition-all">
             <div className="flex items-center gap-2 sm:gap-3">
               <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
               <div>
@@ -451,7 +451,7 @@ export default function UserManagement() {
               </div>
             </div>
           </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-green-500/60 dark:border-green-400/60 shadow-md hover:shadow-lg transition-all">
             <div className="flex items-center gap-2 sm:gap-3">
               <UserCheck className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
               <div>
@@ -462,7 +462,7 @@ export default function UserManagement() {
               </div>
             </div>
           </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-purple-500/60 dark:border-purple-400/60 shadow-md hover:shadow-lg transition-all">
             <div className="flex items-center gap-2 sm:gap-3">
               <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
               <div>
@@ -479,7 +479,7 @@ export default function UserManagement() {
               </div>
             </div>
           </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-orange-500/60 dark:border-orange-400/60 shadow-md hover:shadow-lg transition-all">
             <div className="flex items-center gap-2 sm:gap-3">
               <UserX className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 dark:text-orange-400" />
               <div>

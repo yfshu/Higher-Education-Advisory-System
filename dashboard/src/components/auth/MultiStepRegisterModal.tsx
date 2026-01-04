@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -377,9 +378,11 @@ export default function MultiStepRegisterModal() {
     return true;
   };
 
-  const handleStep1 = () => {
+  const handleStep1 = async () => {
     setError(null);
+    setEmailErrors("");
 
+    // Step 1: Validate all form fields first
     const isNameValid = validateName(step1Data.fullName);
     const isPhoneValid = validatePhone(step1Data.phoneNumber);
     const isEmailValid = validateEmail(step1Data.email);
@@ -400,7 +403,81 @@ export default function MultiStepRegisterModal() {
       return;
     }
 
-    setCurrentStep(2);
+    // Step 2: Check if email already exists - THIS IS MANDATORY
+    setLoading(true);
+    setEmailErrors(""); // Clear any previous errors
+    
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+      const emailCheckUrl = `${backendUrl}/api/auth/check-email?email=${encodeURIComponent(step1Data.email.trim())}`;
+      
+      console.log("🔍 [Step 1] Starting email existence check for:", step1Data.email);
+      console.log("🔍 [Step 1] API URL:", emailCheckUrl);
+      
+      const response = await fetch(emailCheckUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("📡 [Step 1] Email check response status:", response.status, response.statusText);
+
+      if (!response.ok) {
+        // If API call fails (404, 500, etc.), show error and BLOCK progression
+        let errorMessage = "Unable to verify email. Please check your connection and try again.";
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If JSON parsing fails, use status-based message
+          if (response.status === 404) {
+            errorMessage = "Email verification service is unavailable. Please ensure the backend server is running and try again.";
+          } else if (response.status === 500) {
+            errorMessage = "Email verification service error. Please try again later.";
+          }
+        }
+        
+        console.error("❌ [Step 1] Email check API error:", response.status, response.statusText);
+        
+        setEmailErrors(errorMessage);
+        setLoading(false);
+        return; // BLOCK - Do not proceed to step 2
+      }
+
+      const data = await response.json();
+      console.log("✅ [Step 1] Email check result:", data);
+
+      // Validate response structure
+      if (typeof data.exists !== 'boolean') {
+        console.error("❌ [Step 1] Invalid response format:", data);
+        setEmailErrors("Invalid response from email verification service. Please try again.");
+        setLoading(false);
+        return; // BLOCK - Do not proceed to step 2
+      }
+
+      if (data.exists === true) {
+        // Email exists in auth.users - BLOCK user from proceeding
+        console.log("⚠️ [Step 1] Email already exists in auth.users - BLOCKING progression");
+        const errorMsg = data.message || "This email is already registered. Please use a different email or try logging in.";
+        setEmailErrors(errorMsg);
+        setLoading(false);
+        return; // BLOCK - Do not proceed to step 2
+      }
+
+      // Email is NOT found in auth.users - ALLOW progression to step 2
+      console.log("✅ [Step 1] Email is NOT in auth.users - ALLOWING progression to step 2");
+      setEmailErrors(""); // Clear any errors
+      setCurrentStep(2);
+      
+    } catch (error) {
+      // Network error or other exception - BLOCK progression
+      console.error("❌ [Step 1] Error checking email:", error);
+      setEmailErrors("Unable to verify email. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStep2 = () => {
@@ -462,43 +539,46 @@ export default function MultiStepRegisterModal() {
   if (showSuccess) {
     return (
       <Dialog open={isRegisterOpen} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-[480px] border-none shadow-2xl p-0">
-          <div className="flex flex-col items-center justify-center px-8 py-12 text-center">
-            {/* Success Icon */}
-            <div className="mb-8 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg ring-8 ring-green-50">
+        <DialogContent className="sm:max-w-[480px] border-none shadow-2xl p-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+          {/* Decorative gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-emerald-600/10 pointer-events-none" />
+          
+          <div className="relative flex flex-col items-center justify-center px-8 py-12 text-center">
+            {/* Success Icon - Enhanced with glow */}
+            <div className="mb-8 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 shadow-2xl ring-8 ring-emerald-500/30 animate-pulse">
               <Check className="size-10 text-white stroke-[3]" />
             </div>
 
             {/* Title */}
-            <DialogTitle className="mb-4 text-3xl font-bold text-white tracking-tight">
+            <DialogTitle className="mb-4 text-3xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent tracking-tight">
               Registration Successful
             </DialogTitle>
 
             {/* Description */}
-            <p className="text-base text-gray-300 mb-6 max-w-sm leading-relaxed">
+            <DialogDescription className="text-base text-gray-200 mb-6 max-w-sm leading-relaxed">
               Your account has been created. We&apos;ve sent a verification link to:
-            </p>
+            </DialogDescription>
 
-            {/* Email Address - Highlighted */}
-            <div className="mb-6 w-full max-w-sm px-4 py-3 rounded-lg bg-blue-50 border border-blue-100">
-              <p className="text-base font-semibold text-blue-700 break-all">
+            {/* Email Address - Enhanced with vibrant colors */}
+            <div className="mb-6 w-full max-w-sm px-4 py-3 rounded-lg bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 border-2 border-blue-400/50 backdrop-blur-sm shadow-lg">
+              <p className="text-base font-semibold text-blue-300 break-all">
                 {step1Data.email}
               </p>
             </div>
 
             {/* Instructions */}
-            <p className="text-sm text-gray-400 mb-8 max-w-sm leading-relaxed">
+            <p className="text-sm text-gray-300 mb-8 max-w-sm leading-relaxed">
               Please check your inbox and click the verification link to activate your account and access the platform.
             </p>
 
-            {/* CTA Button */}
+            {/* CTA Button - Enhanced gradient */}
             <Button
               onClick={() => {
                 setShowSuccess(false);
                 closeRegister();
                 switchToLogin();
               }}
-              className="w-full max-w-xs bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="w-full max-w-xs bg-gradient-to-r from-blue-600 via-blue-500 to-purple-600 hover:from-blue-700 hover:via-blue-600 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-slate-800 transform hover:scale-105"
             >
               Continue to Login
             </Button>
@@ -650,8 +730,8 @@ export default function MultiStepRegisterModal() {
           <div className="flex gap-3">
             {currentStep < 4 ? (
               <Button
-                onClick={() => {
-                  if (currentStep === 1) handleStep1();
+                onClick={async () => {
+                  if (currentStep === 1) await handleStep1();
                   else if (currentStep === 2) handleStep2();
                   else if (currentStep === 3) handleStep3();
                 }}
@@ -786,28 +866,37 @@ function Step1Form({
         const fallback = `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`;
         onLocationChange(fallback);
         try {
+          // Use backend proxy to avoid CORS issues
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
           const resp = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
+            `${backendUrl}/api/auth/reverse-geocode?lat=${lat}&lon=${lon}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
           );
+          
           if (!resp.ok) {
+            // If API fails, use fallback coordinates
+            console.warn('[Location] Reverse geocoding API error:', resp.status, resp.statusText);
             onLocationChange(fallback);
             return;
           }
-          const json = await resp.json();
-          const addr = json?.address ?? {};
-          const primary =
-            addr.state || addr.city || addr.town || addr.village || addr.suburb;
-          const country = addr.country;
-          if (primary && country) {
-            onLocationChange(`${primary}, ${country}`);
-          } else if (primary) {
-            onLocationChange(primary);
-          } else if (country) {
-            onLocationChange(country);
+          
+          const data = await resp.json();
+          console.log('[Location] Reverse geocoding result:', data);
+          
+          // Use the formatted location from backend
+          if (data.location) {
+            onLocationChange(data.location);
           } else {
             onLocationChange(fallback);
           }
-        } catch {
+        } catch (error) {
+          // If API call fails (network error, etc.), use fallback coordinates
+          console.warn('[Location] Failed to fetch location:', error);
           onLocationChange(fallback);
         }
       },

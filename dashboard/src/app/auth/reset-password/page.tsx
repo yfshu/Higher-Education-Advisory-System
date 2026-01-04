@@ -23,8 +23,10 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [hasValidToken, setHasValidToken] = useState(false);
 
-  // Debug logging
-  console.log("🎨 Render - hasValidToken:", hasValidToken, "error:", error, "success:", success);
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log("🎨 Render - hasValidToken:", hasValidToken, "error:", error, "success:", success);
+  }
 
   // Password validation states
   const [passwordChecks, setPasswordChecks] = useState({

@@ -24,7 +24,7 @@ export class AuthService {
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
     const authClient = this.supabaseService.getAuthClient();
     const dbClient = this.supabaseService.getClient();
-    
+
     // First, check if user exists and is banned/inactive BEFORE attempting login
     // This allows us to give a better error message
     try {
@@ -32,20 +32,24 @@ export class AuthService {
         data: { users },
         error: listError,
       } = await dbClient.auth.admin.listUsers();
-      
+
       if (!listError && users && users.length > 0) {
         const user = users.find(
-          (u: any) => u.email?.toLowerCase() === dto.email.toLowerCase()
+          (u: any) => u.email?.toLowerCase() === dto.email.toLowerCase(),
         );
 
         if (user) {
           // Check if user is banned/inactive
-          const isBanned = (user as any).banned_at !== null && (user as any).banned_at !== undefined;
+          const isBanned =
+            (user as any).banned_at !== null &&
+            (user as any).banned_at !== undefined;
           const statusFromMetadata = (user.app_metadata as any)?.status;
           const isInactive = isBanned || statusFromMetadata === 'inactive';
-          
+
           if (isInactive) {
-            throw new UnauthorizedException('Your account is inactive. Please contact support for assistance.');
+            throw new UnauthorizedException(
+              'Your account is inactive. Please contact support for assistance.',
+            );
           }
         }
       }
@@ -56,7 +60,7 @@ export class AuthService {
       }
       // Otherwise, continue with normal login flow (user might not exist, etc.)
     }
-    
+
     // Attempt login
     const { data, error } = await authClient.auth.signInWithPassword({
       email: dto.email,
@@ -66,16 +70,18 @@ export class AuthService {
     if (error || !data.user) {
       // Check for specific password-related errors
       const errorMessage = error?.message?.toLowerCase() || '';
-      
+
       // Check if error is due to banned/inactive account
       if (
         errorMessage.includes('banned') ||
         errorMessage.includes('inactive') ||
         errorMessage.includes('disabled')
       ) {
-        throw new UnauthorizedException('Your account is inactive. Please contact support for assistance.');
+        throw new UnauthorizedException(
+          'Your account is inactive. Please contact support for assistance.',
+        );
       }
-      
+
       // Common Supabase password error messages
       if (
         errorMessage.includes('invalid login credentials') ||
@@ -85,16 +91,18 @@ export class AuthService {
         errorMessage.includes('email not confirmed') ||
         error?.status === 400
       ) {
-        throw new UnauthorizedException('Password is wrong or invalid. Please check your password and try again.');
+        throw new UnauthorizedException(
+          'Password is wrong or invalid. Please check your password and try again.',
+        );
       }
-      
+
       // Email not found
-      if (
-        errorMessage.includes('user not found')
-      ) {
-        throw new UnauthorizedException('Email not found. Please check your email address.');
+      if (errorMessage.includes('user not found')) {
+        throw new UnauthorizedException(
+          'Email not found. Please check your email address.',
+        );
       }
-      
+
       // Generic fallback
       throw new UnauthorizedException(
         error?.message ?? 'Invalid email or password.',
@@ -102,7 +110,10 @@ export class AuthService {
     }
     const userId = data.user.id;
     // Read role from app_metadata (set by Supabase Admin API), fallback to user_metadata, then default to 'student'
-    const role = (data.user.app_metadata?.role as string) ?? (data.user.user_metadata?.role as string) ?? 'student';
+    const role =
+      (data.user.app_metadata?.role as string) ??
+      (data.user.user_metadata?.role as string) ??
+      'student';
     const fullName = (data.user.user_metadata?.full_name as string) ?? '';
     const phoneNumber = (data.user.user_metadata?.phone_number as string) ?? '';
 
@@ -122,19 +133,26 @@ export class AuthService {
     let avatarUrl: string | undefined = undefined;
     if (profileData?.avatar_url) {
       // Check if avatar_url is already a full URL (legacy data) or a path
-      if (profileData.avatar_url.startsWith('http://') || profileData.avatar_url.startsWith('https://')) {
+      if (
+        profileData.avatar_url.startsWith('http://') ||
+        profileData.avatar_url.startsWith('https://')
+      ) {
         // Already a full URL, use as-is
         avatarUrl = profileData.avatar_url;
       } else {
         // It's a path, generate signed URL (expires in 1 hour)
-        const { data: signedUrlData, error: signedUrlError } = await dbClient.storage
-          .from('profile-avatars')
-          .createSignedUrl(profileData.avatar_url, 3600);
-        
+        const { data: signedUrlData, error: signedUrlError } =
+          await dbClient.storage
+            .from('profile-avatars')
+            .createSignedUrl(profileData.avatar_url, 3600);
+
         if (!signedUrlError && signedUrlData) {
           avatarUrl = signedUrlData.signedUrl;
         } else {
-          console.error('Failed to generate signed URL for avatar:', signedUrlError);
+          console.error(
+            'Failed to generate signed URL for avatar:',
+            signedUrlError,
+          );
           // If signed URL generation fails, return undefined (will show initials)
         }
       }
@@ -402,6 +420,149 @@ export class AuthService {
     }
 
     return { message: 'Password reset email sent.' };
+  }
+
+  async checkEmailExists(
+    email: string,
+  ): Promise<{ exists: boolean; message: string }> {
+    if (!email || !email.trim()) {
+      throw new BadRequestException('Email is required.');
+    }
+
+    const emailLower = email.toLowerCase().trim();
+    // Use getClient() which has serviceRoleKey for admin operations
+    // This is required to access auth.admin.listUsers()
+    const dbClient = this.supabaseService.getClient();
+
+    try {
+      // Check if email exists in Supabase Auth (auth.users table)
+      // We need admin privileges to list users, so use getClient() not getAuthClient()
+      const {
+        data: { users },
+        error: listError,
+      } = await dbClient.auth.admin.listUsers();
+
+      if (listError) {
+        // Log the error for debugging
+        console.error('[checkEmailExists] Error listing users:', listError);
+        // If we can't list users, throw error instead of returning false
+        // This prevents false negatives
+        throw new InternalServerErrorException(
+          `Unable to verify email: ${listError.message || 'Database error'}`,
+        );
+      }
+
+      // Check if any user has this email (case-insensitive)
+      const userExists = users?.some(
+        (u: any) => u.email?.toLowerCase() === emailLower,
+      );
+
+      if (userExists) {
+        return {
+          exists: true,
+          message:
+            'This email is already registered. Please use a different email or try logging in.',
+        };
+      }
+
+      // Email is not found in auth.users - it's available
+      return {
+        exists: false,
+        message: 'Email is available.',
+      };
+    } catch (error) {
+      // If it's our custom error, re-throw it
+      if (error instanceof InternalServerErrorException) {
+        throw error;
+      }
+      // For other errors, log and throw
+      console.error('[checkEmailExists] Unexpected error:', error);
+      throw new InternalServerErrorException(
+        `Unable to verify email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  async reverseGeocode(
+    lat: number,
+    lon: number,
+  ): Promise<{ location: string; state?: string; country?: string }> {
+    if (isNaN(lat) || isNaN(lon)) {
+      throw new BadRequestException('Invalid latitude or longitude.');
+    }
+
+    try {
+      // Use OpenStreetMap Nominatim API via backend to avoid CORS issues
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`,
+        {
+          headers: {
+            'User-Agent': 'BackToSchool/1.0 (Higher Education Advisory System)',
+            'Accept-Language': 'en',
+          },
+        },
+      );
+
+      if (!response.ok) {
+        // If API fails, return coordinates as fallback
+        return {
+          location: `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`,
+        };
+      }
+
+      const json = await response.json();
+      const addr = json?.address ?? {};
+      const state = addr.state || addr.region || addr.province;
+      const country = addr.country;
+      const city = addr.city || addr.town || addr.village || addr.suburb;
+
+      // Build location string - avoid duplicates (e.g., "Kuala Lumpur, Kuala Lumpur, Malaysia")
+      let location = '';
+
+      // If city and state are the same, only use city
+      const cityName = city?.trim();
+      const stateName = state?.trim();
+      const countryName = country?.trim();
+
+      if (cityName && countryName) {
+        // If city and state are the same, skip state
+        if (cityName.toLowerCase() === stateName?.toLowerCase()) {
+          location = `${cityName}, ${countryName}`;
+        } else if (stateName && countryName) {
+          // Use state if available and different from city
+          location = `${cityName || stateName}, ${countryName}`;
+        } else {
+          // Just city and country
+          location = `${cityName}, ${countryName}`;
+        }
+      } else if (stateName && countryName) {
+        // State and country only
+        location = `${stateName}, ${countryName}`;
+      } else if (cityName) {
+        // City only
+        location = cityName;
+      } else if (stateName) {
+        // State only
+        location = stateName;
+      } else if (countryName) {
+        // Country only
+        location = countryName;
+      } else {
+        // Fallback to coordinates
+        location = `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`;
+      }
+
+      return {
+        location,
+        state: stateName || undefined,
+        country: countryName || undefined,
+      };
+    } catch (error) {
+      // If API call fails, return coordinates as fallback
+      return {
+        location: `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`,
+      };
+    }
   }
 
   async updatePassword(

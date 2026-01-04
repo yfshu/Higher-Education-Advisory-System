@@ -22,7 +22,10 @@ import {
   Search,
 } from "lucide-react";
 import { useSavedItems } from "@/hooks/useSavedItems";
-import { getRecommendationHistory, type RecommendationHistoryItem } from "@/lib/api/recommendations";
+import {
+  getRecommendationHistory,
+  type RecommendationHistoryItem,
+} from "@/lib/api/recommendations";
 import { apiCall } from "@/lib/auth/apiClient";
 
 interface SavedProgram {
@@ -39,6 +42,19 @@ interface SavedScholarship {
   name: string;
   organization_name: string | null;
   saved_at: string;
+}
+
+interface ProgramWithUniversity {
+  id: number;
+  name: string;
+  level?: string | null;
+  deadline?: string | null;
+  university?: {
+    id?: number;
+    name?: string;
+    city?: string | null;
+    state?: string | null;
+  } | null;
 }
 
 interface LatestRecommendation {
@@ -58,12 +74,20 @@ const deadlineFormatter = new Intl.DateTimeFormat("en-MY", {
 });
 
 export default function StudentDashboardPage() {
-  const { savedItems, isLoading: savedItemsLoading, refreshSavedItems } = useSavedItems();
+  const {
+    savedItems,
+    isLoading: savedItemsLoading,
+    refreshSavedItems,
+  } = useSavedItems();
   const [mounted, setMounted] = useState(false);
   const [savedPrograms, setSavedPrograms] = useState<SavedProgram[]>([]);
-  const [savedScholarships, setSavedScholarships] = useState<SavedScholarship[]>([]);
+  const [savedScholarships, setSavedScholarships] = useState<
+    SavedScholarship[]
+  >([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
-  const [latestRecommendations, setLatestRecommendations] = useState<LatestRecommendation[]>([]);
+  const [latestRecommendations, setLatestRecommendations] = useState<
+    LatestRecommendation[]
+  >([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
 
   useEffect(() => {
@@ -82,7 +106,8 @@ export default function StudentDashboardPage() {
           return;
         }
 
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
         const cacheBuster = `?t=${Date.now()}`;
 
         // Fetch saved programs with cache-busting
@@ -91,24 +116,29 @@ export default function StudentDashboardPage() {
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
-              'Cache-Control': 'no-cache',
+              "Cache-Control": "no-cache",
             },
-            cache: 'no-store',
+            cache: "no-store",
           }
         );
 
         if (programsResponse.ok) {
           const programsResult = await programsResponse.json();
           if (programsResult.success && programsResult.data) {
-            console.log(`✅ Fetched ${programsResult.data.length} saved programs from API`);
+            console.log(
+              `✅ Fetched ${programsResult.data.length} saved programs from API`
+            );
             // Get only the first 3 for dashboard
             setSavedPrograms(programsResult.data.slice(0, 3));
           } else {
-            console.warn('⚠️ Programs response missing data:', programsResult);
+            console.warn("⚠️ Programs response missing data:", programsResult);
             setSavedPrograms([]);
           }
         } else {
-          console.error('❌ Failed to fetch saved programs:', programsResponse.status);
+          console.error(
+            "❌ Failed to fetch saved programs:",
+            programsResponse.status
+          );
           setSavedPrograms([]);
         }
 
@@ -118,28 +148,36 @@ export default function StudentDashboardPage() {
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
-              'Cache-Control': 'no-cache',
+              "Cache-Control": "no-cache",
             },
-            cache: 'no-store',
+            cache: "no-store",
           }
         );
 
         if (scholarshipsResponse.ok) {
           const scholarshipsResult = await scholarshipsResponse.json();
           if (scholarshipsResult.success && scholarshipsResult.data) {
-            console.log(`✅ Fetched ${scholarshipsResult.data.length} saved scholarships from API`);
+            console.log(
+              `✅ Fetched ${scholarshipsResult.data.length} saved scholarships from API`
+            );
             // Get only the first 3 for dashboard
             setSavedScholarships(scholarshipsResult.data.slice(0, 3));
           } else {
-            console.warn('⚠️ Scholarships response missing data:', scholarshipsResult);
+            console.warn(
+              "⚠️ Scholarships response missing data:",
+              scholarshipsResult
+            );
             setSavedScholarships([]);
           }
         } else {
-          console.error('❌ Failed to fetch saved scholarships:', scholarshipsResponse.status);
+          console.error(
+            "❌ Failed to fetch saved scholarships:",
+            scholarshipsResponse.status
+          );
           setSavedScholarships([]);
         }
       } catch (error) {
-        console.error('Error fetching saved items:', error);
+        console.error("Error fetching saved items:", error);
         setSavedPrograms([]);
         setSavedScholarships([]);
       } finally {
@@ -150,7 +188,9 @@ export default function StudentDashboardPage() {
     if (mounted) {
       fetchSavedItems();
       // Also refresh the useSavedItems hook cache
-      refreshSavedItems().catch(err => console.error('Error refreshing saved items:', err));
+      refreshSavedItems().catch((err) =>
+        console.error("Error refreshing saved items:", err)
+      );
     }
   }, [mounted, refreshSavedItems]);
 
@@ -164,31 +204,41 @@ export default function StudentDashboardPage() {
 
   // Calculate statistics
   const programsCount = useMemo(() => {
-    return savedItems ? Array.from(savedItems.keys()).filter(key => key.startsWith('program:')).length : 0;
+    return savedItems
+      ? Array.from(savedItems.keys()).filter((key) =>
+          key.startsWith("program:")
+        ).length
+      : 0;
   }, [savedItems]);
 
   const scholarshipsCount = useMemo(() => {
-    return savedItems ? Array.from(savedItems.keys()).filter(key => key.startsWith('scholarship:')).length : 0;
+    return savedItems
+      ? Array.from(savedItems.keys()).filter((key) =>
+          key.startsWith("scholarship:")
+        ).length
+      : 0;
   }, [savedItems]);
 
   // Calculate upcoming deadlines (within 30 days)
   const upcomingDeadlinesCount = useMemo(() => {
     if (!savedPrograms || !savedScholarships) return 0;
     const now = new Date();
-    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    
-    const programDeadlines = savedPrograms.filter(p => {
+    const thirtyDaysFromNow = new Date(
+      now.getTime() + 30 * 24 * 60 * 60 * 1000
+    );
+
+    const programDeadlines = savedPrograms.filter((p) => {
       if (!p.saved_at) return false;
       // We need to check program deadlines, but we don't have that in the saved items
       // For now, return 0 or we could fetch program details
       return false;
     });
-    
-    const scholarshipDeadlines = savedScholarships.filter(s => {
+
+    const scholarshipDeadlines = savedScholarships.filter((s) => {
       // Similar issue - we'd need deadline info
       return false;
     });
-    
+
     return 0; // Placeholder until we have deadline data
   }, [savedPrograms, savedScholarships]);
 
@@ -205,16 +255,18 @@ export default function StudentDashboardPage() {
         }
 
         // Fetch latest 3 program recommendations
-        const { data, error } = await getRecommendationHistory('program', 3);
-        
+        const { data, error } = await getRecommendationHistory("program", 3);
+
         if (error || !data || !data.data) {
           setLatestRecommendations([]);
           setLoadingRecommendations(false);
           return;
         }
 
-        const programRecs = data.data.filter(r => r.recommendation_type === 'program' && r.program_id);
-        
+        const programRecs = data.data.filter(
+          (r) => r.recommendation_type === "program" && r.program_id
+        );
+
         if (programRecs.length === 0) {
           setLatestRecommendations([]);
           setLoadingRecommendations(false);
@@ -222,9 +274,12 @@ export default function StudentDashboardPage() {
         }
 
         // Fetch full program details for each recommendation
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
-        const programIds = programRecs.map(r => r.program_id).filter((id): id is number => id !== null);
-        
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+        const programIds = programRecs
+          .map((r) => r.program_id)
+          .filter((id): id is number => id !== null);
+
         if (programIds.length === 0) {
           setLatestRecommendations([]);
           setLoadingRecommendations(false);
@@ -248,8 +303,10 @@ export default function StudentDashboardPage() {
         }
 
         const programsData = await programsResponse.json();
-        const allPrograms = programsData.data || [];
-        const programMap = new Map(allPrograms.map((p: any) => [p.id, p]));
+        const allPrograms: ProgramWithUniversity[] = programsData.data || [];
+        const programMap = new Map<number, ProgramWithUniversity>(
+          allPrograms.map((p) => [p.id, p])
+        );
 
         // Map recommendations to program details
         const recommendations: LatestRecommendation[] = programRecs
@@ -258,14 +315,21 @@ export default function StudentDashboardPage() {
             if (!program) return null;
 
             const matchScore = rec.final_score || rec.ml_confidence_score || 0;
-            const location = program.university?.state && program.university?.city
-              ? `${program.university.city}, ${program.university.state}`
-              : program.university?.state || program.university?.city || 'Location not specified';
+            const location =
+              program.university?.state && program.university?.city
+                ? `${program.university.city}, ${program.university.state}`
+                : program.university?.state ||
+                  program.university?.city ||
+                  "Location not specified";
 
             return {
               program_id: rec.program_id!,
-              program_name: rec.program_name || program.name || `Program #${rec.program_id}`,
-              university_name: program.university?.name || 'University not specified',
+              program_name:
+                rec.program_name ||
+                program.name ||
+                `Program #${rec.program_id}`,
+              university_name:
+                program.university?.name || "University not specified",
               location: location,
               matchPercentage: Math.round(matchScore * 100),
               deadline: program.deadline || null,
@@ -277,7 +341,7 @@ export default function StudentDashboardPage() {
 
         setLatestRecommendations(recommendations);
       } catch (err: any) {
-        console.error('Error fetching latest recommendations:', err);
+        console.error("Error fetching latest recommendations:", err);
         setLatestRecommendations([]);
       } finally {
         setLoadingRecommendations(false);
@@ -298,8 +362,12 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20 dark:border-slate-700/20 shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground mb-1">Total Saved</p>
-                <p className="text-3xl font-bold text-foreground">{savedItemsCount}</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Total Saved
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {savedItemsCount}
+                </p>
                 <p className="mt-2 text-sm text-muted-foreground">All items</p>
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-200/30 dark:border-purple-700/30">
@@ -311,9 +379,15 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20 dark:border-slate-700/20 shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground mb-1">Programs Saved</p>
-                <p className="text-3xl font-bold text-foreground">{programsCount}</p>
-                <p className="mt-2 text-sm text-muted-foreground">Saved programs</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Programs Saved
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {programsCount}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Saved programs
+                </p>
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-200/30 dark:border-blue-700/30">
                 <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />
@@ -324,9 +398,15 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20 dark:border-slate-700/20 shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground mb-1">Scholarships Saved</p>
-                <p className="text-3xl font-bold text-foreground">{scholarshipsCount}</p>
-                <p className="mt-2 text-sm text-muted-foreground">Saved scholarships</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Scholarships Saved
+                </p>
+                <p className="text-3xl font-bold text-foreground">
+                  {scholarshipsCount}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Saved scholarships
+                </p>
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-200/30 dark:border-yellow-700/30">
                 <Award className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
@@ -337,11 +417,15 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20 dark:border-slate-700/20 shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-sm text-muted-foreground mb-1">Quick Access</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Quick Access
+                </p>
                 <p className="text-3xl font-bold text-foreground">
                   {savedPrograms.length + savedScholarships.length}
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">Recent items</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Recent items
+                </p>
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-200/30 dark:border-green-700/30">
                 <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -354,8 +438,15 @@ export default function StudentDashboardPage() {
           <Card className="backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20 dark:border-slate-700/20 shadow-lg hover:shadow-xl transition-shadow">
             <div className="border-b border-white/20 p-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">Latest Recommendations</h3>
-                <Button asChild variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                <h3 className="font-semibold text-foreground">
+                  Latest Recommendations
+                </h3>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-600 hover:text-blue-700"
+                >
                   <Link href="/student/recommendations">
                     View All
                     <ArrowRight className="ml-1 h-4 w-4" />
@@ -368,15 +459,21 @@ export default function StudentDashboardPage() {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <p className="text-sm text-muted-foreground">Loading recommendations...</p>
+                    <p className="text-sm text-muted-foreground">
+                      Loading recommendations...
+                    </p>
                   </div>
                 </div>
               ) : latestRecommendations.length === 0 ? (
                 <div className="text-center py-8">
                   <TrendingUp className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">No recommendations yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    No recommendations yet
+                  </p>
                   <Button asChild variant="outline" size="sm" className="mt-4">
-                    <Link href="/student/recommendations">Get Recommendations</Link>
+                    <Link href="/student/recommendations">
+                      Get Recommendations
+                    </Link>
                   </Button>
                 </div>
               ) : (
@@ -388,12 +485,16 @@ export default function StudentDashboardPage() {
                     >
                       <div className="flex-1">
                         <div className="mb-1 flex items-center gap-2">
-                          <h4 className="font-medium text-foreground">{program.program_name}</h4>
+                          <h4 className="font-medium text-foreground">
+                            {program.program_name}
+                          </h4>
                           <Badge variant="secondary" className="text-xs">
                             {program.matchPercentage}% match
                           </Badge>
                         </div>
-                        <p className="mb-2 text-sm text-muted-foreground">{program.university_name}</p>
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          {program.university_name}
+                        </p>
                         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
@@ -402,7 +503,10 @@ export default function StudentDashboardPage() {
                           {program.deadline && (
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              Deadline: {deadlineFormatter.format(new Date(program.deadline))}
+                              Deadline:{" "}
+                              {deadlineFormatter.format(
+                                new Date(program.deadline)
+                              )}
                             </span>
                           )}
                           {program.level && (
@@ -419,7 +523,9 @@ export default function StudentDashboardPage() {
                         variant="outline"
                         className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-blue-200 dark:border-blue-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       >
-                        <Link href={`/student/program/${program.program_id}`}>View</Link>
+                        <Link href={`/student/program/${program.program_id}`}>
+                          View
+                        </Link>
                       </Button>
                     </div>
                   ))}
@@ -432,7 +538,12 @@ export default function StudentDashboardPage() {
             <div className="border-b border-white/20 dark:border-slate-700/20 p-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-foreground">Saved Items</h3>
-                <Button asChild variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-600 hover:text-blue-700"
+                >
                   <Link href="/student/saved">
                     View All
                     <ArrowRight className="ml-1 h-4 w-4" />
@@ -445,13 +556,18 @@ export default function StudentDashboardPage() {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <p className="text-sm text-muted-foreground">Loading saved items...</p>
+                    <p className="text-sm text-muted-foreground">
+                      Loading saved items...
+                    </p>
                   </div>
                 </div>
-              ) : savedPrograms.length === 0 && savedScholarships.length === 0 ? (
+              ) : savedPrograms.length === 0 &&
+                savedScholarships.length === 0 ? (
                 <div className="text-center py-8">
                   <Star className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">No saved items yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    No saved items yet
+                  </p>
                   <Button asChild variant="outline" size="sm" className="mt-4">
                     <Link href="/student/search">Start Exploring</Link>
                   </Button>
@@ -467,12 +583,20 @@ export default function StudentDashboardPage() {
                         <BookOpen className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-foreground">{program.name}</h4>
+                        <h4 className="font-medium text-foreground">
+                          {program.name}
+                        </h4>
                         <p className="text-sm text-muted-foreground">
-                          {program.university?.name || 'University not specified'}
+                          {program.university?.name ||
+                            "University not specified"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Saved {program.saved_at ? formatDistanceToNow(new Date(program.saved_at), { addSuffix: true }) : 'recently'}
+                          Saved{" "}
+                          {program.saved_at
+                            ? formatDistanceToNow(new Date(program.saved_at), {
+                                addSuffix: true,
+                              })
+                            : "recently"}
                         </p>
                       </div>
                       <Button
@@ -496,12 +620,21 @@ export default function StudentDashboardPage() {
                         <Award className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-foreground">{scholarship.name}</h4>
+                        <h4 className="font-medium text-foreground">
+                          {scholarship.name}
+                        </h4>
                         <p className="text-sm text-muted-foreground">
-                          {scholarship.organization_name || 'Organization not specified'}
+                          {scholarship.organization_name ||
+                            "Organization not specified"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Saved {scholarship.saved_at ? formatDistanceToNow(new Date(scholarship.saved_at), { addSuffix: true }) : 'recently'}
+                          Saved{" "}
+                          {scholarship.saved_at
+                            ? formatDistanceToNow(
+                                new Date(scholarship.saved_at),
+                                { addSuffix: true }
+                              )
+                            : "recently"}
                         </p>
                       </div>
                       <Button

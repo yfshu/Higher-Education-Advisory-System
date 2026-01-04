@@ -30,6 +30,7 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useUser } from "@/contexts/UserContext";
 import { getUserRole } from "@/lib/auth/role";
 import { toast } from "sonner";
+import Particles from "@/components/Particles";
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -265,13 +266,32 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
         </div>
       </nav>
 
-      <div className="flex-1">
-        {title && (
-          <div className="max-w-7xl mx-auto px-6 pt-6 pb-2 backdrop-blur-xl bg-white/5 dark:bg-slate-900/30">
-            <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
-          </div>
-        )}
-        <div className="max-w-7xl mx-auto px-6 pt-2 pb-8">{children}</div>
+      <div className="flex-1 relative">
+        {/* Particles Background Effect - Only in main content area */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <Particles
+            particleCount={300}
+            particleSpread={15}
+            speed={0.15}
+            particleColors={["#d35cff","#1100ff","#ffffff","#fbff14"]}
+            moveParticlesOnHover={false}
+            particleHoverFactor={1}
+            alphaParticles
+            particleBaseSize={100}
+            sizeRandomness={1}
+            cameraDistance={17}
+            disableRotation={false}
+            className=""
+          />
+        </div>
+        <div className="relative z-10">
+          {title && (
+            <div className="max-w-7xl mx-auto px-6 pt-6 pb-2 backdrop-blur-xl bg-white/5 dark:bg-slate-900/30">
+              <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
+            </div>
+          )}
+          <div className="max-w-7xl mx-auto px-6 pt-2 pb-8">{children}</div>
+        </div>
       </div>
     </div>
   );

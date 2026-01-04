@@ -164,32 +164,156 @@ export class ScholarshipsService {
       ...scholarship,
       // Map organization_name to provider for frontend compatibility
       provider: scholarship.organization_name || null,
-      // Map website_url to application_url for frontend compatibility
+      // Keep website_url for contact information display
+      website_url: scholarship.website_url || null,
+      // Map website_url to application_url for frontend compatibility (legacy support)
       application_url: scholarship.website_url || null,
       // Map requirements to eligibility_requirements for frontend compatibility
       eligibility_requirements: scholarship.requirements || null,
+      // Keep contact fields for contact information display
+      contact_email: scholarship.contact_email || null,
+      contact_phone: scholarship.contact_phone || null,
     };
 
-    // Parse eligibility_requirements if it's a JSON string
+    // Parse eligibility_requirements (can be JSONB object or string)
     let eligibilityRequirements: string[] | null = null;
-    if (parsed.eligibility_requirements) {
+    const eligibilityData = scholarship.eligibility_requirements || parsed.eligibility_requirements || scholarship.requirements;
+    
+    if (eligibilityData) {
       try {
-        if (Array.isArray(parsed.eligibility_requirements)) {
-          eligibilityRequirements = parsed.eligibility_requirements;
-        } else if (typeof parsed.eligibility_requirements === 'string') {
-          const parsedJson = JSON.parse(parsed.eligibility_requirements);
+        if (Array.isArray(eligibilityData)) {
+          eligibilityRequirements = eligibilityData;
+        } else if (typeof eligibilityData === 'string') {
+          const parsedJson = JSON.parse(eligibilityData);
           if (Array.isArray(parsedJson)) {
             eligibilityRequirements = parsedJson;
           } else if (typeof parsedJson === 'object' && parsedJson !== null) {
-            // If it's an object, try to extract an array from it
-            eligibilityRequirements = parsedJson.requirements || parsedJson.outcomes || [JSON.stringify(parsedJson)];
+            // Convert object to array of formatted strings
+            const reqs: string[] = [];
+            if (parsedJson.cgpa) reqs.push(`CGPA: ${parsedJson.cgpa}`);
+            if (parsedJson.age_min || parsedJson.age_max) {
+              const ageRange = parsedJson.age_min && parsedJson.age_max 
+                ? `${parsedJson.age_min}-${parsedJson.age_max} years`
+                : parsedJson.age_min 
+                ? `Minimum age: ${parsedJson.age_min} years`
+                : `Maximum age: ${parsedJson.age_max} years`;
+              reqs.push(`Age: ${ageRange}`);
+            }
+            eligibilityRequirements = reqs.length > 0 ? reqs : [JSON.stringify(parsedJson)];
           } else {
-            eligibilityRequirements = [parsed.eligibility_requirements];
+            eligibilityRequirements = [eligibilityData];
           }
+        } else if (typeof eligibilityData === 'object' && eligibilityData !== null) {
+          // Already an object (JSONB)
+          const reqs: string[] = [];
+          if (eligibilityData.cgpa) reqs.push(`CGPA: ${eligibilityData.cgpa}`);
+          if (eligibilityData.age_min || eligibilityData.age_max) {
+            const ageRange = eligibilityData.age_min && eligibilityData.age_max 
+              ? `${eligibilityData.age_min}-${eligibilityData.age_max} years`
+              : eligibilityData.age_min 
+              ? `Minimum age: ${eligibilityData.age_min} years`
+              : `Maximum age: ${eligibilityData.age_max} years`;
+            reqs.push(`Age: ${ageRange}`);
+          }
+          eligibilityRequirements = reqs.length > 0 ? reqs : [JSON.stringify(eligibilityData)];
         }
       } catch (e) {
         // If parsing fails, treat as plain text
-        eligibilityRequirements = [parsed.eligibility_requirements];
+        eligibilityRequirements = [String(eligibilityData)];
+      }
+    }
+
+    // Parse benefits_json (JSONB field)
+    let benefitsJson: string[] | null = null;
+    const benefitsData = scholarship.benefits_json || parsed.benefits_json;
+    if (benefitsData) {
+      try {
+        if (Array.isArray(benefitsData)) {
+          benefitsJson = benefitsData;
+        } else if (typeof benefitsData === 'string') {
+          const parsedJson = JSON.parse(benefitsData);
+          if (Array.isArray(parsedJson)) {
+            benefitsJson = parsedJson;
+          } else if (typeof parsedJson === 'object' && parsedJson !== null) {
+            // Convert object to array of formatted strings
+            const benefits: string[] = [];
+            if (parsedJson.amount !== null && parsedJson.amount !== undefined) {
+              benefits.push(`Amount: RM ${parsedJson.amount.toLocaleString()}`);
+            }
+            if (parsedJson.accommodation !== undefined) {
+              benefits.push(`Accommodation: ${parsedJson.accommodation ? 'Included' : 'Not included'}`);
+            }
+            benefitsJson = benefits.length > 0 ? benefits : [JSON.stringify(parsedJson)];
+          }
+        } else if (typeof benefitsData === 'object' && benefitsData !== null) {
+          // Already an object (JSONB)
+          const benefits: string[] = [];
+          if (benefitsData.amount !== null && benefitsData.amount !== undefined) {
+            benefits.push(`Amount: RM ${benefitsData.amount.toLocaleString()}`);
+          }
+          if (benefitsData.accommodation !== undefined) {
+            benefits.push(`Accommodation: ${benefitsData.accommodation ? 'Included' : 'Not included'}`);
+          }
+          benefitsJson = benefits.length > 0 ? benefits : [JSON.stringify(benefitsData)];
+        }
+      } catch (e) {
+        benefitsJson = null;
+      }
+    }
+
+    // Parse selection_process (JSONB field)
+    let selectionProcess: Array<{ step: number; title: string; description: string; duration: string }> | null = null;
+    const selectionData = scholarship.selection_process || parsed.selection_process;
+    if (selectionData) {
+      try {
+        if (Array.isArray(selectionData)) {
+          selectionProcess = selectionData;
+        } else if (typeof selectionData === 'string') {
+          const parsedJson = JSON.parse(selectionData);
+          if (Array.isArray(parsedJson)) {
+            selectionProcess = parsedJson;
+          } else if (typeof parsedJson === 'object' && parsedJson !== null && parsedJson.stages) {
+            // Convert stages array to step format
+            selectionProcess = parsedJson.stages.map((stage: string, index: number) => ({
+              step: index + 1,
+              title: stage.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+              description: `Complete ${stage.replace(/_/g, ' ')}`,
+              duration: parsedJson.duration || 'Not specified',
+            }));
+          }
+        } else if (typeof selectionData === 'object' && selectionData !== null) {
+          // Already an object (JSONB)
+          if (Array.isArray(selectionData)) {
+            selectionProcess = selectionData;
+          } else if (selectionData.stages && Array.isArray(selectionData.stages)) {
+            selectionProcess = selectionData.stages.map((stage: string, index: number) => ({
+              step: index + 1,
+              title: stage.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+              description: `Complete ${stage.replace(/_/g, ' ')}`,
+              duration: selectionData.duration || 'Not specified',
+            }));
+          }
+        }
+      } catch (e) {
+        selectionProcess = null;
+      }
+    }
+
+    // Parse partner_universities (JSONB field)
+    let partnerUniversities: Array<{ name: string; country: string }> | null = null;
+    const partnerData = scholarship.partner_universities || parsed.partner_universities;
+    if (partnerData) {
+      try {
+        if (Array.isArray(partnerData)) {
+          partnerUniversities = partnerData;
+        } else if (typeof partnerData === 'string') {
+          const parsedJson = JSON.parse(partnerData);
+          if (Array.isArray(parsedJson)) {
+            partnerUniversities = parsedJson;
+          }
+        }
+      } catch (e) {
+        partnerUniversities = null;
       }
     }
 
@@ -199,25 +323,34 @@ export class ScholarshipsService {
     return {
       ...parsed,
       // Remove database-specific fields that don't exist in frontend interface
-      organization_name: undefined,
-      website_url: undefined,
       requirements: undefined,
+      // Keep organization_name from database
+      organization_name: scholarship.organization_name || parsed.organization_name || null,
+      // Keep website_url, contact_email, contact_phone for contact information display
+      website_url: parsed.website_url,
+      contact_email: parsed.contact_email,
+      contact_phone: parsed.contact_phone,
+      // Keep level field from database
+      level: scholarship.level || parsed.level || null,
       // Map to frontend-friendly fields
       provider: parsed.provider,
       application_url: parsed.application_url,
-      eligibility_requirements: eligibilityRequirements || parsed.eligibility_requirements || null,
+      eligibility_requirements: eligibilityRequirements || null,
       benefits: benefits,
+      // Keep JSONB fields for tabs
+      benefits_json: benefitsJson || null,
+      selection_process: selectionProcess || null,
+      partner_universities: partnerUniversities || null,
+      // Keep processing_time_weeks from database
+      processing_time_weeks: scholarship.processing_time_weeks || parsed.processing_time_weeks || null,
+      // Keep applicant_count, rating, review_count from database
+      applicant_count: scholarship.applicant_count || parsed.applicant_count || null,
+      rating: scholarship.rating || parsed.rating || null,
+      review_count: scholarship.review_count || parsed.review_count || null,
       // Remove fields that don't exist in database
-      benefits_json: undefined,
-      selection_process: undefined,
-      partner_universities: undefined,
       study_levels: undefined,
       fields_supported: undefined,
       eligible_programs: undefined,
-      processing_time_weeks: undefined,
-      applicant_count: undefined,
-      rating: undefined,
-      review_count: undefined,
     };
   }
 

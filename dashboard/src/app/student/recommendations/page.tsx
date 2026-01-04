@@ -263,10 +263,6 @@ export default function ProgramRecommendations() {
                 // Cache loading disabled for new field-first flow
                 // Users should go through field selection each time
                 return;
-                
-                setPrograms(programDetails);
-                console.log("✅ Loaded cached recommendations (profile validated)");
-                return; // Successfully loaded from cache
               }
             } else {
               // Profile changed, clear cache

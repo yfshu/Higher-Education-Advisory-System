@@ -21,18 +21,17 @@ import {
   GraduationCap,
   CheckCircle,
   AlertCircle,
-  ExternalLink,
   Bookmark,
   BookmarkCheck,
   Share2,
   Clock,
   Award,
-  FileText,
   Phone,
   Mail,
   Globe
 } from "lucide-react";
 import { useSavedItems } from "@/hooks/useSavedItems";
+import { toast } from "sonner";
 
 interface Scholarship {
   id: number;
@@ -44,7 +43,6 @@ interface Scholarship {
   location: string | null;
   deadline: string | null;
   description: string | null;
-  study_levels: string[] | null;
   application_url: string | null;
   processing_time_weeks: number | null;
   applicant_count: number | null;
@@ -133,21 +131,55 @@ export default function ScholarshipDetail() {
     return `${count}+`;
   };
 
-  const getLevelDisplay = (studyLevels: string[] | null): string => {
-    if (!studyLevels || studyLevels.length === 0) return 'Not specified';
+  const getLevelDisplay = (level: string | null): string => {
+    if (!level) return 'Not specified';
     const levelMap: Record<string, string> = {
       'foundation': 'Foundation',
       'diploma': 'Diploma',
-      'degree': 'Bachelor\'s Degree'
+      'degree': 'Bachelor\'s Degree',
+      'Bachelor': 'Bachelor\'s Degree',
+      'Master': 'Master\'s Degree',
+      'PhD': 'PhD'
     };
-    const levels = studyLevels.map(level => levelMap[level] || level).join(', ');
-    return levels;
+    return levelMap[level.toLowerCase()] || level;
   };
 
   const formatProcessingTime = (weeks: number | null): string => {
     if (!weeks) return 'Not specified';
     if (weeks === 1) return '1 week';
     return `${weeks} weeks`;
+  };
+
+  const handleShare = async () => {
+    if (!scholarship) return;
+
+    if (!navigator.share) {
+      // Fallback: copy to clipboard if Web Share API is not available
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy link:', err);
+        toast.error('Failed to copy link. Please try again.');
+      }
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: scholarship.name,
+        text: `Check out this ${scholarship.type || 'scholarship'} by ${scholarship.organization_name || 'organization'}`,
+        url: window.location.href
+      });
+    } catch (err: any) {
+      // User canceled the share dialog - this is normal, not an error
+      if (err.name === 'AbortError' || err.message === 'Share canceled') {
+        // Silently handle cancel - this is expected behavior
+        return;
+      }
+      // Log other errors but don't show to user
+      console.error('Error sharing:', err);
+    }
   };
 
   if (loading) {
@@ -247,7 +279,12 @@ export default function ScholarshipDetail() {
                     </>
                   )}
                 </Button>
-                <Button variant="outline" size="sm" className="backdrop-blur-sm bg-white/50 border-white/30">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleShare}
+                  className="backdrop-blur-sm bg-white/50 border-white/30"
+                >
                   <Share2 className="w-4 h-4 mr-2" />
                   Share
                 </Button>
@@ -322,12 +359,31 @@ export default function ScholarshipDetail() {
         {/* Detailed Information Tabs */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-white/50 backdrop-blur-sm border-b border-white/20">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="requirements">Requirements</TabsTrigger>
-              <TabsTrigger value="benefits">Benefits</TabsTrigger>
-              <TabsTrigger value="process">Selection Process</TabsTrigger>
-              <TabsTrigger value="contact">Contact</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-b border-white/20 dark:border-slate-700/20">
+              <TabsTrigger 
+                value="overview"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="requirements"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              >
+                Requirements
+              </TabsTrigger>
+              <TabsTrigger 
+                value="benefits"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              >
+                Benefits
+              </TabsTrigger>
+              <TabsTrigger 
+                value="process"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+              >
+                Selection Process
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="p-6 space-y-6">
@@ -338,33 +394,51 @@ export default function ScholarshipDetail() {
                 </p>
                 
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-medium text-foreground mb-3">Study Level</h4>
-                    <Badge variant="outline" className="mb-4">{getLevelDisplay(scholarship.study_levels)}</Badge>
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Study Level */}
+                    <div className="p-4 backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border border-white/20 dark:border-slate-700/20 rounded-lg">
+                      <h4 className="font-medium text-foreground mb-3 text-sm uppercase tracking-wide">Study Level</h4>
+                      <Badge variant="outline" className="text-base px-3 py-1.5">
+                        {getLevelDisplay(scholarship.level)}
+                      </Badge>
+                    </div>
                     
-                    <h4 className="font-medium text-foreground mb-3">Study Location</h4>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{scholarship.location || 'Not specified'}</span>
+                    {/* Study Location */}
+                    <div className="p-4 backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border border-white/20 dark:border-slate-700/20 rounded-lg">
+                      <h4 className="font-medium text-foreground mb-3 text-sm uppercase tracking-wide">Study Location</h4>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <span className="text-foreground font-medium">{scholarship.location || 'Not specified'}</span>
+                      </div>
                     </div>
                   </div>
                   
-                  <div>
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Success Rate */}
                     {scholarship.success_rate !== null && (
-                      <>
-                        <h4 className="font-medium text-foreground mb-3">Success Rate</h4>
-                        <div className="flex items-center gap-3 mb-2">
-                          <Progress value={scholarship.success_rate} className="flex-1" />
-                          <span className="text-sm font-medium text-foreground">{scholarship.success_rate}%</span>
+                      <div className="p-4 backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border border-white/20 dark:border-slate-700/20 rounded-lg">
+                        <h4 className="font-medium text-foreground mb-3 text-sm uppercase tracking-wide">Success Rate</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <Progress value={scholarship.success_rate} className="flex-1 h-2" />
+                            <span className="text-base font-semibold text-foreground min-w-[3.5rem] text-right">
+                              {scholarship.success_rate.toFixed(1)}%
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Application success rate</p>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-4">Application success rate</p>
-                      </>
+                      </div>
                     )}
                     
-                    <h4 className="font-medium text-foreground mb-3">Processing Time</h4>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{formatProcessingTime(scholarship.processing_time_weeks)}</span>
+                    {/* Processing Time */}
+                    <div className="p-4 backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border border-white/20 dark:border-slate-700/20 rounded-lg">
+                      <h4 className="font-medium text-foreground mb-3 text-sm uppercase tracking-wide">Processing Time</h4>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                        <span className="text-foreground font-medium">{formatProcessingTime(scholarship.processing_time_weeks)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -372,14 +446,14 @@ export default function ScholarshipDetail() {
 
               {scholarship.partner_universities && scholarship.partner_universities.length > 0 && (
                 <>
-                  <Separator />
+                  <Separator className="my-6" />
                   <div>
-                    <h4 className="font-medium text-foreground mb-3">Partner Universities</h4>
-                    <div className="grid md:grid-cols-2 gap-2">
+                    <h4 className="font-medium text-foreground mb-4 text-sm uppercase tracking-wide">Partner Universities</h4>
+                    <div className="grid md:grid-cols-2 gap-3">
                       {scholarship.partner_universities.map((university, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <GraduationCap className="w-4 h-4 text-blue-600" />
-                          <span className="text-muted-foreground">{university.name} ({university.country})</span>
+                        <div key={index} className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border border-white/20 dark:border-slate-700/20 rounded-lg hover:bg-white/40 dark:hover:bg-slate-800/40 transition-colors">
+                          <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                          <span className="text-foreground font-medium">{university.name} {university.country ? `(${university.country})` : ''}</span>
                         </div>
                       ))}
                     </div>
@@ -453,103 +527,49 @@ export default function ScholarshipDetail() {
               )}
             </TabsContent>
 
-            <TabsContent value="contact" className="p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Contact Information</h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  {scholarship.website_url && (
-                    <div className="flex items-start gap-3">
-                      <Globe className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-foreground">Website</p>
-                        <a 
-                          href={scholarship.website_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          {scholarship.website_url}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  {scholarship.contact_email && (
-                    <div className="flex items-start gap-3">
-                      <Mail className="w-5 h-5 text-green-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-foreground">Email</p>
-                        <a 
-                          href={`mailto:${scholarship.contact_email}`}
-                          className="text-green-600 hover:text-green-700"
-                        >
-                          {scholarship.contact_email}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {scholarship.contact_phone && (
-                    <div className="flex items-start gap-3">
-                      <Phone className="w-5 h-5 text-purple-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-foreground">Phone</p>
-                        <a 
-                          href={`tel:${scholarship.contact_phone}`}
-                          className="text-purple-600 hover:text-purple-700"
-                        >
-                          {scholarship.contact_phone}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {(!scholarship.website_url && !scholarship.contact_email && !scholarship.contact_phone) && (
-                <p className="text-muted-foreground">No contact information available.</p>
-              )}
-              
-              <div className="mt-6 p-4 backdrop-blur-sm bg-gray-50/40 border border-gray-200/30 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Office Hours:</strong> Monday - Friday, 8:30 AM - 5:00 PM (GMT+8)<br />
-                  <strong>Response Time:</strong> Scholarship inquiries are typically responded to within 2-3 business days.
-                </p>
-              </div>
-            </TabsContent>
           </Tabs>
         </Card>
 
-        {/* Action Buttons */}
+        {/* Contact Information */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
           <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Ready to Apply?</h3>
-                <p className="text-muted-foreground">Visit the official website to start your application process.</p>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Get More Information</h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
+                <Phone className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-medium text-foreground">
+                    {scholarship.contact_phone || 'Not Available'}
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-3">
-                <Button variant="outline" className="backdrop-blur-sm bg-white/50 border-white/30">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Download Guide
-                </Button>
-                {scholarship.application_url ? (
-                  <Button 
-                    onClick={() => window.open(scholarship.application_url || undefined, '_blank')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Apply Now
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </Button>
-                ) : scholarship.website_url ? (
-                  <Button 
-                    onClick={() => window.open(scholarship.website_url || undefined, '_blank')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Visit Official Website
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </Button>
-                ) : null}
+              <div className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
+                <Mail className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium text-foreground">
+                    {scholarship.contact_email || 'Not Available'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
+                <Globe className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-muted-foreground">Website</p>
+                  {scholarship.website_url && scholarship.website_url !== 'Not Available' ? (
+                    <a 
+                      href={scholarship.website_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="font-medium text-blue-600 hover:underline break-all word-break break-words"
+                    >
+                      {scholarship.website_url}
+                    </a>
+                  ) : (
+                    <p className="font-medium text-foreground">Not Available</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -5,6 +5,9 @@ import {
   HttpStatus,
   Post,
   Req,
+  Get,
+  Query,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -104,5 +107,51 @@ export class AuthController {
       ? authHeader.substring('Bearer '.length)
       : undefined;
     return this.authService.updatePassword(token, body);
+  }
+
+  @Get('check-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check if email already exists' })
+  @ApiOkResponse({
+    description: 'Email check completed.',
+    schema: {
+      type: 'object',
+      properties: {
+        exists: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid email.' })
+  async checkEmail(@Query('email') email: string): Promise<{ exists: boolean; message: string }> {
+    if (!email) {
+      throw new BadRequestException('Email query parameter is required.');
+    }
+    return this.authService.checkEmailExists(email);
+  }
+
+  @Get('reverse-geocode')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reverse geocode coordinates to location' })
+  @ApiOkResponse({
+    description: 'Location retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        location: { type: 'string' },
+        state: { type: 'string' },
+        country: { type: 'string' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid coordinates.' })
+  async reverseGeocode(
+    @Query('lat') lat: string,
+    @Query('lon') lon: string,
+  ): Promise<{ location: string; state?: string; country?: string }> {
+    if (!lat || !lon) {
+      throw new BadRequestException('Latitude and longitude are required.');
+    }
+    return this.authService.reverseGeocode(parseFloat(lat), parseFloat(lon));
   }
 }
