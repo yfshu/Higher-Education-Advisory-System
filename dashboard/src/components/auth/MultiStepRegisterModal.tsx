@@ -1008,7 +1008,7 @@ function Step1Form({
                   type="button"
                   variant="outline"
                   onClick={handleAutoDetect}
-                  className="whitespace-nowrap border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                  className="whitespace-nowrap"
                 >
                   Auto-detect
                 </Button>
@@ -1396,7 +1396,7 @@ function Step4Form({
         </div>
 
         <div>
-          <Label htmlFor="studyMode" className="text-gray-900 font-medium">
+          <Label htmlFor="studyMode" className="text-sm font-medium text-foreground">
             Study Mode (Optional)
           </Label>
           <Select
