@@ -17,8 +17,12 @@ export default function DashboardWelcome() {
             Welcome back, {firstName}! 👋
           </h2>
           <p className="text-muted-foreground text-base leading-relaxed mb-6 max-w-2xl">
-            Your personalized Malaysian university program recommendations are ready. Let&apos;s continue
-            exploring the perfect program that matches your SPM/STPM results and career aspirations.
+            Your personalized university program recommendations are ready.
+            <br />
+            <span className="whitespace-nowrap">
+              Let&apos;s continue exploring the perfect program that matches
+              your SPM/STPM results and career aspirations.
+            </span>
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Button
@@ -66,4 +70,3 @@ export default function DashboardWelcome() {
     </section>
   );
 }
-

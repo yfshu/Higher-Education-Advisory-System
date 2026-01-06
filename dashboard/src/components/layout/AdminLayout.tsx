@@ -141,7 +141,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
             <div className="flex items-center gap-2">
               <GraduationCap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               <span className="font-semibold text-foreground">
-                BackToSchool Admin
+                Back To School Admin
               </span>
             </div>
             <Button

@@ -58,7 +58,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2">
             <GraduationCap className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-semibold text-slate-900">BackToSchool</span>
+            <span className="text-xl font-semibold text-slate-900">Back To School</span>
           </Link>
           <div className="flex items-center gap-4">
             <Button

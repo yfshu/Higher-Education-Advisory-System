@@ -15,7 +15,7 @@ FastAPI service for ML-based program recommendations using a trained sklearn mod
 
 3. **Run the service:**
    ```bash
-   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
    Or using Docker:

@@ -179,7 +179,7 @@ export default function StudentLayout({ children, title }: StudentLayoutProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <GraduationCap className="w-8 h-8 text-blue-600" />
-              <span className="text-xl font-semibold text-foreground">BackToSchool</span>
+              <span className="text-xl font-semibold text-foreground">Back To School</span>
             </div>
 
             <div className="hidden md:flex items-center gap-1 bg-white/20 backdrop-blur-lg rounded-full px-2 py-1 border border-white/10 shadow-xl">
