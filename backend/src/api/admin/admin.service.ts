@@ -1,8 +1,5 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
-import { Database } from '../../supabase/types/supabase.types';
-
-type SystemAlert = Database['public']['Tables']['system_alerts']['Row'];
 
 @Injectable()
 export class AdminService {
@@ -10,25 +7,28 @@ export class AdminService {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  /**
-   * Check if user is admin
-   * Checks the role from user's app_metadata (set in Supabase Auth)
-   */
   private async isAdmin(userId: string): Promise<boolean> {
     try {
       const db = this.supabaseService.getClient();
-      
-      // Use admin API to get user details
-      const { data: { user }, error } = await db.auth.admin.getUserById(userId);
+
+      const {
+        data: { user },
+        error,
+      } = await db.auth.admin.getUserById(userId);
 
       if (error || !user) {
         this.logger.error('Error fetching user for admin check:', error);
         return false;
       }
 
-      // Check role from app_metadata (primary) or user_metadata (fallback)
-      const role = (user.app_metadata as any)?.role || (user.user_metadata as any)?.role || 'student';
-      
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const role =
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (user.app_metadata as any)?.role ||
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (user.user_metadata as any)?.role ||
+        'student';
+
       this.logger.log(`Admin check for user ${userId}: role=${role}`);
       return role === 'admin';
     } catch (error) {
@@ -37,11 +37,7 @@ export class AdminService {
     }
   }
 
-  /**
-   * Get dashboard metrics
-   */
   async getDashboardMetrics(userId: string) {
-    // Verify admin access
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
       throw new ForbiddenException('Admin access required');
@@ -50,7 +46,6 @@ export class AdminService {
     try {
       const db = this.supabaseService.getClient();
 
-      // Get total students
       const { count: studentCount, error: studentError } = await db
         .from('student_profile')
         .select('*', { count: 'exact', head: true });
@@ -59,7 +54,6 @@ export class AdminService {
         this.logger.error('Error fetching student count:', studentError);
       }
 
-      // Get total programs
       const { count: programCount, error: programError } = await db
         .from('programs')
         .select('*', { count: 'exact', head: true });
@@ -68,16 +62,17 @@ export class AdminService {
         this.logger.error('Error fetching program count:', programError);
       }
 
-      // Get total scholarships
       const { count: scholarshipCount, error: scholarshipError } = await db
         .from('scholarships')
         .select('*', { count: 'exact', head: true });
 
       if (scholarshipError) {
-        this.logger.error('Error fetching scholarship count:', scholarshipError);
+        this.logger.error(
+          'Error fetching scholarship count:',
+          scholarshipError,
+        );
       }
 
-      // Get open system alerts count
       const { count: alertCount, error: alertError } = await db
         .from('system_alerts')
         .select('*', { count: 'exact', head: true })
@@ -87,21 +82,20 @@ export class AdminService {
         this.logger.error('Error fetching alert count:', alertError);
       }
 
-      // Get recommendations count (if recommendation_logs table exists)
-      // For now, return 0 as placeholder
       let recommendationCount = 0;
       try {
-        // Use type assertion since recommendation_logs might not be in types yet
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         const { count: recCount } = await (db as any)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           .from('recommendation_logs')
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           .select('*', { count: 'exact', head: true });
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         recommendationCount = recCount || 0;
       } catch {
-        // Table might not exist, use 0
         recommendationCount = 0;
       }
 
-      // Get recent registrations (last 7 days)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -138,11 +132,7 @@ export class AdminService {
     }
   }
 
-  /**
-   * Get system alerts
-   */
   async getSystemAlerts(userId: string, limit: number = 10) {
-    // Verify admin access
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
       throw new ForbiddenException('Admin access required');
@@ -169,11 +159,7 @@ export class AdminService {
     }
   }
 
-  /**
-   * Resolve a system alert
-   */
   async resolveAlert(userId: string, alertId: number) {
-    // Verify admin access
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
       throw new ForbiddenException('Admin access required');
@@ -201,11 +187,7 @@ export class AdminService {
     }
   }
 
-  /**
-   * Get recent users
-   */
   async getRecentUsers(userId: string, limit: number = 5) {
-    // Verify admin access
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
       throw new ForbiddenException('Admin access required');
@@ -214,8 +196,6 @@ export class AdminService {
     try {
       const db = this.supabaseService.getClient();
 
-      // Get recent users from student_profile
-      // Note: We can't directly join auth.users due to RLS, so we'll get user_id and fetch emails separately
       const { data: profiles, error } = await db
         .from('student_profile')
         .select('user_id, created_at')
@@ -227,25 +207,30 @@ export class AdminService {
         throw new Error(`Failed to fetch recent users: ${error.message}`);
       }
 
-      // Map to return format
-      // In a real implementation, you might want to fetch emails from auth.users via admin API
-      return (profiles || []).map((profile: any) => ({
-        id: profile.user_id,
-        email: profile.user_id ? `${profile.user_id.substring(0, 8)}...@user.com` : 'N/A',
-        joined: profile.created_at,
-        status: 'Active',
-      }));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      return (profiles || []).map((profile: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        const userId = profile.user_id;
+        return {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          id: userId,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+          email: userId
+            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+              `${String(userId).substring(0, 8)}...@user.com`
+            : 'N/A',
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+          joined: profile.created_at,
+          status: 'Active',
+        };
+      });
     } catch (error) {
       this.logger.error('Exception in getRecentUsers:', error);
       throw error;
     }
   }
 
-  /**
-   * Get recent programs
-   */
   async getRecentPrograms(userId: string, limit: number = 5) {
-    // Verify admin access
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
       throw new ForbiddenException('Admin access required');
@@ -256,14 +241,16 @@ export class AdminService {
 
       const { data, error } = await db
         .from('programs')
-        .select(`
+        .select(
+          `
           id,
           name,
           created_at,
           university:university_id (
             name
           )
-        `)
+        `,
+        )
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -272,12 +259,17 @@ export class AdminService {
         throw new Error(`Failed to fetch recent programs: ${error.message}`);
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       return (data || []).map((program: any) => ({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         id: program.id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         title: program.name,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         university: program.university?.name || 'Unknown University',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         added: program.created_at,
-        applications: 0, // Placeholder - would need separate table
+        applications: 0,
       }));
     } catch (error) {
       this.logger.error('Exception in getRecentPrograms:', error);
@@ -285,9 +277,6 @@ export class AdminService {
     }
   }
 
-  /**
-   * Get all users with pagination
-   */
   async getAllUsers(userId: string, limit: number = 50, offset: number = 0) {
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
@@ -297,10 +286,11 @@ export class AdminService {
     try {
       const db = this.supabaseService.getClient();
 
-      // Get user profiles with pagination
-      const { data: profiles, error: profileError, count } = await db
+      const { data: profiles, error: profileError } = await db
         .from('student_profile')
-        .select('user_id, phone_number, country_code, avatar_url, created_at', { count: 'exact' })
+        .select('user_id, phone_number, country_code, avatar_url, created_at', {
+          count: 'exact',
+        })
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -309,73 +299,106 @@ export class AdminService {
         throw new Error(`Failed to fetch users: ${profileError.message}`);
       }
 
-      // Fetch user emails from auth.users using admin API and filter for student role only
       const usersWithEmails = await Promise.all(
         (profiles || []).map(async (profile: any) => {
           try {
-            const { data: { user }, error: userError } = await db.auth.admin.getUserById(profile.user_id);
-            
+            const {
+              data: { user },
+              error: userError,
+            } = await db.auth.admin.getUserById(
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+              profile.user_id as string,
+            );
+
             if (userError || !user) {
-              this.logger.warn(`Could not fetch user ${profile.user_id}:`, userError);
-              return null; // Skip users that can't be fetched
+              this.logger.warn(
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                `Could not fetch user ${userId}:`,
+                userError,
+              );
+              return null;
             }
 
-            // Filter: Only include users with role 'student' or no role (default to student)
-            const role = (user.app_metadata as any)?.role || (user.user_metadata as any)?.role || 'student';
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            const role =
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              (user.app_metadata as any)?.role ||
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              (user.user_metadata as any)?.role ||
+              'student';
             if (role === 'admin') {
-              return null; // Skip admin users
+              return null;
             }
 
-            // Check if user is banned - check both banned_at and app_metadata.status
-            const isBanned = (user as any).banned_at !== null && (user as any).banned_at !== undefined;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            const isBanned =
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              (user as any).banned_at !== null &&
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              (user as any).banned_at !== undefined;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             const statusFromMetadata = (user.app_metadata as any)?.status;
-            // Use app_metadata.status as fallback if banned_at is not set
+
             const isInactive = isBanned || statusFromMetadata === 'inactive';
 
-            // Try to get full name from multiple sources
             let fullName = 'Unknown';
             if (user.user_metadata) {
-              fullName = (user.user_metadata.full_name as string) || 
-                        (user.user_metadata.name as string) || 
-                        (user.user_metadata.fullName as string) ||
-                        'Unknown';
+              fullName =
+                (user.user_metadata.full_name as string) ||
+                (user.user_metadata.name as string) ||
+                (user.user_metadata.fullName as string) ||
+                'Unknown';
             }
-            // If still unknown, try to get from email or use email as fallback
+
             if (fullName === 'Unknown' && user.email) {
-              // Extract name from email if possible (e.g., "john.doe@example.com" -> "John Doe")
               const emailParts = user.email.split('@')[0];
               if (emailParts.includes('.')) {
-                fullName = emailParts.split('.').map(part => 
-                  part.charAt(0).toUpperCase() + part.slice(1)
-                ).join(' ');
+                fullName = emailParts
+                  .split('.')
+                  .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                  .join(' ');
               } else {
-                fullName = emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
+                fullName =
+                  emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
               }
             }
 
-            // Generate signed URL for avatar if it exists (for private bucket)
             let avatarUrl: string | null = null;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             if (profile.avatar_url) {
-              // Check if avatar_url is already a full URL (legacy data) or a path
-              if (profile.avatar_url.startsWith('http://') || profile.avatar_url.startsWith('https://')) {
-                // Already a full URL, use as-is
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              if (
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                profile.avatar_url.startsWith('http://') ||
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                profile.avatar_url.startsWith('https://')
+              ) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                 avatarUrl = profile.avatar_url;
               } else {
-                // It's a path, generate signed URL (expires in 1 hour)
                 try {
-                  const { data: signedUrlData, error: signedUrlError } = await db.storage
-                    .from('profile-avatars')
-                    .createSignedUrl(profile.avatar_url, 3600);
-                  
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+                  const { data: signedUrlData, error: signedUrlError } =
+                    await db.storage
+                      .from('profile-avatars')
+                      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+                      .createSignedUrl(profile.avatar_url as string, 3600);
+
                   if (!signedUrlError && signedUrlData) {
                     avatarUrl = signedUrlData.signedUrl;
                   } else {
-                    this.logger.warn(`Failed to generate signed URL for avatar ${profile.avatar_url}:`, signedUrlError);
-                    // If signed URL generation fails, return null (will show initials)
+                    this.logger.warn(
+                      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                      `Failed to generate signed URL for avatar ${profile.avatar_url}:`,
+                      signedUrlError,
+                    );
                   }
                 } catch (error) {
-                  this.logger.error(`Exception generating signed URL for avatar ${profile.avatar_url}:`, error);
-                  // Return null on error (will show initials)
+                  this.logger.error(
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                    `Exception generating signed URL for avatar ${profile.avatar_url}:`,
+                    error,
+                  );
                 }
               }
             }
@@ -384,24 +407,28 @@ export class AdminService {
               id: user.id,
               email: user.email || 'N/A',
               fullName: fullName,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
               phoneNumber: profile.phone_number || null,
               avatarUrl: avatarUrl,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
               joined: profile.created_at || user.created_at,
               status: isInactive ? 'Inactive' : 'Active',
             };
           } catch (error) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             this.logger.error(`Error fetching user ${profile.user_id}:`, error);
-            return null; // Skip users with errors
+            return null;
           }
-        })
+        }),
       );
 
-      // Filter out null values (admin users or errors)
-      const filteredUsers = usersWithEmails.filter((user): user is NonNullable<typeof user> => user !== null);
+      const filteredUsers = usersWithEmails.filter(
+        (user): user is NonNullable<typeof user> => user !== null,
+      );
 
       return {
         users: filteredUsers,
-        total: filteredUsers.length, // Use filtered count
+        total: filteredUsers.length,
       };
     } catch (error) {
       this.logger.error('Exception in getAllUsers:', error);
@@ -409,9 +436,6 @@ export class AdminService {
     }
   }
 
-  /**
-   * Get user by ID
-   */
   async getUserById(userId: string, targetUserId: string) {
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
@@ -421,7 +445,6 @@ export class AdminService {
     try {
       const db = this.supabaseService.getClient();
 
-      // Get user profile
       const { data: profile, error: profileError } = await db
         .from('student_profile')
         .select('*')
@@ -432,63 +455,76 @@ export class AdminService {
         this.logger.error('Error fetching user profile:', profileError);
       }
 
-      // Get user from auth
-      const { data: { user }, error: userError } = await db.auth.admin.getUserById(targetUserId);
+      const {
+        data: { user },
+        error: userError,
+      } = await db.auth.admin.getUserById(targetUserId);
 
       if (userError || !user) {
-        throw new Error(`Failed to fetch user: ${userError?.message || 'User not found'}`);
+        throw new Error(
+          `Failed to fetch user: ${userError?.message || 'User not found'}`,
+        );
       }
 
-      // Check if user is banned - check both banned_at and app_metadata.status
-      const isBanned = (user as any).banned_at !== null && (user as any).banned_at !== undefined;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const isBanned =
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (user as any).banned_at !== null &&
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (user as any).banned_at !== undefined;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const statusFromMetadata = (user.app_metadata as any)?.status;
-      // Use app_metadata.status as fallback if banned_at is not set
+
       const isInactive = isBanned || statusFromMetadata === 'inactive';
 
-      // Try to get full name from multiple sources
       let fullName = 'Unknown';
       if (user.user_metadata) {
-        fullName = (user.user_metadata.full_name as string) || 
-                  (user.user_metadata.name as string) || 
-                  (user.user_metadata.fullName as string) ||
-                  'Unknown';
+        fullName =
+          (user.user_metadata.full_name as string) ||
+          (user.user_metadata.name as string) ||
+          (user.user_metadata.fullName as string) ||
+          'Unknown';
       }
-      // If still unknown, try to get from email or use email as fallback
+
       if (fullName === 'Unknown' && user.email) {
-        // Extract name from email if possible
         const emailParts = user.email.split('@')[0];
         if (emailParts.includes('.')) {
-          fullName = emailParts.split('.').map(part => 
-            part.charAt(0).toUpperCase() + part.slice(1)
-          ).join(' ');
+          fullName = emailParts
+            .split('.')
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
         } else {
           fullName = emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
         }
       }
 
-      // Generate signed URL for avatar if it exists (for private bucket)
       let avatarUrl: string | null = null;
       if (profile?.avatar_url) {
-        // Check if avatar_url is already a full URL (legacy data) or a path
-        if (profile.avatar_url.startsWith('http://') || profile.avatar_url.startsWith('https://')) {
-          // Already a full URL, use as-is
+        if (
+          profile.avatar_url.startsWith('http://') ||
+          profile.avatar_url.startsWith('https://')
+        ) {
           avatarUrl = profile.avatar_url;
         } else {
-          // It's a path, generate signed URL (expires in 1 hour)
           try {
-            const { data: signedUrlData, error: signedUrlError } = await db.storage
-              .from('profile-avatars')
-              .createSignedUrl(profile.avatar_url, 3600);
-            
+            const { data: signedUrlData, error: signedUrlError } =
+              await db.storage
+                .from('profile-avatars')
+                .createSignedUrl(profile.avatar_url, 3600);
+
             if (!signedUrlError && signedUrlData) {
               avatarUrl = signedUrlData.signedUrl;
             } else {
-              this.logger.warn(`Failed to generate signed URL for avatar ${profile.avatar_url}:`, signedUrlError);
-              // If signed URL generation fails, return null (will show initials)
+              this.logger.warn(
+                `Failed to generate signed URL for avatar ${profile.avatar_url}:`,
+                signedUrlError,
+              );
             }
           } catch (error) {
-            this.logger.error(`Exception generating signed URL for avatar ${profile.avatar_url}:`, error);
-            // Return null on error (will show initials)
+            this.logger.error(
+              `Exception generating signed URL for avatar ${profile.avatar_url}:`,
+              error,
+            );
           }
         }
       }
@@ -511,9 +547,6 @@ export class AdminService {
     }
   }
 
-  /**
-   * Update user
-   */
   async updateUser(userId: string, targetUserId: string, updateData: any) {
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
@@ -523,95 +556,130 @@ export class AdminService {
     try {
       const db = this.supabaseService.getClient();
 
-      // Get existing user metadata first to preserve it
-      const { data: { user: existingUser } } = await db.auth.admin.getUserById(targetUserId);
+      const {
+        data: { user: existingUser },
+      } = await db.auth.admin.getUserById(targetUserId);
       const existingMetadata = existingUser?.user_metadata || {};
-      
-      // Update auth user if email or metadata changed
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const authUpdates: any = {};
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (updateData.email) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         authUpdates.email = updateData.email;
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (updateData.fullName) {
-        // Preserve existing metadata and update full_name
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         authUpdates.user_metadata = {
           ...existingMetadata,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           full_name: updateData.fullName,
         };
       }
-      
-      // Handle status change (ban/unban) - this must be done separately
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (updateData.isActive !== undefined) {
-        // Normalize isActive to boolean
-        const isActive = updateData.isActive === true || updateData.isActive === 'true' || updateData.isActive === 'active';
-        
-        this.logger.log(`Updating user ${targetUserId} status to: ${isActive ? 'Active' : 'Inactive'}`);
-        
-        // Prepare status update with both ban_duration and app_metadata.status
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const isActive =
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          updateData.isActive === true ||
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          updateData.isActive === 'true' ||
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          updateData.isActive === 'active';
+
+        this.logger.log(
+          `Updating user ${targetUserId} status to: ${isActive ? 'Active' : 'Inactive'}`,
+        );
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const statusUpdate: any = {
           app_metadata: {
             ...existingUser?.app_metadata,
             status: isActive ? 'active' : 'inactive',
           },
         };
-        
+
         if (!isActive) {
-          // Ban user - set ban_duration to a very long time
-          statusUpdate.ban_duration = '876000h'; // ~100 years (effectively permanent)
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          statusUpdate.ban_duration = '876000h';
           this.logger.log(`Banning user ${targetUserId}`);
         } else {
-          // Unban user - set ban_duration to 'none'
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           statusUpdate.ban_duration = 'none';
           this.logger.log(`Unbanning user ${targetUserId}`);
         }
-        
-        // Apply status update
-        const { data: { user: updatedUser }, error: statusError } = await db.auth.admin.updateUserById(targetUserId, statusUpdate);
+
+        const {
+          data: { user: updatedUser },
+          error: statusError,
+        } = await db.auth.admin.updateUserById(targetUserId, statusUpdate);
         if (statusError) {
           this.logger.error('Error updating user status:', statusError);
-          throw new Error(`Failed to update user status: ${statusError.message}`);
+          throw new Error(
+            `Failed to update user status: ${statusError.message}`,
+          );
         }
-        
-        // Verify the ban status was applied correctly
+
         if (updatedUser) {
-          const verifyBanned = (updatedUser as any).banned_at !== null && (updatedUser as any).banned_at !== undefined;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const verifyBanned =
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (updatedUser as any).banned_at !== null &&
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (updatedUser as any).banned_at !== undefined;
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           const verifyStatus = (updatedUser.app_metadata as any)?.status;
-          this.logger.log(`User ${targetUserId} ban status verified: ${verifyBanned ? 'Banned' : 'Not Banned'}, app_metadata.status: ${verifyStatus}`);
-          
-          // If we tried to ban but user is not banned, or vice versa, log warning
+          this.logger.log(
+            `User ${targetUserId} ban status verified: ${verifyBanned ? 'Banned' : 'Not Banned'}, app_metadata.status: ${verifyStatus}`,
+          );
+
           if (!isActive && !verifyBanned) {
-            this.logger.warn(`Warning: Attempted to ban user ${targetUserId} but user is not banned after update`);
+            this.logger.warn(
+              `Warning: Attempted to ban user ${targetUserId} but user is not banned after update`,
+            );
           } else if (isActive && verifyBanned) {
-            this.logger.warn(`Warning: Attempted to unban user ${targetUserId} but user is still banned after update`);
+            this.logger.warn(
+              `Warning: Attempted to unban user ${targetUserId} but user is still banned after update`,
+            );
           }
         }
-        
+
         this.logger.log(`Successfully updated user ${targetUserId} status`);
       }
 
-      // Only update email and metadata if provided (status is handled separately above)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (updateData.email || updateData.fullName) {
-        const { error: authError } = await db.auth.admin.updateUserById(targetUserId, authUpdates);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        const { error: authError } = await db.auth.admin.updateUserById(
+          targetUserId,
+          authUpdates,
+        );
         if (authError) {
           this.logger.error('Error updating auth user:', authError);
           throw new Error(`Failed to update user: ${authError.message}`);
         }
       }
 
-      // Update student profile if phone number changed
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (updateData.phoneNumber !== undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         const { error: profileError } = await db
           .from('student_profile')
-          .update({ phone_number: updateData.phoneNumber || null })
+          .update({
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            phone_number:
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              (updateData.phoneNumber as string | null) || null,
+          })
           .eq('user_id', targetUserId);
 
         if (profileError) {
           this.logger.error('Error updating profile:', profileError);
-          // Don't throw - auth update succeeded
         }
       }
 
-      // Fetch updated user
       return await this.getUserById(userId, targetUserId);
     } catch (error) {
       this.logger.error('Exception in updateUser:', error);
@@ -619,16 +687,12 @@ export class AdminService {
     }
   }
 
-  /**
-   * Delete user
-   */
   async deleteUser(userId: string, targetUserId: string) {
     const isUserAdmin = await this.isAdmin(userId);
     if (!isUserAdmin) {
       throw new ForbiddenException('Admin access required');
     }
 
-    // Prevent self-deletion
     if (userId === targetUserId) {
       throw new ForbiddenException('Cannot delete your own account');
     }
@@ -636,7 +700,6 @@ export class AdminService {
     try {
       const db = this.supabaseService.getClient();
 
-      // Delete from auth (this will cascade to related tables if RLS is set up)
       const { error: authError } = await db.auth.admin.deleteUser(targetUserId);
 
       if (authError) {
@@ -651,4 +714,3 @@ export class AdminService {
     }
   }
 }
-

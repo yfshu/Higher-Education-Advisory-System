@@ -34,16 +34,21 @@ export class AuthService {
       } = await dbClient.auth.admin.listUsers();
 
       if (!listError && users && users.length > 0) {
+        interface UserWithMetadata {
+          email?: string;
+          banned_at?: string | null;
+          app_metadata?: { status?: string };
+        }
         const user = users.find(
-          (u: any) => u.email?.toLowerCase() === dto.email.toLowerCase(),
-        );
+          (u: UserWithMetadata) =>
+            u.email?.toLowerCase() === dto.email.toLowerCase(),
+        ) as UserWithMetadata | undefined;
 
         if (user) {
           // Check if user is banned/inactive
           const isBanned =
-            (user as any).banned_at !== null &&
-            (user as any).banned_at !== undefined;
-          const statusFromMetadata = (user.app_metadata as any)?.status;
+            user.banned_at !== null && user.banned_at !== undefined;
+          const statusFromMetadata = user.app_metadata?.status;
           const isInactive = isBanned || statusFromMetadata === 'inactive';
 
           if (isInactive) {
@@ -168,12 +173,8 @@ export class AuthService {
       },
       profile: profileData
         ? {
-            phoneNumber: (profileData.phone_number ?? undefined) as
-              | string
-              | undefined,
-            countryCode: (profileData.country_code ?? undefined) as
-              | string
-              | undefined,
+            phoneNumber: profileData.phone_number ?? undefined,
+            countryCode: profileData.country_code ?? undefined,
             avatarUrl: avatarUrl,
             studyLevel: profileData.study_level,
             extracurricular: profileData.extracurricular,
@@ -453,8 +454,11 @@ export class AuthService {
       }
 
       // Check if any user has this email (case-insensitive)
+      interface UserWithEmail {
+        email?: string;
+      }
       const userExists = users?.some(
-        (u: any) => u.email?.toLowerCase() === emailLower,
+        (u: UserWithEmail) => u.email?.toLowerCase() === emailLower,
       );
 
       if (userExists) {
@@ -510,8 +514,23 @@ export class AuthService {
         };
       }
 
-      const json = await response.json();
-      const addr = json?.address ?? {};
+      interface NominatimAddress {
+        state?: string;
+        region?: string;
+        province?: string;
+        country?: string;
+        city?: string;
+        town?: string;
+        village?: string;
+        suburb?: string;
+      }
+
+      interface NominatimResponse {
+        address?: NominatimAddress;
+      }
+
+      const json = (await response.json()) as NominatimResponse;
+      const addr: NominatimAddress = json?.address ?? {};
       const state = addr.state || addr.region || addr.province;
       const country = addr.country;
       const city = addr.city || addr.town || addr.village || addr.suburb;
@@ -557,7 +576,7 @@ export class AuthService {
         state: stateName || undefined,
         country: countryName || undefined,
       };
-    } catch (error) {
+    } catch {
       // If API call fails, return coordinates as fallback
       return {
         location: `Lat ${lat.toFixed(4)}, Lon ${lon.toFixed(4)}`,

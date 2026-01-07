@@ -34,8 +34,11 @@ interface ProgramData {
 export class CompareService {
   private readonly logger = new Logger(CompareService.name);
   private readonly openai: OpenAI | null = null;
-  private readonly cache = new Map<string, { summary: string; timestamp: number }>();
-  private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour
+  private readonly cache = new Map<
+    string,
+    { summary: string; timestamp: number }
+  >();
+  private readonly CACHE_TTL = 60 * 60 * 1000;
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -43,13 +46,12 @@ export class CompareService {
       this.openai = new OpenAI({ apiKey });
       this.logger.log('OpenAI client initialized for compare service');
     } else {
-      this.logger.warn('OPENAI_API_KEY not found - AI comparison will be unavailable');
+      this.logger.warn(
+        'OPENAI_API_KEY not found - AI comparison will be unavailable',
+      );
     }
   }
 
-  /**
-   * Generate AI explanation comparing two programs
-   */
   async generateComparisonExplanation(
     programA: ProgramData,
     programB: ProgramData,
@@ -58,20 +60,20 @@ export class CompareService {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Check cache
     const cacheKey = `${programA.id}-${programB.id}`;
     const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
-      this.logger.log(`Returning cached AI explanation for programs ${programA.id} and ${programB.id}`);
+      this.logger.log(
+        `Returning cached AI explanation for programs ${programA.id} and ${programB.id}`,
+      );
       return cached.summary;
     }
 
     try {
-      // Format program data for comparison
       const programAFormatted = this.formatProgramForAI(programA);
       const programBFormatted = this.formatProgramForAI(programB);
 
-      const systemPrompt = `You are an academic advisor helping Malaysian students compare two university programs objectively. Your role is to provide neutral, factual, and student-friendly guidance.
+      const systemPrompt = `You are an academic advisor helping Malaysian students compare two university programs objectively.Your role is to provide neutral, factual, and student-friendly guidance.
 
 **Your Guidelines:**
 - Be neutral and factual - do not favor one program over another
@@ -112,16 +114,18 @@ Provide an objective comparison following the structure specified.`;
         max_tokens: 1000,
       });
 
-      const summary = completion.choices[0]?.message?.content || 
+      const summary =
+        completion.choices[0]?.message?.content ||
         'Unable to generate comparison at this time. Please try again.';
 
-      // Cache the result
       this.cache.set(cacheKey, {
         summary,
         timestamp: Date.now(),
       });
 
-      this.logger.log(`AI explanation generated for programs ${programA.id} and ${programB.id}`);
+      this.logger.log(
+        `AI explanation generated for programs ${programA.id} and ${programB.id}`,
+      );
       return summary;
     } catch (error) {
       this.logger.error('Error generating AI comparison:', error);
@@ -129,24 +133,28 @@ Provide an objective comparison following the structure specified.`;
     }
   }
 
-  /**
-   * Format program data for AI prompt
-   */
   private formatProgramForAI(program: ProgramData): string {
     const parts: string[] = [];
 
     parts.push(`Program Name: ${program.name || 'Not specified'}`);
     parts.push(`University: ${program.university?.name || 'Not specified'}`);
-    parts.push(`Location: ${program.university?.city || ''}${program.university?.state ? `, ${program.university.state}` : ''}, Malaysia`);
+    parts.push(
+      `Location: ${program.university?.city || ''}${program.university?.state ? `, ${program.university.state}` : ''}, Malaysia`,
+    );
     parts.push(`Level: ${program.level || 'Not specified'}`);
-    parts.push(`Duration: ${program.duration || program.duration_months ? `${program.duration_months} months` : 'Not specified'}`);
-    
+    parts.push(
+      `Duration: ${program.duration || program.duration_months ? `${program.duration_months} months` : 'Not specified'}`,
+    );
+
     if (program.tuition_fee_amount) {
-      const currency = program.currency === 'MYR' ? 'RM' : program.currency || '';
+      const currency =
+        program.currency === 'MYR' ? 'RM' : program.currency || '';
       const period = program.tuition_fee_period || 'period';
-      parts.push(`Tuition Fee: ${currency} ${program.tuition_fee_amount.toLocaleString()} per ${period}`);
+      parts.push(
+        `Tuition Fee: ${currency} ${program.tuition_fee_amount.toLocaleString()} per ${period}`,
+      );
     } else {
-      parts.push(`Tuition Fee: Not specified`);
+      parts.push('Tuition Fee: Not specified');
     }
 
     if (program.start_month) {
@@ -158,17 +166,25 @@ Provide an objective comparison following the structure specified.`;
     }
 
     if (program.description) {
-      parts.push(`Description: ${program.description.substring(0, 300)}${program.description.length > 300 ? '...' : ''}`);
+      parts.push(
+        `Description: ${program.description.substring(0, 300)}${program.description.length > 300 ? '...' : ''}`,
+      );
     }
 
     if (program.entry_requirements) {
       try {
-        const reqs = typeof program.entry_requirements === 'string' 
-          ? JSON.parse(program.entry_requirements) 
-          : program.entry_requirements;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const reqs =
+          typeof program.entry_requirements === 'string'
+            ? JSON.parse(program.entry_requirements)
+            : program.entry_requirements;
         parts.push(`Entry Requirements: ${JSON.stringify(reqs)}`);
       } catch {
-        parts.push(`Entry Requirements: ${program.entry_requirements}`);
+        const reqsStr =
+          typeof program.entry_requirements === 'string'
+            ? program.entry_requirements
+            : JSON.stringify(program.entry_requirements);
+        parts.push(`Entry Requirements: ${reqsStr}`);
       }
     }
 
@@ -177,7 +193,9 @@ Provide an objective comparison following the structure specified.`;
     }
 
     if (program.average_salary) {
-      parts.push(`Average Salary: RM ${program.average_salary.toLocaleString()}/month`);
+      parts.push(
+        `Average Salary: RM ${program.average_salary.toLocaleString()}/month`,
+      );
     }
 
     if (program.satisfaction_rate) {
@@ -185,10 +203,11 @@ Provide an objective comparison following the structure specified.`;
     }
 
     if (program.rating) {
-      parts.push(`Rating: ${program.rating}/5 (${program.review_count || 0} reviews)`);
+      parts.push(
+        `Rating: ${program.rating}/5 (${program.review_count || 0} reviews)`,
+      );
     }
 
     return parts.join('\n');
   }
 }
-

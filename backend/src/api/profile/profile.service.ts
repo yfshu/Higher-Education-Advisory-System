@@ -21,7 +21,7 @@ export class ProfileService {
 
     const supabase = this.supabaseService.createClientWithToken(accessToken);
     const { data: auth, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !auth.user) {
       throw new UnauthorizedException('Invalid or expired token.');
     }
@@ -45,19 +45,26 @@ export class ProfileService {
     let avatarUrl: string | undefined = undefined;
     if (profileData?.avatar_url) {
       // Check if avatar_url is already a full URL (legacy data) or a path
-      if (profileData.avatar_url.startsWith('http://') || profileData.avatar_url.startsWith('https://')) {
+      if (
+        profileData.avatar_url.startsWith('http://') ||
+        profileData.avatar_url.startsWith('https://')
+      ) {
         // Already a full URL, use as-is
         avatarUrl = profileData.avatar_url;
       } else {
         // It's a path, generate signed URL (expires in 1 hour)
-        const { data: signedUrlData, error: signedUrlError } = await dbClient.storage
-          .from('profile-avatars')
-          .createSignedUrl(profileData.avatar_url, 3600);
-        
+        const { data: signedUrlData, error: signedUrlError } =
+          await dbClient.storage
+            .from('profile-avatars')
+            .createSignedUrl(profileData.avatar_url, 3600);
+
         if (!signedUrlError && signedUrlData) {
           avatarUrl = signedUrlData.signedUrl;
         } else {
-          console.error('Failed to generate signed URL for avatar:', signedUrlError);
+          console.error(
+            'Failed to generate signed URL for avatar:',
+            signedUrlError,
+          );
           // If signed URL generation fails, return undefined (will show initials)
         }
       }
@@ -81,12 +88,13 @@ export class ProfileService {
         email: auth.user.email ?? '',
         role: (auth.user.user_metadata?.role as string) ?? 'student',
         fullName: (auth.user.user_metadata?.full_name as string) ?? undefined,
-        phoneNumber: (auth.user.user_metadata?.phone_number as string) ?? undefined,
+        phoneNumber:
+          (auth.user.user_metadata?.phone_number as string) ?? undefined,
       },
       profile: profileData
         ? {
-            phoneNumber: (profileData.phone_number ?? undefined) as string | undefined,
-            countryCode: (profileData.country_code ?? undefined) as string | undefined,
+            phoneNumber: profileData.phone_number ?? undefined,
+            countryCode: profileData.country_code ?? undefined,
             avatarUrl: avatarUrl,
             studyLevel: profileData.study_level,
             extracurricular: profileData.extracurricular,
@@ -169,7 +177,10 @@ export class ProfileService {
     }
 
     // Determine file extension
-    const ext = file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' ? 'jpg' : 'png';
+    const ext =
+      file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg'
+        ? 'jpg'
+        : 'png';
     const fileName = `avatars/${userId}.${ext}`;
 
     // Use service role client for storage and database operations to bypass RLS
@@ -177,7 +188,7 @@ export class ProfileService {
 
     // Upload to Supabase Storage using service role client
     // file.buffer is already a Buffer from multer, which Supabase accepts
-    const { data: uploadData, error: uploadError } = await dbClient.storage
+    const { error: uploadError } = await dbClient.storage
       .from('profile-avatars')
       .upload(fileName, file.buffer, {
         contentType: file.mimetype,
@@ -210,9 +221,10 @@ export class ProfileService {
     }
 
     // Generate a signed URL for immediate use (expires in 1 hour)
-    const { data: signedUrlData, error: signedUrlError } = await dbClient.storage
-      .from('profile-avatars')
-      .createSignedUrl(fileName, 3600); // 1 hour expiry
+    const { data: signedUrlData, error: signedUrlError } =
+      await dbClient.storage
+        .from('profile-avatars')
+        .createSignedUrl(fileName, 3600); // 1 hour expiry
 
     if (signedUrlError) {
       // If signed URL generation fails, still return success but log the error
@@ -248,12 +260,8 @@ export class ProfileService {
 
     const dbClient = this.supabaseService.getClient();
 
-    // Build update object - only allow editable fields
-    // IMPORTANT: Do NOT allow updates to:
-    // - phone_number (read-only, set during registration)
-    // - country_code (read-only, set during registration)
-    // - user_id (immutable)
-    const updateData: Database['public']['Tables']['student_profile']['Update'] = {};
+    const updateData: Database['public']['Tables']['student_profile']['Update'] =
+      {};
 
     // Academic fields
     if (dto.studyLevel !== undefined) {
@@ -264,40 +272,74 @@ export class ProfileService {
     }
 
     // Subject grades
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (dto.bm !== undefined) updateData.bm = dto.bm as any;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (dto.english !== undefined) updateData.english = dto.english as any;
-    if (dto.history !== undefined) updateData.history = dto.history as any;
-    if (dto.mathematics !== undefined) updateData.mathematics = dto.mathematics as any;
+    if (dto.history !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.history = dto.history as any;
+    if (dto.mathematics !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.mathematics = dto.mathematics as any;
     if (dto.islamicEducationMoralEducation !== undefined) {
-      updateData.islamic_education_moral_education = dto.islamicEducationMoralEducation as any;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.islamic_education_moral_education =
+        dto.islamicEducationMoralEducation as any;
     }
-    if (dto.physics !== undefined) updateData.physics = dto.physics as any;
-    if (dto.chemistry !== undefined) updateData.chemistry = dto.chemistry as any;
-    if (dto.biology !== undefined) updateData.biology = dto.biology as any;
+    if (dto.physics !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.physics = dto.physics as any;
+    if (dto.chemistry !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.chemistry = dto.chemistry as any;
+    if (dto.biology !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.biology = dto.biology as any;
     if (dto.additionalMathematics !== undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       updateData.additional_mathematics = dto.additionalMathematics as any;
     }
-    if (dto.geography !== undefined) updateData.geography = dto.geography as any;
-    if (dto.economics !== undefined) updateData.economics = dto.economics as any;
-    if (dto.accounting !== undefined) updateData.accounting = dto.accounting as any;
+    if (dto.geography !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.geography = dto.geography as any;
+    if (dto.economics !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.economics = dto.economics as any;
+    if (dto.accounting !== undefined)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      updateData.accounting = dto.accounting as any;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (dto.chinese !== undefined) updateData.chinese = dto.chinese as any;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (dto.tamil !== undefined) updateData.tamil = dto.tamil as any;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (dto.ict !== undefined) updateData.ict = dto.ict as any;
 
     // Interests
-    if (dto.mathsInterest !== undefined) updateData.maths_interest = dto.mathsInterest;
-    if (dto.scienceInterest !== undefined) updateData.science_interest = dto.scienceInterest;
-    if (dto.computerInterest !== undefined) updateData.computer_interest = dto.computerInterest;
-    if (dto.writingInterest !== undefined) updateData.writing_interest = dto.writingInterest;
-    if (dto.artInterest !== undefined) updateData.art_interest = dto.artInterest;
-    if (dto.businessInterest !== undefined) updateData.business_interest = dto.businessInterest;
-    if (dto.socialInterest !== undefined) updateData.social_interest = dto.socialInterest;
+    if (dto.mathsInterest !== undefined)
+      updateData.maths_interest = dto.mathsInterest;
+    if (dto.scienceInterest !== undefined)
+      updateData.science_interest = dto.scienceInterest;
+    if (dto.computerInterest !== undefined)
+      updateData.computer_interest = dto.computerInterest;
+    if (dto.writingInterest !== undefined)
+      updateData.writing_interest = dto.writingInterest;
+    if (dto.artInterest !== undefined)
+      updateData.art_interest = dto.artInterest;
+    if (dto.businessInterest !== undefined)
+      updateData.business_interest = dto.businessInterest;
+    if (dto.socialInterest !== undefined)
+      updateData.social_interest = dto.socialInterest;
 
     // Skills
-    if (dto.logicalThinking !== undefined) updateData.logical_thinking = dto.logicalThinking;
-    if (dto.problemSolving !== undefined) updateData.problem_solving = dto.problemSolving;
+    if (dto.logicalThinking !== undefined)
+      updateData.logical_thinking = dto.logicalThinking;
+    if (dto.problemSolving !== undefined)
+      updateData.problem_solving = dto.problemSolving;
     if (dto.creativity !== undefined) updateData.creativity = dto.creativity;
-    if (dto.communication !== undefined) updateData.communication = dto.communication;
+    if (dto.communication !== undefined)
+      updateData.communication = dto.communication;
     if (dto.teamwork !== undefined) updateData.teamwork = dto.teamwork;
     if (dto.leadership !== undefined) updateData.leadership = dto.leadership;
     if (dto.attentionToDetail !== undefined) {
@@ -308,13 +350,16 @@ export class ProfileService {
     updateData.updated_at = new Date().toISOString();
 
     // Extract preferences data if present
-    const preferencesUpdate: Database['public']['Tables']['preferences']['Update'] = {};
-    if (dto.budgetRange !== undefined) preferencesUpdate.budget_range = dto.budgetRange;
+    const preferencesUpdate: Database['public']['Tables']['preferences']['Update'] =
+      {};
+    if (dto.budgetRange !== undefined)
+      preferencesUpdate.budget_range = dto.budgetRange;
     if (dto.preferredLocation !== undefined)
       preferencesUpdate.preferred_location = dto.preferredLocation;
     if (dto.preferredCountry !== undefined)
       preferencesUpdate.preferred_country = dto.preferredCountry;
-    if (dto.studyMode !== undefined) preferencesUpdate.study_mode = dto.studyMode;
+    if (dto.studyMode !== undefined)
+      preferencesUpdate.study_mode = dto.studyMode;
 
     // Update student_profile
     if (Object.keys(updateData).length > 1) {

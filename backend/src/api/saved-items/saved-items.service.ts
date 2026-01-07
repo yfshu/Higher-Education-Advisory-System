@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { Database } from '../../supabase/types/supabase.types';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -13,21 +13,19 @@ export class SavedItemsService {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  /**
-   * Get a user-scoped client that respects RLS
-   */
   private getUserClient(accessToken: string): SupabaseClient<Database> {
     return this.supabaseService.createUserClient(accessToken);
   }
 
-  /**
-   * Save an item (program or scholarship)
-   */
-  async saveItem(userId: string, itemType: ItemType, itemId: number, accessToken: string): Promise<SavedItemRow> {
+  async saveItem(
+    userId: string,
+    itemType: ItemType,
+    itemId: number,
+    accessToken: string,
+  ): Promise<SavedItemRow> {
     try {
       const db = this.getUserClient(accessToken);
-      
-      // Check if already saved
+
       const { data: existing } = await db
         .from('saved_items')
         .select('id')
@@ -37,11 +35,12 @@ export class SavedItemsService {
         .single();
 
       if (existing) {
-        this.logger.log(`Item already saved: ${itemType} ${itemId} for user ${userId}`);
+        this.logger.log(
+          `Item already saved: ${itemType} ${itemId} for user ${userId}`,
+        );
         return existing as SavedItemRow;
       }
 
-      // Insert new saved item
       const insertData: SavedItemInsert = {
         user_id: userId,
         item_type: itemType,
@@ -60,7 +59,9 @@ export class SavedItemsService {
         throw new BadRequestException(`Failed to save item: ${error.message}`);
       }
 
-      this.logger.log(`Successfully saved ${itemType} ${itemId} for user ${userId}`);
+      this.logger.log(
+        `Successfully saved ${itemType} ${itemId} for user ${userId}`,
+      );
       return data;
     } catch (error) {
       this.logger.error('Exception in saveItem:', error);
@@ -68,10 +69,12 @@ export class SavedItemsService {
     }
   }
 
-  /**
-   * Unsave an item (program or scholarship)
-   */
-  async unsaveItem(userId: string, itemType: ItemType, itemId: number, accessToken: string): Promise<void> {
+  async unsaveItem(
+    userId: string,
+    itemType: ItemType,
+    itemId: number,
+    accessToken: string,
+  ): Promise<void> {
     try {
       const db = this.getUserClient(accessToken);
 
@@ -84,20 +87,26 @@ export class SavedItemsService {
 
       if (error) {
         this.logger.error('Error unsaving item:', error);
-        throw new BadRequestException(`Failed to unsave item: ${error.message}`);
+        throw new BadRequestException(
+          `Failed to unsave item: ${error.message}`,
+        );
       }
 
-      this.logger.log(`Successfully unsaved ${itemType} ${itemId} for user ${userId}`);
+      this.logger.log(
+        `Successfully unsaved ${itemType} ${itemId} for user ${userId}`,
+      );
     } catch (error) {
       this.logger.error('Exception in unsaveItem:', error);
       throw error;
     }
   }
 
-  /**
-   * Check if an item is saved
-   */
-  async isItemSaved(userId: string, itemType: ItemType, itemId: number, accessToken: string): Promise<boolean> {
+  async isItemSaved(
+    userId: string,
+    itemType: ItemType,
+    itemId: number,
+    accessToken: string,
+  ): Promise<boolean> {
     try {
       const db = this.getUserClient(accessToken);
 
@@ -110,9 +119,10 @@ export class SavedItemsService {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        // PGRST116 is "not found" which is expected
         this.logger.error('Error checking saved state:', error);
-        throw new BadRequestException(`Failed to check saved state: ${error.message}`);
+        throw new BadRequestException(
+          `Failed to check saved state: ${error.message}`,
+        );
       }
 
       return !!data;
@@ -122,11 +132,11 @@ export class SavedItemsService {
     }
   }
 
-  /**
-   * Fetch saved items for a user
-   * If itemType is provided, filter by it
-   */
-  async getSavedItems(userId: string, accessToken: string, itemType?: ItemType): Promise<SavedItemRow[]> {
+  async getSavedItems(
+    userId: string,
+    accessToken: string,
+    itemType?: ItemType,
+  ): Promise<SavedItemRow[]> {
     try {
       const db = this.getUserClient(accessToken);
 
@@ -144,10 +154,14 @@ export class SavedItemsService {
 
       if (error) {
         this.logger.error('Error fetching saved items:', error);
-        throw new BadRequestException(`Failed to fetch saved items: ${error.message}`);
+        throw new BadRequestException(
+          `Failed to fetch saved items: ${error.message}`,
+        );
       }
 
-      this.logger.log(`Successfully fetched ${data?.length || 0} saved items for user ${userId}`);
+      this.logger.log(
+        `Successfully fetched ${data?.length || 0} saved items for user ${userId}`,
+      );
       return data || [];
     } catch (error) {
       this.logger.error('Exception in getSavedItems:', error);
@@ -155,14 +169,10 @@ export class SavedItemsService {
     }
   }
 
-  /**
-   * Fetch saved programs with full program data
-   */
   async getSavedPrograms(userId: string, accessToken: string): Promise<any[]> {
     try {
       const db = this.getUserClient(accessToken);
 
-      // First, fetch saved_items for programs
       const { data: savedItems, error: savedItemsError } = await db
         .from('saved_items')
         .select('*')
@@ -172,7 +182,9 @@ export class SavedItemsService {
 
       if (savedItemsError) {
         this.logger.error('Error fetching saved items:', savedItemsError);
-        throw new BadRequestException(`Failed to fetch saved items: ${savedItemsError.message}`);
+        throw new BadRequestException(
+          `Failed to fetch saved items: ${savedItemsError.message}`,
+        );
       }
 
       if (!savedItems || savedItems.length === 0) {
@@ -180,39 +192,48 @@ export class SavedItemsService {
         return [];
       }
 
-      // Extract program IDs
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
       const programIds = savedItems.map((item: any) => item.item_id);
 
-      // Fetch programs with university data
       const { data: programs, error: programsError } = await db
         .from('programs')
-        .select(`
+        .select(
+          `
           *,
           university:university_id (
             *
           )
-        `)
+        `,
+        )
         .in('id', programIds);
 
       if (programsError) {
         this.logger.error('Error fetching programs:', programsError);
-        throw new BadRequestException(`Failed to fetch programs: ${programsError.message}`);
+        throw new BadRequestException(
+          `Failed to fetch programs: ${programsError.message}`,
+        );
       }
 
-      // Create a map of saved_at times by program ID
       const savedAtMap = new Map<number, string>();
       savedItems.forEach((item: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
         savedAtMap.set(item.item_id, item.saved_at);
       });
 
-      // Combine programs with saved_at information
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       const programsWithSavedInfo = (programs || []).map((program: any) => ({
         ...program,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
         saved_at: savedAtMap.get(program.id) || null,
-        saved_item_id: savedItems.find((item: any) => item.item_id === program.id)?.id || null,
+        saved_item_id:
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          savedItems.find((item: any) => item.item_id === program.id)?.id ||
+          null,
       }));
 
-      this.logger.log(`Successfully fetched ${programsWithSavedInfo.length} saved programs for user ${userId}`);
+      this.logger.log(
+        `Successfully fetched ${programsWithSavedInfo.length} saved programs for user ${userId}`,
+      );
       return programsWithSavedInfo;
     } catch (error) {
       this.logger.error('Exception in getSavedPrograms:', error);
@@ -220,14 +241,13 @@ export class SavedItemsService {
     }
   }
 
-  /**
-   * Fetch saved scholarships with full scholarship data
-   */
-  async getSavedScholarships(userId: string, accessToken: string): Promise<any[]> {
+  async getSavedScholarships(
+    userId: string,
+    accessToken: string,
+  ): Promise<any[]> {
     try {
       const db = this.getUserClient(accessToken);
 
-      // First, fetch saved_items for scholarships
       const { data: savedItems, error: savedItemsError } = await db
         .from('saved_items')
         .select('*')
@@ -237,7 +257,9 @@ export class SavedItemsService {
 
       if (savedItemsError) {
         this.logger.error('Error fetching saved items:', savedItemsError);
-        throw new BadRequestException(`Failed to fetch saved items: ${savedItemsError.message}`);
+        throw new BadRequestException(
+          `Failed to fetch saved items: ${savedItemsError.message}`,
+        );
       }
 
       if (!savedItems || savedItems.length === 0) {
@@ -245,10 +267,9 @@ export class SavedItemsService {
         return [];
       }
 
-      // Extract scholarship IDs
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
       const scholarshipIds = savedItems.map((item: any) => item.item_id);
 
-      // Fetch scholarships
       const { data: scholarships, error: scholarshipsError } = await db
         .from('scholarships')
         .select('*')
@@ -256,23 +277,33 @@ export class SavedItemsService {
 
       if (scholarshipsError) {
         this.logger.error('Error fetching scholarships:', scholarshipsError);
-        throw new BadRequestException(`Failed to fetch scholarships: ${scholarshipsError.message}`);
+        throw new BadRequestException(
+          `Failed to fetch scholarships: ${scholarshipsError.message}`,
+        );
       }
 
-      // Create a map of saved_at times by scholarship ID
       const savedAtMap = new Map<number, string>();
       savedItems.forEach((item: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
         savedAtMap.set(item.item_id, item.saved_at);
       });
 
-      // Combine scholarships with saved_at information
-      const scholarshipsWithSavedInfo = (scholarships || []).map((scholarship: any) => ({
-        ...scholarship,
-        saved_at: savedAtMap.get(scholarship.id) || null,
-        saved_item_id: savedItems.find((item: any) => item.item_id === scholarship.id)?.id || null,
-      }));
+      const scholarshipsWithSavedInfo = (scholarships || []).map(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        (scholarship: any) => ({
+          ...scholarship,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+          saved_at: savedAtMap.get(scholarship.id) || null,
+          saved_item_id:
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            savedItems.find((item: any) => item.item_id === scholarship.id)
+              ?.id || null,
+        }),
+      );
 
-      this.logger.log(`Successfully fetched ${scholarshipsWithSavedInfo.length} saved scholarships for user ${userId}`);
+      this.logger.log(
+        `Successfully fetched ${scholarshipsWithSavedInfo.length} saved scholarships for user ${userId}`,
+      );
       return scholarshipsWithSavedInfo;
     } catch (error) {
       this.logger.error('Exception in getSavedScholarships:', error);
@@ -280,4 +311,3 @@ export class SavedItemsService {
     }
   }
 }
-

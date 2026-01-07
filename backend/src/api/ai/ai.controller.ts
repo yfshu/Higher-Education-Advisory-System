@@ -35,13 +35,12 @@ export class AIController {
   async getFieldRecommendations(@Req() req: Request): Promise<FieldRecommendationResponseDto> {
     try {
       const userId = (req as any).user?.id;
-      const accessToken = req.headers.authorization?.replace('Bearer ', '');
 
-      if (!userId || !accessToken) {
+      if (!userId) {
         throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
       }
 
-      return await this.aiService.getFieldRecommendations(userId, accessToken);
+      return await this.aiService.getFieldRecommendations(userId);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -79,9 +78,8 @@ export class AIController {
   ): Promise<FinalRecommendationResponseDto> {
     try {
       const userId = (req as any).user?.id;
-      const accessToken = req.headers.authorization?.replace('Bearer ', '');
 
-      if (!userId || !accessToken) {
+      if (!userId) {
         throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
       }
 
@@ -89,7 +87,7 @@ export class AIController {
         throw new HttpException('Field name is required', HttpStatus.BAD_REQUEST);
       }
 
-      return await this.aiService.getProgramsByField(userId, accessToken, body.field_name);
+      return await this.aiService.getProgramsByField(userId, body.field_name);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -124,13 +122,12 @@ export class AIController {
   async getRecommendations(@Req() req: Request): Promise<FinalRecommendationResponseDto> {
     try {
       const userId = (req as any).user?.id;
-      const accessToken = req.headers.authorization?.replace('Bearer ', '');
 
-      if (!userId || !accessToken) {
+      if (!userId) {
         throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
       }
 
-      return await this.aiService.getRecommendations(userId, accessToken);
+      return await this.aiService.getRecommendations(userId);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

@@ -1,4 +1,10 @@
-import { Injectable, Logger, BadRequestException, forwardRef, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  forwardRef,
+  Inject,
+} from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { Database } from '../../supabase/types/supabase.types';
 import { ProgramsService } from '../programs/programs.service';
@@ -6,7 +12,6 @@ import { ScholarshipsService } from '../scholarships/scholarships.service';
 import OpenAI from 'openai';
 
 type HelpSupportRow = Database['public']['Tables']['help_support']['Row'];
-type HelpCategory = Database['public']['Enums']['help_category'];
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -17,7 +22,10 @@ interface ChatMessage {
 export class HelpService {
   private readonly logger = new Logger(HelpService.name);
   private readonly openai: OpenAI | null = null;
-  private readonly rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+  private readonly rateLimitMap = new Map<
+    string,
+    { count: number; resetAt: number }
+  >();
 
   constructor(
     private readonly supabaseService: SupabaseService,
@@ -26,7 +34,6 @@ export class HelpService {
     @Inject(forwardRef(() => ScholarshipsService))
     private readonly scholarshipsService: ScholarshipsService,
   ) {
-    // Initialize OpenAI client if API key is available
     const apiKey = process.env.OPENAI_API_KEY;
     if (apiKey) {
       this.openai = new OpenAI({ apiKey });
@@ -36,10 +43,10 @@ export class HelpService {
     }
   }
 
-  /**
-   * Fetch FAQs from help_support table
-   */
-  async getFAQs(limit: number = 8, searchQuery?: string): Promise<HelpSupportRow[]> {
+  async getFAQs(
+    limit: number = 8,
+    searchQuery?: string,
+  ): Promise<HelpSupportRow[]> {
     try {
       const db = this.supabaseService.getClient();
 
@@ -50,10 +57,11 @@ export class HelpService {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      // Add search filter if provided
       if (searchQuery && searchQuery.trim()) {
         const searchTerm = `%${searchQuery.trim()}%`;
-        query = query.or(`title.ilike.${searchTerm},content.ilike.${searchTerm}`);
+        query = query.or(
+          `title.ilike.${searchTerm},content.ilike.${searchTerm}`,
+        );
       }
 
       const { data, error } = await query;
@@ -71,15 +79,15 @@ export class HelpService {
     }
   }
 
-  /**
-   * Check rate limit for a user/IP
-   */
-  private checkRateLimit(identifier: string, maxRequests: number = 20, windowMs: number = 60000): boolean {
+  private checkRateLimit(
+    identifier: string,
+    maxRequests: number = 20,
+    windowMs: number = 60000,
+  ): boolean {
     const now = Date.now();
     const userLimit = this.rateLimitMap.get(identifier);
 
     if (!userLimit || now > userLimit.resetAt) {
-      // Reset or create new limit
       this.rateLimitMap.set(identifier, {
         count: 1,
         resetAt: now + windowMs,
@@ -88,111 +96,194 @@ export class HelpService {
     }
 
     if (userLimit.count >= maxRequests) {
-      return false; // Rate limit exceeded
+      return false;
     }
 
     userLimit.count++;
     return true;
   }
 
-  /**
-   * Validate message content
-   */
-  private validateMessage(message: string): { valid: boolean; error?: string } {
+  private validateMessage(message: string): {
+    valid: boolean;
+    error?: string;
+  } {
     if (!message || !message.trim()) {
       return { valid: false, error: 'Message cannot be empty' };
     }
 
     if (message.length > 1000) {
-      return { valid: false, error: 'Message is too long (max 1000 characters)' };
+      return {
+        valid: false,
+        error: 'Message is too long (max 1000 characters)',
+      };
     }
 
     return { valid: true };
   }
 
-  /**
-   * Check if message is related to academic/system topics or is a polite acknowledgment
-   */
   private isAcademicTopic(message: string): boolean {
     const academicKeywords = [
-      'education', 'university', 'program', 'scholarship', 'foundation', 'diploma', 'degree',
-      'bachelor', 'malaysia', 'malaysian', 'spm', 'stpm', 'application', 'admission',
-      'tuition', 'fee', 'course', 'subject', 'career', 'job', 'backtoschool', 'system',
-      'profile', 'recommendation', 'match', 'save', 'compare', 'search', 'filter',
-      'how to', 'help', 'support', 'guide', 'tutorial', 'feature', 'function'
+      'education',
+      'university',
+      'program',
+      'scholarship',
+      'foundation',
+      'diploma',
+      'degree',
+      'bachelor',
+      'malaysia',
+      'malaysian',
+      'spm',
+      'stpm',
+      'application',
+      'admission',
+      'tuition',
+      'fee',
+      'course',
+      'subject',
+      'career',
+      'job',
+      'backtoschool',
+      'system',
+      'profile',
+      'recommendation',
+      'match',
+      'save',
+      'compare',
+      'search',
+      'filter',
+      'how to',
+      'help',
+      'support',
+      'guide',
+      'tutorial',
+      'feature',
+      'function',
     ];
 
-    // Gratitude and acknowledgment phrases (should be allowed)
     const acknowledgmentPhrases = [
-      'thank', 'thanks', 'appreciate', 'grateful', 'alright', 'okay', 'ok', 'got it',
-      'understood', 'sure', 'yes', 'no', 'maybe', 'i see', 'i understand', 'cool',
-      'nice', 'great', 'awesome', 'perfect', 'good', 'fine', 'bye', 'goodbye',
-      'see you', 'take care', 'have a good day'
+      'thank',
+      'thanks',
+      'appreciate',
+      'grateful',
+      'alright',
+      'okay',
+      'ok',
+      'got it',
+      'understood',
+      'sure',
+      'yes',
+      'no',
+      'maybe',
+      'i see',
+      'i understand',
+      'cool',
+      'nice',
+      'great',
+      'awesome',
+      'perfect',
+      'good',
+      'fine',
+      'bye',
+      'goodbye',
+      'see you',
+      'take care',
+      'have a good day',
     ];
 
     const lowerMessage = message.toLowerCase().trim();
-    
+
     // Check if it's a simple acknowledgment (allow these)
-    if (acknowledgmentPhrases.some(phrase => lowerMessage.includes(phrase))) {
+    if (acknowledgmentPhrases.some((phrase) => lowerMessage.includes(phrase))) {
       return true;
     }
-    
+
     // Check if it contains academic keywords
-    return academicKeywords.some(keyword => lowerMessage.includes(keyword));
+    return academicKeywords.some((keyword) => lowerMessage.includes(keyword));
   }
 
-  /**
-   * Detect if the query is asking about programs
-   */
   private isProgramQuery(message: string): boolean {
     const programKeywords = [
-      'program', 'programme', 'course', 'foundation', 'diploma', 'degree', 'bachelor',
-      'engineering', 'business', 'medicine', 'computer', 'science', 'arts', 'law',
-      'accounting', 'finance', 'marketing', 'management', 'what programs', 'which programs',
-      'available programs', 'list programs', 'show programs', 'find programs'
+      'program',
+      'programme',
+      'course',
+      'foundation',
+      'diploma',
+      'degree',
+      'bachelor',
+      'engineering',
+      'business',
+      'medicine',
+      'computer',
+      'science',
+      'arts',
+      'law',
+      'accounting',
+      'finance',
+      'marketing',
+      'management',
+      'what programs',
+      'which programs',
+      'available programs',
+      'list programs',
+      'show programs',
+      'find programs',
     ];
     const lowerMessage = message.toLowerCase();
-    return programKeywords.some(keyword => lowerMessage.includes(keyword));
+    return programKeywords.some((keyword) => lowerMessage.includes(keyword));
   }
 
-  /**
-   * Detect if the query is asking about scholarships
-   */
   private isScholarshipQuery(message: string): boolean {
     const scholarshipKeywords = [
-      'scholarship', 'financial aid', 'funding', 'grant', 'bursary', 'what scholarships',
-      'which scholarships', 'available scholarships', 'list scholarships', 'show scholarships',
-      'find scholarships', 'scholarship opportunities'
+      'scholarship',
+      'financial aid',
+      'funding',
+      'grant',
+      'bursary',
+      'what scholarships',
+      'which scholarships',
+      'available scholarships',
+      'list scholarships',
+      'show scholarships',
+      'find scholarships',
+      'scholarship opportunities',
     ];
     const lowerMessage = message.toLowerCase();
-    return scholarshipKeywords.some(keyword => lowerMessage.includes(keyword));
+    return scholarshipKeywords.some((keyword) =>
+      lowerMessage.includes(keyword),
+    );
   }
 
-  /**
-   * Fetch relevant programs based on query
-   */
   private async fetchRelevantPrograms(message: string): Promise<string> {
     try {
       const allPrograms = await this.programsService.getPrograms();
-      
-      // Extract keywords from message to filter programs
+
       const lowerMessage = message.toLowerCase();
       const relevantPrograms = allPrograms
-        .filter(program => {
+        .filter((program) => {
           const programName = (program.name || '').toLowerCase();
           const description = (program.description || '').toLowerCase();
           const level = (program.level || '').toLowerCase();
-          const tags = Array.isArray(program.tags) 
-            ? program.tags.map(t => String(t).toLowerCase()).join(' ')
+          const tags = Array.isArray(program.tags)
+            ? program.tags
+                .map((t) => {
+                  if (typeof t === 'string') return t.toLowerCase();
+                  if (typeof t === 'number') return String(t);
+                  return JSON.stringify(t);
+                })
+                .join(' ')
             : '';
-          
+
           const searchText = `${programName} ${description} ${level} ${tags}`;
-          
-          // Check if any word from the message appears in the program
-          const messageWords = lowerMessage.split(/\s+/).filter(w => w.length > 3);
-          return messageWords.some(word => searchText.includes(word)) || 
-                 programName.includes(lowerMessage) ||
-                 description.includes(lowerMessage);
+
+          const messageWords = lowerMessage
+            .split(/\s+/)
+            .filter((w) => w.length > 3);
+          return (
+            messageWords.some((word) => searchText.includes(word)) ||
+            programName.includes(lowerMessage) ||
+            description.includes(lowerMessage)
+          );
         })
         .slice(0, 10); // Limit to top 10 most relevant
 
@@ -205,26 +296,31 @@ export class HelpService {
 You can search for specific programs on the Search Programs page.`;
       }
 
-      // Format programs for AI context
-      const programsInfo = relevantPrograms.map((p, idx) => {
-        const university = p.university;
-        const location = university 
-          ? `${university.city || ''}${university.city && university.state ? ', ' : ''}${university.state || ''}`
-          : 'Location not specified';
-        const fee = (p as any).tuition_fee_amount 
-          ? `RM ${(p as any).tuition_fee_amount.toLocaleString()} ${(p as any).tuition_fee_period || 'per period'}`
-          : 'Fee information available on program page';
-        const duration = (p as any).duration_months 
-          ? `${(p as any).duration_months} months`
-          : p.duration || 'Duration varies';
+      const programsInfo = relevantPrograms
+        .map((p, idx) => {
+          const university = p.university;
+          const location = university
+            ? `${university.city || ''}${university.city && university.state ? ', ' : ''}${university.state || ''}`
+            : 'Location not specified';
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+          const fee = (p as any).tuition_fee_amount
+            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+              `RM ${(p as any).tuition_fee_amount.toLocaleString()} ${(p as any).tuition_fee_period || 'per period'}`
+            : 'Fee information available on program page';
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          const duration = (p as any).duration_months
+            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              `${(p as any).duration_months} months`
+            : p.duration || 'Duration varies';
 
-        return `${idx + 1}. **${p.name}** (${p.level || 'N/A'})
+          return `${idx + 1}. **${p.name}** (${p.level || 'N/A'})
    - University: ${university?.name || 'Not specified'}
    - Location: ${location}
    - Duration: ${duration}
    - Tuition: ${fee}
    - Description: ${(p.description || '').substring(0, 150)}${p.description && p.description.length > 150 ? '...' : ''}`;
-      }).join('\n\n');
+        })
+        .join('\n\n');
 
       return `Here are ${relevantPrograms.length} programs that might interest you:\n\n${programsInfo}\n\nYou can view more details about any program by visiting the program detail page.`;
     } catch (error) {
@@ -233,29 +329,30 @@ You can search for specific programs on the Search Programs page.`;
     }
   }
 
-  /**
-   * Fetch relevant scholarships based on query
-   */
   private async fetchRelevantScholarships(message: string): Promise<string> {
     try {
       const allScholarships = await this.scholarshipsService.getScholarships();
-      
-      // Extract keywords from message to filter scholarships
+
       const lowerMessage = message.toLowerCase();
       const relevantScholarships = allScholarships
-        .filter(scholarship => {
+        .filter((scholarship) => {
           const name = (scholarship.name || '').toLowerCase();
           const description = (scholarship.description || '').toLowerCase();
-          const organization = (scholarship.organization_name || '').toLowerCase();
+          const organization = (
+            scholarship.organization_name || ''
+          ).toLowerCase();
           const type = (scholarship.type || '').toLowerCase();
-          
+
           const searchText = `${name} ${description} ${organization} ${type}`;
-          
-          // Check if any word from the message appears in the scholarship
-          const messageWords = lowerMessage.split(/\s+/).filter(w => w.length > 3);
-          return messageWords.some(word => searchText.includes(word)) || 
-                 name.includes(lowerMessage) ||
-                 description.includes(lowerMessage);
+
+          const messageWords = lowerMessage
+            .split(/\s+/)
+            .filter((w) => w.length > 3);
+          return (
+            messageWords.some((word) => searchText.includes(word)) ||
+            name.includes(lowerMessage) ||
+            description.includes(lowerMessage)
+          );
         })
         .slice(0, 10); // Limit to top 10 most relevant
 
@@ -268,19 +365,25 @@ You can search for specific programs on the Search Programs page.`;
 You can search for specific scholarships on the Scholarships page.`;
       }
 
-      // Format scholarships for AI context
-      const scholarshipsInfo = relevantScholarships.map((s, idx) => {
-        const amount = s.amount 
-          ? `RM ${s.amount.toLocaleString()}`
-          : 'Amount varies';
-        const deadline = s.deadline 
-          ? new Date(s.deadline).toLocaleDateString()
-          : 'Check scholarship page';
-        const levels = Array.isArray((s as any).study_levels) && (s as any).study_levels.length > 0
-          ? (s as any).study_levels.join(', ')
-          : 'All levels';
+      const scholarshipsInfo = relevantScholarships
+        .map((s, idx) => {
+          const amount = s.amount
+            ? `RM ${s.amount.toLocaleString()}`
+            : 'Amount varies';
+          const deadline = s.deadline
+            ? new Date(s.deadline).toLocaleDateString()
+            : 'Check scholarship page';
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+          const levels =
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            Array.isArray((s as any).study_levels) &&
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            (s as any).study_levels.length > 0
+              ? // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                (s as any).study_levels.join(', ')
+              : 'All levels';
 
-        return `${idx + 1}. **${s.name}**
+          return `${idx + 1}. **${s.name}**
    - Organization: ${s.organization_name || 'Not specified'}
    - Type: ${s.type || 'N/A'}
    - Amount: ${amount}
@@ -288,7 +391,8 @@ You can search for specific scholarships on the Scholarships page.`;
    - Deadline: ${deadline}
    - Location: ${s.location || 'Various locations'}
    - Description: ${(s.description || '').substring(0, 150)}${s.description && s.description.length > 150 ? '...' : ''}`;
-      }).join('\n\n');
+        })
+        .join('\n\n');
 
       return `Here are ${relevantScholarships.length} scholarships that might interest you:\n\n${scholarshipsInfo}\n\nYou can view more details and apply for any scholarship by visiting the scholarship detail page.`;
     } catch (error) {
@@ -297,48 +401,45 @@ You can search for specific scholarships on the Scholarships page.`;
     }
   }
 
-  /**
-   * Handle AI chat request
-   */
   async handleAIChat(
     message: string,
     history: ChatMessage[],
     userIdentifier: string,
   ): Promise<string> {
     try {
-      // Validate message
       const validation = this.validateMessage(message);
       if (!validation.valid) {
         throw new BadRequestException(validation.error);
       }
 
-      // Check rate limit
       if (!this.checkRateLimit(userIdentifier)) {
-        throw new BadRequestException('Rate limit exceeded. Please wait a moment before sending another message.');
+        throw new BadRequestException(
+          'Rate limit exceeded. Please wait a moment before sending another message.',
+        );
       }
 
-      // Check if topic is academic/system related
       if (!this.isAcademicTopic(message)) {
         return "I'm here to help with questions about Malaysian education, university programs, scholarships, and how to use the BackToSchool platform. Could you please ask a question related to these topics?";
       }
 
-      // Check if OpenAI is available
       if (!this.openai) {
         this.logger.error('OpenAI client not initialized');
         return "I'm sorry, the AI assistant is currently unavailable. Please try again later or contact support for assistance.";
       }
 
-      // Fetch relevant information if query is about programs or scholarships
       let databaseContext = '';
       if (this.isProgramQuery(message)) {
-        this.logger.log('Detected program query, fetching relevant programs...');
+        this.logger.log(
+          'Detected program query, fetching relevant programs...',
+        );
         databaseContext = await this.fetchRelevantPrograms(message);
       } else if (this.isScholarshipQuery(message)) {
-        this.logger.log('Detected scholarship query, fetching relevant scholarships...');
+        this.logger.log(
+          'Detected scholarship query, fetching relevant scholarships...',
+        );
         databaseContext = await this.fetchRelevantScholarships(message);
       }
 
-      // Prepare enhanced system prompt with human-like personality
       const systemPrompt = `You are a friendly and knowledgeable academic advisor for the BackToSchool platform, a Malaysian higher education advisory system. You help students navigate their educational journey with warmth, empathy, and expertise.
 
 **Your Personality:**
@@ -391,12 +492,10 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
 - Include specific examples when helpful
 - End with a helpful follow-up question or suggestion when appropriate`;
 
-      // Prepare messages for OpenAI
       const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
       ];
 
-      // Add context information if available (presented as the AI's knowledge, not as database data)
       if (databaseContext) {
         messages.push({
           role: 'system',
@@ -404,7 +503,6 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
         });
       }
 
-      // Add conversation history (last 8 messages to maintain context)
       const recentHistory = history.slice(-8);
       recentHistory.forEach((msg) => {
         messages.push({
@@ -413,41 +511,37 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
         });
       });
 
-      // Add current user message
       messages.push({
         role: 'user',
         content: message.trim(),
       });
 
-      // Call OpenAI API with enhanced settings for more human-like responses
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages,
-        temperature: 0.8, // Slightly higher for more natural, varied responses
-        max_tokens: 600, // Increased for more detailed, helpful responses
-        presence_penalty: 0.3, // Encourage more varied vocabulary
-        frequency_penalty: 0.3, // Reduce repetition
+        temperature: 0.8,
+        max_tokens: 600,
+        presence_penalty: 0.3,
+        frequency_penalty: 0.3,
       });
 
-      const reply = completion.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again.";
+      const reply =
+        completion.choices[0]?.message?.content ||
+        "I'm sorry, I couldn't generate a response. Please try again.";
 
       this.logger.log(`AI chat response generated for user ${userIdentifier}`);
       return reply;
     } catch (error) {
       this.logger.error('Exception in handleAIChat:', error);
-      
+
       if (error instanceof BadRequestException) {
         throw error;
       }
 
-      // Return friendly error message
       return "I'm sorry, I encountered an error processing your request. Please try again or contact support for assistance.";
     }
   }
 
-  /**
-   * Get all help support items (FAQs, System Messages, Policies) for admin
-   */
   async getAllHelpSupport(category?: string): Promise<any[]> {
     try {
       const db = this.supabaseService.getClient();
@@ -458,7 +552,8 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
         .order('created_at', { ascending: false });
 
       if (category) {
-        query = query.eq('category', category as any); // Type assertion for enum
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        query = query.eq('category', category as any);
       }
 
       const { data, error } = await query;
@@ -468,7 +563,9 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
         throw new Error(`Failed to fetch help support items: ${error.message}`);
       }
 
-      this.logger.log(`Successfully fetched ${data?.length || 0} help support items`);
+      this.logger.log(
+        `Successfully fetched ${data?.length || 0} help support items`,
+      );
       return data || [];
     } catch (error) {
       this.logger.error('Exception in getAllHelpSupport:', error);
@@ -476,15 +573,13 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
     }
   }
 
-  /**
-   * Create a new help support item
-   */
   async createHelpSupport(helpData: any): Promise<any> {
     try {
       const db = this.supabaseService.getClient();
 
-      // Ensure category defaults to 'FAQ' if not provided
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (!helpData.category) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         helpData.category = 'FAQ';
       }
 
@@ -507,14 +602,11 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
     }
   }
 
-  /**
-   * Update an existing help support item
-   */
   async updateHelpSupport(id: number, helpData: any): Promise<any> {
     try {
       const db = this.supabaseService.getClient();
 
-      // Add updated_at timestamp
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       helpData.updated_at = new Date().toISOString();
 
       const { data, error } = await db
@@ -526,7 +618,9 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
 
       if (error) {
         if (error.code === 'PGRST116') {
-          this.logger.warn(`Help support item with id ${id} not found for update`);
+          this.logger.warn(
+            `Help support item with id ${id} not found for update`,
+          );
           throw new Error('Help support item not found');
         }
         this.logger.error('Error updating help support item:', error);
@@ -541,21 +635,17 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
     }
   }
 
-  /**
-   * Delete a help support item
-   */
   async deleteHelpSupport(id: number): Promise<void> {
     try {
       const db = this.supabaseService.getClient();
 
-      const { error } = await db
-        .from('help_support')
-        .delete()
-        .eq('id', id);
+      const { error } = await db.from('help_support').delete().eq('id', id);
 
       if (error) {
         if (error.code === 'PGRST116') {
-          this.logger.warn(`Help support item with id ${id} not found for deletion`);
+          this.logger.warn(
+            `Help support item with id ${id} not found for deletion`,
+          );
           throw new Error('Help support item not found');
         }
         this.logger.error('Error deleting help support item:', error);
@@ -569,4 +659,3 @@ Politely but warmly redirect: "I'm here specifically to help with Malaysian educ
     }
   }
 }
-
