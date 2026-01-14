@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { Database } from '../../supabase/types/supabase.types';
 
@@ -174,6 +174,150 @@ export class UniversitiesService {
       this.logger.error('Exception in deleteUniversity:', error);
       throw error;
     }
+  }
+
+  async uploadLogo(
+    accessToken: string | undefined,
+    file: Express.Multer.File,
+  ): Promise<{ message: string; logoUrl: string }> {
+    if (!accessToken) {
+      throw new UnauthorizedException('Missing access token.');
+    }
+
+    if (!file) {
+      throw new BadRequestException('No file provided.');
+    }
+
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only JPG and PNG images are allowed.',
+      );
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      throw new BadRequestException('File size exceeds 5MB limit.');
+    }
+
+    const authClient = this.supabaseService.createClientWithToken(accessToken);
+    const { data: auth } = await authClient.auth.getUser();
+    const userId = auth.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired token.');
+    }
+
+    const ext =
+      file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg'
+        ? 'jpg'
+        : 'png';
+    const timestamp = Date.now();
+    const fileName = `university-logos/${userId}_${timestamp}.${ext}`;
+
+    const dbClient = this.supabaseService.getClient();
+
+    const { error: uploadError } = await dbClient.storage
+      .from('profile-avatars')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new InternalServerErrorException(
+        `Failed to upload logo: ${uploadError.message}`,
+      );
+    }
+
+    const { data: signedUrlData, error: signedUrlError } =
+      await dbClient.storage
+        .from('profile-avatars')
+        .createSignedUrl(fileName, 3600);
+
+    if (signedUrlError) {
+      this.logger.error('Failed to generate signed URL:', signedUrlError);
+      return {
+        message: 'Logo uploaded successfully.',
+        logoUrl: fileName,
+      };
+    }
+
+    return {
+      message: 'Logo uploaded successfully.',
+      logoUrl: signedUrlData.signedUrl,
+    };
+  }
+
+  async uploadUniversityImage(
+    accessToken: string | undefined,
+    file: Express.Multer.File,
+  ): Promise<{ message: string; imageUrl: string }> {
+    if (!accessToken) {
+      throw new UnauthorizedException('Missing access token.');
+    }
+
+    if (!file) {
+      throw new BadRequestException('No file provided.');
+    }
+
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Only JPG and PNG images are allowed.',
+      );
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      throw new BadRequestException('File size exceeds 5MB limit.');
+    }
+
+    const authClient = this.supabaseService.createClientWithToken(accessToken);
+    const { data: auth } = await authClient.auth.getUser();
+    const userId = auth.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired token.');
+    }
+
+    const ext =
+      file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg'
+        ? 'jpg'
+        : 'png';
+    const timestamp = Date.now();
+    const fileName = `university-images/${userId}_${timestamp}.${ext}`;
+
+    const dbClient = this.supabaseService.getClient();
+
+    const { error: uploadError } = await dbClient.storage
+      .from('profile-avatars')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      throw new InternalServerErrorException(
+        `Failed to upload image: ${uploadError.message}`,
+      );
+    }
+
+    const { data: signedUrlData, error: signedUrlError } =
+      await dbClient.storage
+        .from('profile-avatars')
+        .createSignedUrl(fileName, 3600);
+
+    if (signedUrlError) {
+      this.logger.error('Failed to generate signed URL:', signedUrlError);
+      return {
+        message: 'Image uploaded successfully.',
+        imageUrl: fileName,
+      };
+    }
+
+    return {
+      message: 'Image uploaded successfully.',
+      imageUrl: signedUrlData.signedUrl,
+    };
   }
 }
 

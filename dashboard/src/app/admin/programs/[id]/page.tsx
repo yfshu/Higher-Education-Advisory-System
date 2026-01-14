@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -26,6 +26,9 @@ import {
   Phone,
   Mail,
   DollarSign,
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface Program {
@@ -58,6 +61,8 @@ interface Program {
     email: string | null;
     phone_number: string | null;
     website_url: string | null;
+    logo_url: string | null;
+    image_urls: string[] | null;
   } | null;
 }
 
@@ -363,6 +368,224 @@ export default function AdminProgramDetail() {
     return facilities;
   };
 
+  // Image Carousel Component
+  function ImageCarousel({ images, universityName }: { images: string[]; universityName: string }) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
+    // Reset to first image when images array changes
+    useEffect(() => {
+      setCurrentIndex(0);
+    }, [images.length]);
+
+    // Auto-swipe every 3 seconds
+    useEffect(() => {
+      if (images.length <= 1 || isPaused) return;
+
+      const interval = setInterval(() => {
+        setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }, [images.length, isPaused]);
+
+    const goToPrevious = () => {
+      setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+      setIsPaused(true);
+      setTimeout(() => setIsPaused(false), 5000);
+    };
+
+    const goToNext = () => {
+      setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+      setIsPaused(true);
+      setTimeout(() => setIsPaused(false), 5000);
+    };
+
+    const goToSlide = (index: number) => {
+      if (index >= 0 && index < images.length) {
+        setCurrentIndex(index);
+        setIsPaused(true);
+        setTimeout(() => setIsPaused(false), 5000);
+      }
+    };
+
+    if (!images || images.length === 0) {
+      return null;
+    }
+
+    const currentImage = images[currentIndex] || images[0];
+
+    return (
+      <div 
+        className="relative"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        <div className="relative backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm overflow-hidden">
+          <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden flex items-center justify-center relative">
+            <img
+              key={currentIndex}
+              src={currentImage}
+              alt={`${universityName} Photo ${currentIndex + 1}`}
+              className="w-full h-full object-cover transition-opacity duration-500"
+              loading="lazy"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                console.error('Failed to load image:', currentImage);
+                target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect width="800" height="450" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="Arial" font-size="18"%3EImage not available%3C/text%3E%3C/svg%3E';
+                target.onerror = null;
+              }}
+            />
+          </div>
+
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={goToPrevious}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all z-10"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={goToNext}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all z-10"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+              {currentIndex + 1} / {images.length}
+            </div>
+          )}
+        </div>
+
+        {images.length > 1 && (
+          <div className="mt-4 flex gap-2 justify-center overflow-x-auto pb-2">
+            {images.map((image, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all ${
+                  index === currentIndex
+                    ? 'border-blue-600 ring-2 ring-blue-300'
+                    : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-100'
+                }`}
+              >
+                <img
+                  src={image}
+                  alt={`Thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Gallery Content Component
+  function GalleryContent({ program }: { program: Program | null }) {
+    const imageUrls = useMemo(() => {
+      let urls: string[] = [];
+      if (program?.university?.image_urls) {
+        if (typeof program.university.image_urls === 'string') {
+          try {
+            const parsed = JSON.parse(program.university.image_urls);
+            urls = Array.isArray(parsed) ? parsed.filter((url: any) => url && typeof url === 'string' && url.trim() !== '') : [];
+          } catch (e) {
+            console.error('Error parsing image_urls JSON:', e);
+            urls = [];
+          }
+        } else if (Array.isArray(program.university.image_urls)) {
+          urls = program.university.image_urls.filter((url: any) => url && typeof url === 'string' && url.trim() !== '');
+        }
+      }
+      return urls;
+    }, [program?.university?.image_urls]);
+
+    const logoUrl = program?.university?.logo_url;
+    const hasLogo = logoUrl && typeof logoUrl === 'string' && logoUrl.trim() !== '';
+    const hasImages = imageUrls.length > 0;
+
+    if (!hasLogo && !hasImages) {
+      return (
+        <Card className="p-6 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+          <div className="text-center py-12">
+            <ImageIcon className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-muted-foreground">No images available for this university.</p>
+          </div>
+        </Card>
+      );
+    }
+
+    return (
+      <Card className="p-6 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+        <div className="space-y-8">
+          {hasLogo && (
+            <div>
+              <h4 className="text-base font-semibold mb-4">University Logo</h4>
+              <div className="flex justify-center">
+                <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+                  <img
+                    src={logoUrl}
+                    alt={`${program?.university?.name || 'University'} Logo`}
+                    className="max-h-32 max-w-full object-contain"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      console.error('Failed to load logo:', logoUrl);
+                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="Arial" font-size="14"%3ELogo%3C/text%3E%3C/svg%3E';
+                      target.onerror = null;
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {hasImages && (
+            <div>
+              <h4 className="text-base font-semibold mb-4">
+                University Photos {imageUrls.length > 1 && `(${imageUrls.length} photos)`}
+              </h4>
+              {imageUrls.length === 1 ? (
+                <div className="flex justify-center">
+                  <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm max-w-4xl w-full">
+                    <img
+                      src={imageUrls[0]}
+                      alt={`${program?.university?.name || 'University'} Photo 1`}
+                      className="w-full h-auto rounded-md object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        console.error('Failed to load image:', imageUrls[0]);
+                        target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect width="800" height="450" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="Arial" font-size="18"%3EImage not available%3C/text%3E%3C/svg%3E';
+                        target.onerror = null;
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <ImageCarousel images={imageUrls} universityName={program?.university?.name || 'University'} />
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
   // Parse data (only if program exists) - must be before early returns for hooks order
   const entryRequirements = program ? parseEntryRequirements(program.entry_requirements) : {};
   const curriculum = program ? parseCurriculum(program.curriculum) : [];
@@ -519,11 +742,12 @@ export default function AdminProgramDetail() {
 
         {/* Tabs for Detailed Information */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
             <TabsTrigger value="requirements">Requirements</TabsTrigger>
             <TabsTrigger value="careers">Career Outcomes</TabsTrigger>
+            <TabsTrigger value="gallery">Gallery</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -679,6 +903,11 @@ export default function AdminProgramDetail() {
                 </div>
               )}
             </Card>
+          </TabsContent>
+
+          {/* Gallery Tab */}
+          <TabsContent value="gallery" className="space-y-4">
+            <GalleryContent program={program} />
           </TabsContent>
         </Tabs>
 

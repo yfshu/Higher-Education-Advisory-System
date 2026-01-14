@@ -545,7 +545,7 @@ export class AIService {
         );
 
         if (mlRecommendations.recommendations.length > 0) {
-          mlRecommendations.recommendations.slice(0, 3).forEach((rec, idx) => {
+          mlRecommendations.recommendations.slice(0, 5).forEach((rec, idx) => {
             this.logger.log(
               `  ML Rank ${idx + 1}: Program ID ${rec.program_id} - Score: ${(rec.score * 100).toFixed(2)}%`,
             );
@@ -564,13 +564,13 @@ export class AIService {
         );
       }
 
-      let top3MLPrograms: ProgramWithUniversity[];
+      let top5MLPrograms: ProgramWithUniversity[];
       if (mlRecommendations && mlRecommendations.recommendations.length > 0) {
         this.logger.log(
           `✅ ML model returned ${mlRecommendations.recommendations.length} recommendations`,
         );
         const mlPrograms = mlRecommendations.recommendations
-          .slice(0, 3)
+          .slice(0, 5)
           .map((rec) => {
             const program = candidatePrograms.find(
               (p) => p.id === rec.program_id,
@@ -585,28 +585,28 @@ export class AIService {
           .filter((p): p is ProgramWithUniversity => p !== undefined);
 
         if (mlPrograms.length > 0) {
-          top3MLPrograms = mlPrograms;
+          top5MLPrograms = mlPrograms;
           this.logger.log(
-            `✅ Using ${top3MLPrograms.length} programs from ML model`,
+            `✅ Using ${top5MLPrograms.length} programs from ML model`,
           );
         } else {
           this.logger.warn(
-            `⚠️ ML model returned invalid program IDs. Using first 3 candidates as fallback.`,
+            `⚠️ ML model returned invalid program IDs. Using first 5 candidates as fallback.`,
           );
-          top3MLPrograms = candidatePrograms.slice(0, 3);
+          top5MLPrograms = candidatePrograms.slice(0, 5);
         }
       } else {
         this.logger.warn(
-          `⚠️ ML model failed or returned no results. Using first 3 candidates as fallback.`,
+          `⚠️ ML model failed or returned no results. Using first 5 candidates as fallback.`,
         );
-        top3MLPrograms = candidatePrograms.slice(0, 3);
+        top5MLPrograms = candidatePrograms.slice(0, 5);
       }
 
       this.logger.log(
-        `Top 3 programs selected: ${top3MLPrograms.map((p) => `${p.id} (${p.name?.substring(0, 30)}...)`).join(', ')}`,
+        `Top 5 programs selected: ${top5MLPrograms.map((p) => `${p.id} (${p.name?.substring(0, 30)}...)`).join(', ')}`,
       );
 
-      if (top3MLPrograms.length === 0) {
+      if (top5MLPrograms.length === 0) {
         this.logger.error(`❌ No programs available after ML model processing`);
         return {
           recommendations: [],
@@ -617,7 +617,7 @@ export class AIService {
       if (!this.openai) {
         this.logger.warn('OpenAI not configured - returning ML results only');
         return {
-          recommendations: top3MLPrograms.map((p, idx) => ({
+          recommendations: top5MLPrograms.map((p, idx) => ({
             program_id: p.id,
             rank: idx + 1,
             match_score: mlRecommendations?.recommendations.find(
@@ -633,7 +633,7 @@ export class AIService {
       const validatedPrograms = await this.validateProgramsWithOpenAI(
         profile,
         preferences,
-        top3MLPrograms,
+        top5MLPrograms,
         fieldName,
         studentProfile,
         mlRecommendations?.recommendations || [],
@@ -675,7 +675,7 @@ export class AIService {
   private async validateProgramsWithOpenAI(
     profile: any,
     preferences: any,
-    top3Programs: ProgramWithUniversity[],
+    top5Programs: ProgramWithUniversity[],
     fieldName: string,
     studentProfile: StudentProfileData,
     mlRecommendations: Array<{ program_id: number; score: number }>,
@@ -684,7 +684,7 @@ export class AIService {
       throw new Error('OpenAI client not initialized');
     }
 
-    const topCandidates = top3Programs;
+    const topCandidates = top5Programs;
 
     const studentSummary = this.buildStudentSummary(profile, preferences);
 
@@ -733,9 +733,9 @@ export class AIService {
     const systemPrompt = `You are an academic advisor helping a Malaysian student validate and understand ML model recommendations for the "${fieldName}" field.
 
 **Your Task:**
-1. The ML model has already selected the TOP 3 programs for this field
+1. The ML model has already selected the TOP 5 programs for this field
 2. Your role is to VALIDATE these recommendations and provide detailed explanations
-3. For each of the 3 programs, explain WHY it fits the student's profile
+3. For each of the 5 programs, explain WHY it fits the student's profile
 4. Reference the ML model's confidence scores
 5. Highlight how each program aligns with:
    - Student's subject strengths
@@ -745,13 +745,13 @@ export class AIService {
    - Career alignment
 
 **Important:**
-- DO NOT change the program selection (these are already the top 3 from ML model)
+- DO NOT change the program selection (these are already the top 5 from ML model)
 - DO NOT re-rank the programs
 - Focus on VALIDATION and EXPLANATION only
 - Use the exact program IDs provided
 
 **Output Format:**
-Return a JSON array with exactly 3 programs in the SAME ORDER, each with:
+Return a JSON array with exactly 5 programs in the SAME ORDER, each with:
 - program_id: The exact program ID from the list (must match exactly)
 - reason: A detailed explanation (3-4 sentences) explaining:
   * Why this program matches the student's profile
@@ -767,7 +767,7 @@ ${studentSummary}
 
 Field: ${fieldName}
 
-ML Model's Top 3 Recommended Programs (already selected, in order):
+ML Model's Top 5 Recommended Programs (already selected, in order):
 ${programSummaries
   .map((p, idx) => {
     const mlScore = scoreMap.get(p.id);
@@ -784,14 +784,16 @@ ${programSummaries
   .join('\n\n')}
 
 **Your Task:**
-Validate these 3 programs and provide detailed explanations for why each one fits the student.
-DO NOT change the program IDs or order - these are already the ML model's top 3 selections.
+Validate these 5 programs and provide detailed explanations for why each one fits the student.
+DO NOT change the program IDs or order - these are already the ML model's top 5 selections.
 
 Return as JSON array (same order, same IDs):
 [
   {"program_id": ${programSummaries[0]?.id || 0}, "reason": "Detailed explanation..."},
   {"program_id": ${programSummaries[1]?.id || 0}, "reason": "Detailed explanation..."},
-  {"program_id": ${programSummaries[2]?.id || 0}, "reason": "Detailed explanation..."}
+  {"program_id": ${programSummaries[2]?.id || 0}, "reason": "Detailed explanation..."},
+  {"program_id": ${programSummaries[3]?.id || 0}, "reason": "Detailed explanation..."},
+  {"program_id": ${programSummaries[4]?.id || 0}, "reason": "Detailed explanation..."}
 ]`;
 
     try {
@@ -802,7 +804,7 @@ Return as JSON array (same order, same IDs):
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: 2000,
       });
 
       const content = completion.choices[0]?.message?.content;
@@ -828,7 +830,7 @@ Return as JSON array (same order, same IDs):
         const mlScoreMap = new Map(
           mlRecommendations.map((r) => [r.program_id, r.score]),
         );
-        return topCandidates.slice(0, 3).map((p, idx) => {
+        return topCandidates.slice(0, 5).map((p, idx) => {
           const mlScore = mlScoreMap.get(p.id);
           const reasons: string[] = [`Field match: ${fieldName}`];
           if (mlScore) {
@@ -852,7 +854,7 @@ Return as JSON array (same order, same IDs):
 
       const validRecommendations: FinalRecommendationDto[] = [];
 
-      for (let idx = 0; idx < Math.min(3, topCandidates.length); idx++) {
+      for (let idx = 0; idx < Math.min(5, topCandidates.length); idx++) {
         const program = topCandidates[idx];
         const mlRec = mlRecommendations.find(
           (r) => r.program_id === program.id,
@@ -892,7 +894,7 @@ Return as JSON array (same order, same IDs):
       const mlScoreMap = new Map(
         mlRecommendations.map((r) => [r.program_id, r.score]),
       );
-      return topCandidates.slice(0, 3).map((p, idx) => {
+      return topCandidates.slice(0, 5).map((p, idx) => {
         const mlScore = mlScoreMap.get(p.id);
         const reasons: string[] = [`Field match: ${fieldName}`];
         if (mlScore) {

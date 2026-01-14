@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import { toast } from "sonner";
 
 interface DeleteUniversityDialogProps {
   open: boolean;
@@ -32,7 +33,7 @@ export function DeleteUniversityDialog({
 
   const handleDelete = async () => {
     if (!university || !userData?.accessToken) {
-      alert("Please log in to perform this action.");
+      toast.error("Please log in to perform this action.");
       return;
     }
 
@@ -51,11 +52,12 @@ export function DeleteUniversityDialog({
         throw new Error(errorData.message || "Failed to delete university");
       }
 
+      toast.success(`University "${university.name}" deleted successfully!`);
       onConfirm();
       onOpenChange(false);
     } catch (error) {
       console.error("Error deleting university:", error);
-      alert(error instanceof Error ? error.message : "Failed to delete university");
+      toast.error(error instanceof Error ? error.message : "Failed to delete university");
     } finally {
       setLoading(false);
     }

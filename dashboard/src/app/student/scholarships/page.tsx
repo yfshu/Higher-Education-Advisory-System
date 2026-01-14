@@ -207,15 +207,15 @@ export default function ScholarshipSearch() {
     return `${count}+`;
   };
 
-  const getLevelDisplay = (studyLevels: string[] | null): string => {
-    if (!studyLevels || studyLevels.length === 0) return 'Not specified';
+  const getLevelDisplay = (level: string | null | undefined): string => {
+    if (!level) return 'Not specified';
     const levelMap: Record<string, string> = {
       'foundation': 'Foundation',
       'diploma': 'Diploma',
       'degree': 'Bachelor\'s Degree'
     };
-    const levels = studyLevels.map(level => levelMap[level] || level).join(', ');
-    return levels;
+    const levelLower = level.toLowerCase();
+    return levelMap[levelLower] || level.charAt(0).toUpperCase() + level.slice(1);
   };
 
   // toggleSave is now provided by useSavedItems hook
@@ -233,10 +233,12 @@ export default function ScholarshipSearch() {
     // Type filter (already handled by backend API)
     const matchesType = filters.type === 'all' || scholarship.type === filters.type;
     
-    // Level filter - check the level field (singular, lowercase)
+    // Level filter - backend handles this, client-side filter should pass through
+    // Backend already filtered by level, so we just need to verify (for debugging)
     const matchesLevel = filters.level === 'all' || (() => {
       if (!scholarship.level) {
-        return false; // If no level specified, don't show unless "all" is selected
+        console.warn(`⚠️ Scholarship ${scholarship.id} has no level but passed backend filter`);
+        return false;
       }
       const levelMap: Record<string, string> = {
         'Foundation': 'foundation',
@@ -244,8 +246,15 @@ export default function ScholarshipSearch() {
         'Bachelor\'s Degree': 'degree'
       };
       const backendLevel = levelMap[filters.level];
-      if (!backendLevel) return true; // If level not in map, show it
-      return scholarship.level.toLowerCase() === backendLevel.toLowerCase();
+      if (!backendLevel) {
+        console.warn(`⚠️ Unknown level filter: ${filters.level}`);
+        return true; // If level not in map, show it
+      }
+      const matches = scholarship.level.toLowerCase() === backendLevel.toLowerCase();
+      if (!matches) {
+        console.warn(`⚠️ Level mismatch for scholarship ${scholarship.id}: "${scholarship.level}" !== "${backendLevel}"`);
+      }
+      return matches;
     })();
     
     // Amount filter - simplified
@@ -486,7 +495,7 @@ export default function ScholarshipSearch() {
                       <GraduationCap className="w-4 h-4 text-blue-600" />
                       <div>
                         <p className="text-sm text-muted-foreground">Level</p>
-                        <p className="font-medium text-foreground">{getLevelDisplay(scholarship.study_levels)}</p>
+                        <p className="font-medium text-foreground">{getLevelDisplay(scholarship.level)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

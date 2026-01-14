@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, HttpException, HttpStatus, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, Req, HttpException, HttpStatus, ParseIntPipe, UseGuards, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { ScholarshipsService } from './scholarships.service';
 import { CreateScholarshipRequestDto } from './dto/requests/create-scholarship-request.dto';
@@ -10,6 +10,8 @@ import { AuthenticatedRequest } from '../../supabase/types/express.d';
 @ApiTags('Scholarships')
 @Controller('api/scholarships')
 export class ScholarshipsController {
+  private readonly logger = new Logger(ScholarshipsController.name);
+  
   constructor(private readonly scholarshipsService: ScholarshipsService) {}
 
   @Get()
@@ -45,6 +47,7 @@ export class ScholarshipsController {
       const filters: any = {};
       
       if (studyLevel) {
+        this.logger.log(`📥 Received studyLevel parameter: "${studyLevel}"`);
         filters.studyLevel = studyLevel;
       }
       

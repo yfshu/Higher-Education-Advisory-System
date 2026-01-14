@@ -573,13 +573,31 @@ function CompareContent() {
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-6">
         <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all w-full sm:w-auto">
-          <Link href={`/student/course/${programA.id}`} className="flex items-center justify-center">
+          <Link 
+            href={`/student/course/${programA.id}`} 
+            className="flex items-center justify-center"
+            onClick={() => {
+              // Store referrer so back button knows where to go
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("program_detail_referrer", "/student/compare");
+              }
+            }}
+          >
             <ExternalLink className="w-4 h-4 mr-2" />
             View {programA.name.length > 30 ? programA.name.substring(0, 30) + "..." : programA.name} Details
           </Link>
         </Button>
         <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all w-full sm:w-auto">
-          <Link href={`/student/course/${programB.id}`} className="flex items-center justify-center">
+          <Link 
+            href={`/student/course/${programB.id}`} 
+            className="flex items-center justify-center"
+            onClick={() => {
+              // Store referrer so back button knows where to go
+              if (typeof window !== "undefined") {
+                sessionStorage.setItem("program_detail_referrer", "/student/compare");
+              }
+            }}
+          >
             <ExternalLink className="w-4 h-4 mr-2" />
             View {programB.name.length > 30 ? programB.name.substring(0, 30) + "..." : programB.name} Details
           </Link>

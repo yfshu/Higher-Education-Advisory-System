@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import StudentLayout from "@/components/layout/StudentLayout";
 import { Card } from "@/components/ui/card";
@@ -84,16 +85,17 @@ export default function ProgramRecommendations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [debugMode, setDebugMode] = useState(false); // Developer debug mode
   
   const { isItemSaved, toggleSave } = useSavedItems();
-  const { addProgram, isSelected, canCompare, selectedPrograms } = useCompare();
+  const { addProgram, isSelected, canCompare, selectedPrograms, clearCompare } = useCompare();
+  const pathname = usePathname();
 
   // Cache key for sessionStorage
   const CACHE_KEY = "ai_recommendations_cache";
   const CACHE_TIMESTAMP_KEY = "ai_recommendations_timestamp";
   const CACHE_PROFILE_HASH_KEY = "ai_recommendations_profile_hash";
   const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour
+  const COMPARE_NAVIGATION_FLAG = "navigated_to_compare";
 
   // Generate a hash of the current profile for cache invalidation
   const generateProfileHash = async (): Promise<string> => {
@@ -142,6 +144,17 @@ export default function ProgramRecommendations() {
       return "";
     }
   };
+
+  // Clear compare selection when returning from compare page
+  useEffect(() => {
+    if (typeof window !== "undefined" && pathname === "/student/recommendations") {
+      const navigatedToCompare = sessionStorage.getItem(COMPARE_NAVIGATION_FLAG);
+      if (navigatedToCompare === "true") {
+        clearCompare();
+        sessionStorage.removeItem(COMPARE_NAVIGATION_FLAG);
+      }
+    }
+  }, [pathname, clearCompare]);
 
   // Listen for profile update events to clear cache
   useEffect(() => {
@@ -225,65 +238,103 @@ export default function ProgramRecommendations() {
   };
 
   // Load cached recommendations on mount (with profile validation)
+  // Also restore state when returning from program detail page
   useEffect(() => {
     const loadCachedRecommendations = async () => {
       try {
+        const cachedField = sessionStorage.getItem("recommendations_selected_field");
+        const cachedFieldRecommendations = sessionStorage.getItem("recommendations_field_list");
+        const cachedPrograms = sessionStorage.getItem("recommendations_programs_list");
+        const cachedRecommendations = sessionStorage.getItem("recommendations_list");
+        const cachedPoweredBy = sessionStorage.getItem("recommendations_powered_by");
+        const cachedTimestamp = sessionStorage.getItem("recommendations_cache_timestamp");
+        
+        // Check if we have cached programs (most important for restoring state)
+        if (cachedField && cachedPrograms && cachedRecommendations) {
+          // Check if cache is still valid (within 1 hour)
+          const now = Date.now();
+          const timestamp = cachedTimestamp ? parseInt(cachedTimestamp, 10) : 0;
+          
+          if (now - timestamp < CACHE_EXPIRY) {
+            try {
+              const programs = JSON.parse(cachedPrograms);
+              const recommendations = JSON.parse(cachedRecommendations);
+              
+              if (programs && programs.length > 0 && recommendations && recommendations.length > 0) {
+                console.log("✅ Restoring cached recommendations state");
+                setSelectedField(cachedField);
+                setPrograms(programs);
+                setRecommendations(recommendations);
+                
+                if (cachedPoweredBy) {
+                  try {
+                    setPoweredBy(JSON.parse(cachedPoweredBy));
+                  } catch (e) {
+                    // Ignore powered by parse error
+                  }
+                }
+                
+                // Also restore field recommendations if available
+                if (cachedFieldRecommendations) {
+                  try {
+                    const fields = JSON.parse(cachedFieldRecommendations);
+                    if (fields && fields.length > 0) {
+                      setFieldRecommendations(fields);
+                    }
+                  } catch (e) {
+                    console.error("Error parsing cached field recommendations:", e);
+                  }
+                }
+                
+                // Set step to programs to show the list
+                setStep('programs');
+                return; // Successfully restored, exit early
+              }
+            } catch (e) {
+              console.error("Error parsing cached programs:", e);
+            }
+          } else {
+            console.log("⚠️ Cache expired, clearing");
+            // Cache expired, clear it
+            sessionStorage.removeItem("recommendations_selected_field");
+            sessionStorage.removeItem("recommendations_field_list");
+            sessionStorage.removeItem("recommendations_programs_list");
+            sessionStorage.removeItem("recommendations_list");
+            sessionStorage.removeItem("recommendations_powered_by");
+            sessionStorage.removeItem("recommendations_cache_timestamp");
+          }
+        }
+        
+        // Also check for old cache format (for backward compatibility)
         const cachedData = sessionStorage.getItem(CACHE_KEY);
-        const cachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+        const oldCachedTimestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
         const cachedProfileHash = sessionStorage.getItem(CACHE_PROFILE_HASH_KEY);
         
-        if (cachedData && cachedTimestamp) {
-          const timestamp = parseInt(cachedTimestamp, 10);
+        if (cachedData && oldCachedTimestamp) {
+          const timestamp = parseInt(oldCachedTimestamp, 10);
           const now = Date.now();
           
-          // Check if cache is still valid (not expired)
           if (now - timestamp < CACHE_EXPIRY) {
-            // Validate profile hasn't changed
             const currentProfileHash = await generateProfileHash();
             
             if (currentProfileHash && cachedProfileHash && currentProfileHash === cachedProfileHash) {
-              // Profile matches, load cache
-              const parsed = JSON.parse(cachedData);
-              
-              if (parsed.recommendations && parsed.recommendations.length > 0) {
-                // Validate cached program IDs before using them
-                const programIds = parsed.recommendations.map((rec: AIRecommendation) => rec.program_id);
-                
-                // Check if IDs look suspicious (very low numbers like 1, 2, 5, 6, 8 are likely wrong)
-                const suspiciousIds = programIds.filter((id: number) => id < 100);
-                if (suspiciousIds.length > 0) {
-                  console.warn(`⚠️ Cached recommendations contain suspicious program IDs: ${suspiciousIds.join(', ')}`);
-                  console.warn(`   Clearing invalid cache. Please generate new recommendations.`);
-                  sessionStorage.removeItem(CACHE_KEY);
-                  sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
-                  sessionStorage.removeItem(CACHE_PROFILE_HASH_KEY);
-                  return; // Don't load invalid cache
+              // Restore field recommendations if available
+              if (cachedFieldRecommendations) {
+                try {
+                  const fields = JSON.parse(cachedFieldRecommendations);
+                  if (fields && fields.length > 0) {
+                    setFieldRecommendations(fields);
+                    setStep('fields');
+                  }
+                } catch (e) {
+                  console.error("Error parsing cached field recommendations:", e);
                 }
-                
-                // Cache loading disabled for new field-first flow
-                // Users should go through field selection each time
-                return;
               }
-            } else {
-              // Profile changed, clear cache
-              console.log("⚠️ Profile changed, clearing cache");
-              sessionStorage.removeItem(CACHE_KEY);
-              sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
-              sessionStorage.removeItem(CACHE_PROFILE_HASH_KEY);
             }
-          } else {
-            // Cache expired, clear it
-            sessionStorage.removeItem(CACHE_KEY);
-            sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
-            sessionStorage.removeItem(CACHE_PROFILE_HASH_KEY);
           }
         }
       } catch (err) {
         console.error("Error loading cached recommendations:", err);
-        // Clear corrupted cache
-        sessionStorage.removeItem(CACHE_KEY);
-        sessionStorage.removeItem(CACHE_TIMESTAMP_KEY);
-        sessionStorage.removeItem(CACHE_PROFILE_HASH_KEY);
       }
     };
 
@@ -328,6 +379,14 @@ export default function ProgramRecommendations() {
         setFieldRecommendations(data.fields);
         setPoweredBy(data.powered_by || []);
         setStep('fields'); // Show field selection UI
+        
+        // Cache field recommendations for state restoration
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("recommendations_field_list", JSON.stringify(data.fields));
+          if (data.powered_by) {
+            sessionStorage.setItem("recommendations_powered_by", JSON.stringify(data.powered_by));
+          }
+        }
       } else {
         throw new Error("No field recommendations received");
       }
@@ -340,7 +399,7 @@ export default function ProgramRecommendations() {
     }
   };
 
-  // STEP 2: Handle field selection - Get top 3 programs for selected field
+  // STEP 2: Handle field selection - Get top 5 programs for selected field
   const handleFieldSelection = async (fieldName: string) => {
     setSelectedField(fieldName);
     setStep('programs');
@@ -350,7 +409,7 @@ export default function ProgramRecommendations() {
     setPrograms([]);
 
     try {
-      // Get top 3 programs for selected field using OpenAI
+      // Get top 5 programs for selected field using OpenAI
       const { data, error: programError } = await getProgramsByField(fieldName);
 
       if (programError || !data) {
@@ -376,6 +435,17 @@ export default function ProgramRecommendations() {
           setPrograms(programDetails);
           console.log("✅ Successfully set programs:", programDetails.length);
           setStep('programs'); // Move to programs view only after successful fetch
+          
+          // Cache programs and recommendations for state restoration
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("recommendations_selected_field", fieldName);
+            sessionStorage.setItem("recommendations_programs_list", JSON.stringify(programDetails));
+            sessionStorage.setItem("recommendations_list", JSON.stringify(data.recommendations));
+            sessionStorage.setItem("recommendations_cache_timestamp", Date.now().toString());
+            if (data.powered_by) {
+              sessionStorage.setItem("recommendations_powered_by", JSON.stringify(data.powered_by));
+            }
+          }
         }
       } else {
         console.warn("⚠️ Backend returned empty recommendations array");
@@ -439,6 +509,21 @@ Please try selecting a different field.`);
     if (!program.entry_requirements) return "Not Available";
     try {
       if (typeof program.entry_requirements === "string") {
+        // Try to parse if it's a JSON string
+        try {
+          const parsed = JSON.parse(program.entry_requirements);
+          if (typeof parsed === "object" && parsed !== null) {
+            const req = parsed;
+            const parts = [];
+            if (req.academic) parts.push(req.academic);
+            if (req.english) parts.push(req.english);
+            if (req.other) parts.push(req.other);
+            return parts.join(" • ") || "Not Available";
+          }
+        } catch {
+          // If parsing fails, return the string as-is
+          return program.entry_requirements;
+        }
         return program.entry_requirements;
       }
       if (typeof program.entry_requirements === "object") {
@@ -446,6 +531,7 @@ Please try selecting a different field.`);
         const parts = [];
         if (req.academic) parts.push(req.academic);
         if (req.english) parts.push(req.english);
+        if (req.other) parts.push(req.other);
         return parts.join(" • ") || "Not Available";
       }
       return "Not Available";
@@ -614,7 +700,7 @@ Please try selecting a different field.`);
                 </h2>
                 <p className="text-muted-foreground">
                   Based on your academic results, interests, and skills, here are the top 5 fields that match your profile best.
-                  Click on a field to see the top 3 recommended programs.
+                  Click on a field to see the top 5 recommended programs.
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
                   Percentages show the distribution of match strength across the top 5 fields (totals 100%).
@@ -653,7 +739,7 @@ Please try selecting a different field.`);
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <TrendingUp className="w-4 h-4" />
-                          <span>Click to see top 3 programs</span>
+                          <span>Click to see top 5 programs</span>
                         </div>
                       </div>
                     </Card>
@@ -780,43 +866,7 @@ Please try selecting a different field.`);
                     ))}
                   </div>
                 )}
-                {/* Developer Debug Mode Toggle */}
-                {process.env.NODE_ENV === 'development' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDebugMode(!debugMode)}
-                    className="text-xs"
-                  >
-                    {debugMode ? 'Hide' : 'Show'} Debug Info
-                  </Button>
-                )}
               </div>
-              
-              {/* Debug Information Panel */}
-              {debugMode && (
-                <Card className="mb-6 p-4 bg-yellow-50/50 border-yellow-200/30">
-                  <h4 className="font-semibold mb-2 text-sm">Debug Information</h4>
-                  <div className="space-y-2 text-xs font-mono">
-                    <div>
-                      <strong>Total Recommendations:</strong> {recommendations.length}
-                    </div>
-                    <div>
-                      <strong>Match Scores:</strong>
-                      <ul className="list-disc list-inside ml-2">
-                        {recommendations.slice(0, 5).map((rec) => (
-                          <li key={rec.program_id}>
-                            Program {rec.program_id}: {rec.match_score ? (rec.match_score * 100).toFixed(1) : 'N/A'}%
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <strong>Powered By:</strong> {poweredBy.join(', ')}
-                    </div>
-                  </div>
-                </Card>
-              )}
 
               {/* Search and Filters */}
               <div className="flex flex-col md:flex-row gap-4">
@@ -836,7 +886,14 @@ Please try selecting a different field.`);
                   </div>
                 </div>
                 {canCompare && (
-                  <Link href={`/student/compare?ids=${selectedPrograms.join(',')}`}>
+                  <Link 
+                    href={`/student/compare?ids=${selectedPrograms.join(',')}`}
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem(COMPARE_NAVIGATION_FLAG, "true");
+                      }
+                    }}
+                  >
                     <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all">
                       <Scale className="w-4 h-4 mr-2" />
                       Compare Now ({selectedPrograms.length})
@@ -873,6 +930,16 @@ Please try selecting a different field.`);
                     size="sm"
                   >
                     Diploma
+                  </Button>
+                  <Button
+                    variant={selectedFilter === "foundation" ? "default" : "outline"}
+                    onClick={() => {
+                      setSelectedFilter("foundation");
+                      setCurrentPage(1);
+                    }}
+                    size="sm"
+                  >
+                    Foundation
                   </Button>
                 </div>
               </div>
@@ -971,15 +1038,17 @@ Please try selecting a different field.`);
                                     Key Match Factors:
                                   </p>
                                   <div className="flex flex-wrap gap-1">
-                                    {recommendation.reasons.map((reason, idx) => (
-                                      <Badge
-                                        key={idx}
-                                        variant="secondary"
-                                        className="text-xs bg-purple-100/50 text-purple-800 border-purple-200/30"
-                                      >
-                                        {reason}
-                                      </Badge>
-                                    ))}
+                                    {recommendation.reasons
+                                      .filter((reason) => !reason.includes("ML model confidence"))
+                                      .map((reason, idx) => (
+                                        <Badge
+                                          key={idx}
+                                          variant="secondary"
+                                          className="text-xs bg-purple-100/50 text-purple-800 border-purple-200/30"
+                                        >
+                                          {reason}
+                                        </Badge>
+                                      ))}
                                   </div>
                                 </div>
                               )}
@@ -1007,33 +1076,49 @@ Please try selecting a different field.`);
                           )}
 
                           {/* Details Grid */}
-                          <div className="grid md:grid-cols-3 gap-4 mb-6">
-                            <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
-                              <p className="text-xs text-muted-foreground mb-1">
-                                Tuition Fee
+                          <div className="grid md:grid-cols-4 gap-4 mb-6">
+                            <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
+                              <p className="text-lg font-bold text-foreground">
+                                {program.tuition_fee_amount 
+                                  ? `${program.currency === 'MYR' ? 'RM' : program.currency} ${program.tuition_fee_amount.toLocaleString()}`
+                                  : 'N/A'}
                               </p>
-                              <p className="font-medium text-foreground">
-                                {formatTuitionFee(program)}
-                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">per {program.tuition_fee_period || 'semester'}</p>
                             </div>
-                            <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
-                              <p className="text-xs text-muted-foreground mb-1">
-                                Application Deadline
-                              </p>
-                              <p className="font-medium text-foreground flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {program.deadline
-                                  ? new Date(program.deadline).toLocaleDateString()
-                                  : "Not Available"}
-                              </p>
+                            <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
+                              <p className="text-lg font-bold text-foreground">{formatDuration(program)}</p>
+                              <p className="text-xs text-muted-foreground mt-1">duration</p>
                             </div>
-                            <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-3">
-                              <p className="text-xs text-muted-foreground mb-1">
-                                Entry Requirements
-                              </p>
-                              <p className="font-medium text-foreground text-sm">
-                                {getEntryRequirements(program)}
-                              </p>
+                            <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
+                              <div className="min-h-[2rem] flex items-center justify-center mb-1">
+                                {program.start_month ? (
+                                  <div className="flex flex-wrap gap-1 justify-center items-center">
+                                    {program.start_month.split(',').map((month, idx) => (
+                                      <Badge 
+                                        key={idx} 
+                                        variant="secondary" 
+                                        className="text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                                      >
+                                        {month.trim()}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-lg font-bold text-foreground">N/A</p>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">start date</p>
+                            </div>
+                            <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Calendar className="w-4 h-4 text-orange-600" />
+                                <p className="text-sm font-bold text-foreground">
+                                  {program.deadline
+                                    ? new Date(program.deadline).toLocaleDateString()
+                                    : "N/A"}
+                                </p>
+                              </div>
+                              <p className="text-xs text-muted-foreground">deadline</p>
                             </div>
                           </div>
 
@@ -1043,7 +1128,15 @@ Please try selecting a different field.`);
                               asChild
                               className="bg-blue-600 hover:bg-blue-700 text-white"
                             >
-                              <Link href={`/student/program/${program.id}`}>
+                              <Link 
+                                href={`/student/program/${program.id}`}
+                                onClick={() => {
+                                  // Store referrer so back button knows where to go
+                                  if (typeof window !== "undefined") {
+                                    sessionStorage.setItem("program_detail_referrer", "/student/recommendations");
+                                  }
+                                }}
+                              >
                                 <ExternalLink className="w-4 h-4 mr-2" />
                                 View Details
                               </Link>

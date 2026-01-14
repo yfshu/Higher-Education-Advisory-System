@@ -242,13 +242,13 @@ export default function SavedItems() {
           Closed
         </Badge>
       );
-    } else if (daysUntilDeadline <= 7) {
+    } else if (daysUntilDeadline <= 30) {
       return (
         <Badge variant="destructive">
           Urgent - {daysUntilDeadline} days left
         </Badge>
       );
-    } else if (daysUntilDeadline <= 30) {
+    } else if (daysUntilDeadline <= 60) {
       return (
         <Badge variant="secondary" className="bg-orange-100 text-orange-600">
           Due Soon
@@ -331,7 +331,7 @@ export default function SavedItems() {
     );
 
     if (scholarshipFilterBy === "urgent") {
-      return daysUntilDeadline <= 7 && daysUntilDeadline >= 0;
+      return daysUntilDeadline <= 30 && daysUntilDeadline >= 0;
     }
     if (scholarshipFilterBy === "open") {
       return daysUntilDeadline > 0;
@@ -443,7 +443,7 @@ export default function SavedItems() {
                           new Date().getTime()) /
                           (1000 * 60 * 60 * 24)
                       );
-                      return days <= 7 && days >= 0;
+                      return days <= 30 && days >= 0;
                     }).length
                   }
                 </p>

@@ -293,19 +293,96 @@ export default function ProgramManagement() {
           </Button>
         </div>
 
+        {/* Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-blue-300/60 dark:border-blue-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-blue-400 dark:hover:border-blue-400">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {programs.length}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">Total Programs</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-green-300/60 dark:border-green-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-green-400 dark:hover:border-green-400">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <GraduationCap className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {programs.filter((p) =>
+                    p.level && ["foundation", "diploma", "degree", "bachelor"].includes(p.level.toLowerCase())
+                  ).length}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">Active</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-purple-300/60 dark:border-purple-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-purple-400 dark:hover:border-purple-400">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {programs.filter((p) => 
+                    p.level && p.level.toLowerCase() === "foundation"
+                  ).length}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">Foundation</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-amber-300/60 dark:border-amber-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-amber-400 dark:hover:border-amber-400">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {programs.filter((p) => 
+                    p.level && p.level.toLowerCase() === "diploma"
+                  ).length}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">Diploma</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-orange-300/60 dark:border-orange-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-orange-400 dark:hover:border-orange-400">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <BookOpen className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {programs.filter((p) => 
+                    p.level && (p.level.toLowerCase() === "degree" || p.level.toLowerCase() === "bachelor")
+                  ).length}
+                </p>
+                <p className="text-xs text-muted-foreground font-medium">Degree</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
         {/* Toolbar */}
-        <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+        <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-gray-300/60 dark:border-gray-600/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-blue-400 dark:hover:border-blue-500">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
             {/* Search */}
             <div className="flex-1 w-full lg:w-auto">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground z-10" />
                 <Input
                   type="text"
                   placeholder="Search programs or universities..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-full"
+                  className="pl-9 w-full border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200"
                 />
               </div>
             </div>
@@ -669,83 +746,6 @@ export default function ProgramManagement() {
             Showing {startIndex + 1} - {Math.min(endIndex, filteredAndSortedPrograms.length)} of {filteredAndSortedPrograms.length} programs
           </div>
         )}
-
-        {/* Statistics */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {programs.length}
-                </p>
-                <p className="text-xs text-muted-foreground">Total Programs</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <GraduationCap className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {programs.filter((p) =>
-                    p.level && ["foundation", "diploma", "degree", "bachelor"].includes(p.level.toLowerCase())
-                  ).length}
-                </p>
-                <p className="text-xs text-muted-foreground">Active</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {programs.filter((p) => 
-                    p.level && p.level.toLowerCase() === "foundation"
-                  ).length}
-                </p>
-                <p className="text-xs text-muted-foreground">Foundation</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {programs.filter((p) => 
-                    p.level && p.level.toLowerCase() === "diploma"
-                  ).length}
-                </p>
-                <p className="text-xs text-muted-foreground">Diploma</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <BookOpen className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {programs.filter((p) => 
-                    p.level && (p.level.toLowerCase() === "degree" || p.level.toLowerCase() === "bachelor")
-                  ).length}
-                </p>
-                <p className="text-xs text-muted-foreground">Degree</p>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
 
       {/* Wizard Modal */}

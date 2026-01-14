@@ -23,6 +23,7 @@ import {
   Trash2,
   HelpCircle,
   Loader2,
+  Search,
 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ export default function ContentManagement() {
   const [selectedItem, setSelectedItem] = useState<HelpSupportItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const itemsPerPage = 5;
 
   const [formData, setFormData] = useState({
@@ -187,13 +189,30 @@ export default function ContentManagement() {
     }, 300);
   };
 
+  // Filter FAQs based on search term
+  const filteredFaqs = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return faqs;
+    }
+    const searchLower = searchTerm.toLowerCase();
+    return faqs.filter((faq) => 
+      faq.title.toLowerCase().includes(searchLower) ||
+      faq.content.toLowerCase().includes(searchLower)
+    );
+  }, [faqs, searchTerm]);
+
   // Pagination logic
-  const totalPages = Math.ceil(faqs.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredFaqs.length / itemsPerPage);
   const paginatedFaqs = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return faqs.slice(startIndex, endIndex);
-  }, [faqs, currentPage, itemsPerPage]);
+    return filteredFaqs.slice(startIndex, endIndex);
+  }, [filteredFaqs, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -312,6 +331,32 @@ export default function ContentManagement() {
           </Dialog>
         </div>
 
+        {/* Search Bar */}
+        <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-gray-300/60 dark:border-gray-600/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-blue-400 dark:hover:border-blue-500">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground z-10" />
+              <Input
+                type="text"
+                placeholder="Search FAQs by question or answer..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-full border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200"
+              />
+            </div>
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchTerm("")}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </Card>
+
         {/* FAQs List */}
         <div className="space-y-4">
           {loading ? (
@@ -326,9 +371,22 @@ export default function ContentManagement() {
                 Retry
               </Button>
             </div>
-          ) : paginatedFaqs.length === 0 ? (
+          ) : filteredFaqs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No FAQs found. Click "Add FAQ" to create one.
+              {searchTerm ? (
+                <>
+                  No FAQs found matching "{searchTerm}". 
+                  <Button 
+                    variant="link" 
+                    onClick={() => setSearchTerm("")}
+                    className="ml-2"
+                  >
+                    Clear search
+                  </Button>
+                </>
+              ) : (
+                "No FAQs found. Click \"Add FAQ\" to create one."
+              )}
             </div>
           ) : (
             <>
@@ -413,7 +471,8 @@ export default function ContentManagement() {
 
               {/* Results count */}
               <div className="text-center text-sm text-muted-foreground mt-4">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, faqs.length)} of {faqs.length} FAQs
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredFaqs.length)} of {filteredFaqs.length} FAQ{filteredFaqs.length !== 1 ? 's' : ''}
+                {searchTerm && ` (filtered from ${faqs.length} total)`}
               </div>
             </>
           )}

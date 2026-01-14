@@ -484,13 +484,10 @@ export default function StudentDashboardPage() {
                       className="flex items-start gap-4 rounded-lg border border-white/20 dark:border-slate-700/20 bg-white/40 dark:bg-slate-800/40 p-4 backdrop-blur-sm hover:bg-white/60 dark:hover:bg-slate-700/60 transition-colors"
                     >
                       <div className="flex-1">
-                        <div className="mb-1 flex items-center gap-2">
+                        <div className="mb-1">
                           <h4 className="font-medium text-foreground">
                             {program.program_name}
                           </h4>
-                          <Badge variant="secondary" className="text-xs">
-                            {program.matchPercentage}% match
-                          </Badge>
                         </div>
                         <p className="mb-2 text-sm text-muted-foreground">
                           {program.university_name}

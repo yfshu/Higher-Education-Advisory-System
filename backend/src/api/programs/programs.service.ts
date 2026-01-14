@@ -133,6 +133,7 @@ export class ProgramsService {
             email,
             phone_number,
             logo_url,
+            image_urls,
             address
           )
         `,
@@ -147,6 +148,124 @@ export class ProgramsService {
         }
         this.logger.error('Error fetching program:', error);
         throw new Error(`Failed to fetch program: ${error.message}`);
+      }
+
+      // Generate fresh signed URLs for university logo and images
+      if (data && (data as any).university) {
+        const university = (data as any).university;
+        
+        // Helper function to extract path from URL or return path as-is
+        const extractPath = (url: string | null): string | null => {
+          if (!url) return null;
+          
+          // If it's already a path (doesn't start with http), return as-is
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            return url;
+          }
+          
+          // If it's a signed URL, extract the path from it
+          try {
+            const urlObj = new URL(url);
+            // Extract path from Supabase signed URL format
+            // Format: /storage/v1/object/sign/bucket-name/path?token=...
+            const pathMatch = urlObj.pathname.match(/\/storage\/v1\/object\/sign\/[^/]+\/(.+)$/);
+            if (pathMatch && pathMatch[1]) {
+              return decodeURIComponent(pathMatch[1]);
+            }
+            
+            // Alternative: try to extract from query parameter if path extraction fails
+            // Some Supabase URLs might have the path in a different format
+            const tokenParam = urlObj.searchParams.get('token');
+            if (tokenParam) {
+              try {
+                // Decode JWT token to get the path (if needed)
+                // For now, try regex extraction from the URL itself
+                const manualMatch = url.match(/university-(?:logos|images)\/([^?]+)/);
+                if (manualMatch && manualMatch[1]) {
+                  return `university-${url.includes('university-logos') ? 'logos' : 'images'}/${manualMatch[1]}`;
+                }
+              } catch {
+                // Ignore token parsing errors
+              }
+            }
+          } catch {
+            // If URL parsing fails, try to extract path manually
+            const pathMatch = url.match(/university-(?:logos|images)\/([^?]+)/);
+            if (pathMatch && pathMatch[1]) {
+              return `university-${url.includes('university-logos') ? 'logos' : 'images'}/${pathMatch[1]}`;
+            }
+          }
+          
+          // If all extraction methods fail, return null
+          this.logger.warn(`Could not extract path from URL: ${url}`);
+          return null;
+        };
+
+        // Generate fresh signed URL for logo
+        if (university.logo_url) {
+          const logoPath = extractPath(university.logo_url);
+          if (logoPath) {
+            try {
+              const { data: signedUrlData, error: signedUrlError } =
+                await db.storage
+                  .from('profile-avatars')
+                  .createSignedUrl(logoPath, 3600); // 1 hour expiry
+
+              if (!signedUrlError && signedUrlData) {
+                university.logo_url = signedUrlData.signedUrl;
+              } else {
+                this.logger.warn(`Failed to generate signed URL for logo: ${logoPath}`);
+              }
+            } catch (err) {
+              this.logger.error(`Error generating signed URL for logo: ${err}`);
+            }
+          }
+        }
+
+        // Generate fresh signed URLs for images
+        if (university.image_urls) {
+          let imageUrls: string[] = [];
+          
+          // Parse image_urls if it's a string
+          if (typeof university.image_urls === 'string') {
+            try {
+              const parsed = JSON.parse(university.image_urls);
+              imageUrls = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              imageUrls = [];
+            }
+          } else if (Array.isArray(university.image_urls)) {
+            imageUrls = university.image_urls;
+          }
+
+          // Generate fresh signed URLs for each image
+          const freshImageUrls = await Promise.all(
+            imageUrls.map(async (imageUrl: string) => {
+              const imagePath = extractPath(imageUrl);
+              if (imagePath) {
+                try {
+                  const { data: signedUrlData, error: signedUrlError } =
+                    await db.storage
+                      .from('profile-avatars')
+                      .createSignedUrl(imagePath, 3600); // 1 hour expiry
+
+                  if (!signedUrlError && signedUrlData) {
+                    return signedUrlData.signedUrl;
+                  } else {
+                    this.logger.warn(`Failed to generate signed URL for image: ${imagePath}`);
+                    return imageUrl; // Return original URL if signing fails
+                  }
+                } catch (err) {
+                  this.logger.error(`Error generating signed URL for image: ${err}`);
+                  return imageUrl; // Return original URL on error
+                }
+              }
+              return imageUrl; // Return original URL if path extraction fails
+            })
+          );
+
+          university.image_urls = freshImageUrls.filter((url) => url); // Remove null/undefined
+        }
       }
 
       this.logger.log(`Successfully fetched program ${id}`);

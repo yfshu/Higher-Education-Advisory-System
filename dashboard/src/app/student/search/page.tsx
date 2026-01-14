@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import StudentLayout from "@/components/layout/StudentLayout";
 import { Card } from "@/components/ui/card";
@@ -77,7 +78,20 @@ export default function SearchPrograms() {
   const [sortBy, setSortBy] = useState('relevance');
   const programsPerPage = 6;
   const { isItemSaved, toggleSave } = useSavedItems();
-  const { addProgram, isSelected, canCompare, selectedPrograms } = useCompare();
+  const { addProgram, isSelected, canCompare, selectedPrograms, clearCompare } = useCompare();
+  const pathname = usePathname();
+  const COMPARE_NAVIGATION_FLAG = "navigated_to_compare";
+
+  // Clear compare selection when returning from compare page
+  useEffect(() => {
+    if (typeof window !== "undefined" && pathname === "/student/search") {
+      const navigatedToCompare = sessionStorage.getItem(COMPARE_NAVIGATION_FLAG);
+      if (navigatedToCompare === "true") {
+        clearCompare();
+        sessionStorage.removeItem(COMPARE_NAVIGATION_FLAG);
+      }
+    }
+  }, [pathname, clearCompare]);
 
   // Fetch programs from backend
   useEffect(() => {
@@ -404,7 +418,14 @@ export default function SearchPrograms() {
                   Found <span className="font-bold text-foreground text-lg">{sortedPrograms.length}</span> programs matching your criteria
                 </p>
                 {canCompare && (
-                  <Link href={`/student/compare?ids=${selectedPrograms.join(',')}`}>
+                  <Link 
+                    href={`/student/compare?ids=${selectedPrograms.join(',')}`}
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem(COMPARE_NAVIGATION_FLAG, "true");
+                      }
+                    }}
+                  >
                     <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all whitespace-nowrap">
                       <Scale className="w-4 h-4 mr-2" />
                       Compare Now ({selectedPrograms.length})
@@ -462,23 +483,31 @@ export default function SearchPrograms() {
                 <Card key={program.id} className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg hover:shadow-xl transition-all duration-200">
                   <div className="p-6">
                     {/* Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-foreground">{program.name}</h3>
-                          <Badge variant="outline" className="text-xs">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">{program.name}</h3>
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
                             {getLevelDisplay(program.level)}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <GraduationCap className="w-4 h-4" />
-                            {program.university?.name || 'Not Available'}
+                        <div className="flex flex-wrap items-center gap-3 md:gap-4 text-sm text-muted-foreground mb-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <GraduationCap className="w-4 h-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                            <span className="truncate">{program.university?.name || 'Not Available'}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {getLocation(program)}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <MapPin className="w-4 h-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                            <span className="truncate">{getLocation(program)}</span>
                           </div>
+                        </div>
+                        {/* Rating and Reviews */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                            <span className="font-medium text-foreground">{program.rating?.toFixed(1) || 'N/A'}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">({program.review_count || 0} reviews)</span>
                         </div>
                       </div>
                       <Button 
@@ -487,19 +516,10 @@ export default function SearchPrograms() {
                         onClick={async () => {
                           await toggleSave('program', program.id);
                         }}
-                        className={`${isItemSaved('program', program.id) ? 'text-red-600' : 'text-muted-foreground'} hover:text-red-600`}
+                        className={`flex-shrink-0 ${isItemSaved('program', program.id) ? 'text-red-600' : 'text-muted-foreground'} hover:text-red-600`}
                       >
                         <Heart className={`w-5 h-5 ${isItemSaved('program', program.id) ? 'fill-current' : ''}`} />
                       </Button>
-                    </div>
-
-                    {/* Rating and Reviews */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                        <span className="font-medium text-foreground">{program.rating?.toFixed(1) || 'N/A'}</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">({program.review_count || 0} reviews)</span>
                     </div>
 
                     {/* Description */}
@@ -516,28 +536,47 @@ export default function SearchPrograms() {
                       </div>
                     )}
 
-                    {/* Program Details */}
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Duration</p>
-                        <p className="font-medium text-foreground flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDuration(program)}
-                        </p>
+                    {/* Program Details - Simple Inline Layout */}
+                    <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm text-muted-foreground mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium text-foreground">
+                          {program.tuition_fee_amount 
+                            ? `${program.currency === 'MYR' ? 'RM' : program.currency} ${program.tuition_fee_amount.toLocaleString()}`
+                            : 'Not Available'}
+                        </span>
+                        {program.tuition_fee_amount && (
+                          <span className="text-xs">/ {program.tuition_fee_period || 'semester'}</span>
+                        )}
                       </div>
-                      <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/50 border border-white/20 dark:border-slate-700/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">Tuition Fee</p>
-                        <p className="font-medium text-foreground">{formatTuitionFee(program)}</p>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium text-foreground">{formatDuration(program)}</span>
                       </div>
-                    </div>
-
-                    {/* Start Date and Deadline */}
-                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                      <span>Starts: {program.start_month || 'Not Available'}</span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Apply by: {program.deadline ? new Date(program.deadline).toLocaleDateString() : 'Not Available'}
-                      </span>
+                      {program.start_month && (
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          <div className="flex flex-wrap gap-1">
+                            {program.start_month.split(',').map((month, idx) => (
+                              <Badge 
+                                key={idx} 
+                                variant="secondary" 
+                                className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                              >
+                                {month.trim()}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {program.deadline && (
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-orange-600" />
+                          <span className="font-medium text-foreground">
+                            Apply by: {new Date(program.deadline).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}

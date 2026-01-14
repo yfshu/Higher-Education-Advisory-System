@@ -152,18 +152,18 @@ export default function AdminDashboard() {
               asChild
               className="w-full bg-white/90 hover:bg-white text-slate-700 shadow-md hover:shadow-lg transition-all justify-start"
             >
-              <Link href="/admin/programs">
-                <BookOpen className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Manage Programs</span>
+              <Link href="/admin/universities">
+                <Building2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Manage Universities</span>
               </Link>
             </Button>
             <Button
               asChild
               className="w-full bg-white/90 hover:bg-white text-slate-700 shadow-md hover:shadow-lg transition-all justify-start"
             >
-              <Link href="/admin/universities">
-                <Building2 className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Manage Universities</span>
+              <Link href="/admin/programs">
+                <BookOpen className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Manage Programs</span>
               </Link>
             </Button>
             <Button
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Malaysian Students
+                  Students
                 </p>
                 <p className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
                   {(metrics?.students?.total ?? 0).toLocaleString()}
@@ -311,17 +311,28 @@ export default function AdminDashboard() {
                       className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-white/30 dark:bg-slate-800/30 backdrop-blur-sm border border-white/20"
                     >
                       <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium text-sm sm:text-base flex-shrink-0">
-                        {getInitialChar(user?.email)}
+                        {getInitialChar(user?.fullName || user?.email)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
-                          {user?.email ?? "Unknown User"}
+                          {user?.fullName || user?.email || "Unknown User"}
                         </h4>
-                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                          Joined{" "}
-                          {hasMounted
-                            ? formatDateSafely(user?.joined)
-                            : "Recently"}
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+                          {user?.email && user?.fullName ? (
+                            <>
+                              {user.email} • Joined{" "}
+                              {hasMounted
+                                ? formatDateSafely(user?.joined)
+                                : "Recently"}
+                            </>
+                          ) : (
+                            <>
+                              Joined{" "}
+                              {hasMounted
+                                ? formatDateSafely(user?.joined)
+                                : "Recently"}
+                            </>
+                          )}
                         </p>
                       </div>
                       <Badge

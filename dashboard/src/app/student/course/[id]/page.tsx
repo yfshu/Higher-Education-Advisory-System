@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode, useMemo } from "react";
 import { useParams } from "next/navigation";
 import StudentLayout from "@/components/layout/StudentLayout";
 import { Card } from "@/components/ui/card";
@@ -25,11 +25,260 @@ import {
   Phone,
   Mail,
   ArrowLeft,
-  Search
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
-import { ReactNode } from "react";
 import { useSavedItems } from "@/hooks/useSavedItems";
+
+// Image Carousel Component
+function ImageCarousel({ images, universityName }: { images: string[]; universityName: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Reset to first image when images array changes
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [images.length]); // Only depend on length, not the array itself
+
+  // Auto-swipe every 3 seconds
+  useEffect(() => {
+    if (images.length <= 1 || isPaused) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    }, 3000); // 3 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length, isPaused]);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setIsPaused(true); // Pause auto-swipe when user manually navigates
+    // Resume after 5 seconds
+    setTimeout(() => setIsPaused(false), 5000);
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setIsPaused(true); // Pause auto-swipe when user manually navigates
+    // Resume after 5 seconds
+    setTimeout(() => setIsPaused(false), 5000);
+  };
+
+  const goToSlide = (index: number) => {
+    if (index >= 0 && index < images.length) {
+      setCurrentIndex(index);
+      setIsPaused(true); // Pause auto-swipe when user manually navigates
+      // Resume after 5 seconds
+      setTimeout(() => setIsPaused(false), 5000);
+    }
+  };
+
+  // Safety check
+  if (!images || images.length === 0) {
+    return null;
+  }
+
+  const currentImage = images[currentIndex] || images[0];
+
+  return (
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsPaused(true)} // Pause on hover
+      onMouseLeave={() => setIsPaused(false)} // Resume when mouse leaves
+    >
+      {/* Main Image Display */}
+      <div className="relative backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm overflow-hidden">
+        <div className="aspect-video bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden flex items-center justify-center relative">
+          <img
+            key={currentIndex}
+            src={currentImage}
+            alt={`${universityName} Photo ${currentIndex + 1}`}
+            className="w-full h-full object-cover transition-opacity duration-500"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              console.error('Failed to load image:', currentImage);
+              // Show placeholder instead of hiding
+              target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect width="800" height="450" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="Arial" font-size="18"%3EImage not available%3C/text%3E%3C/svg%3E';
+              target.onerror = null; // Prevent infinite loop
+            }}
+          />
+        </div>
+
+        {/* Navigation Arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={goToPrevious}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all z-10"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={goToNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all z-10"
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </>
+        )}
+
+        {/* Image Counter */}
+        {images.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+            {currentIndex + 1} / {images.length}
+          </div>
+        )}
+      </div>
+
+      {/* Thumbnail Navigation */}
+      {images.length > 1 && (
+        <div className="mt-4 flex gap-2 justify-center overflow-x-auto pb-2">
+          {images.map((image, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all ${
+                index === currentIndex
+                  ? 'border-blue-600 ring-2 ring-blue-300'
+                  : 'border-gray-200 dark:border-gray-700 opacity-60 hover:opacity-100'
+              }`}
+            >
+              <img
+                src={image}
+                alt={`Thumbnail ${index + 1}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Gallery Content Component
+function GalleryContent({ program }: { program: Program | null }) {
+  // Parse image_urls - could be string (JSON) or array
+  const imageUrls = useMemo(() => {
+    let urls: string[] = [];
+    if (program?.university?.image_urls) {
+      if (typeof program.university.image_urls === 'string') {
+        try {
+          const parsed = JSON.parse(program.university.image_urls);
+          urls = Array.isArray(parsed) ? parsed.filter((url: any) => url && typeof url === 'string' && url.trim() !== '') : [];
+        } catch (e) {
+          console.error('Error parsing image_urls JSON:', e);
+          urls = [];
+        }
+      } else if (Array.isArray(program.university.image_urls)) {
+        urls = program.university.image_urls.filter((url: any) => url && typeof url === 'string' && url.trim() !== '');
+      }
+    }
+    return urls;
+  }, [program?.university?.image_urls]);
+
+  const logoUrl = program?.university?.logo_url;
+  const hasLogo = logoUrl && typeof logoUrl === 'string' && logoUrl.trim() !== '';
+  const hasImages = imageUrls.length > 0;
+
+  if (!hasLogo && !hasImages) {
+    return (
+      <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-blue-600" />
+            University Gallery
+          </h3>
+          <div className="text-center py-12">
+            <ImageIcon className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <p className="text-muted-foreground">No images available for this university.</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg">
+      <div className="p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+          <ImageIcon className="w-5 h-5 text-blue-600" />
+          University Gallery
+        </h3>
+        
+        <div className="space-y-8">
+          {/* University Logo */}
+          {hasLogo && (
+            <div>
+              <h4 className="text-base font-semibold text-foreground mb-4">University Logo</h4>
+              <div className="flex justify-center">
+                <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+                  <img
+                    src={logoUrl}
+                    alt={`${program?.university?.name || 'University'} Logo`}
+                    className="max-h-32 max-w-full object-contain"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      console.error('Failed to load logo:', logoUrl);
+                      // Show placeholder instead of hiding
+                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="Arial" font-size="14"%3ELogo%3C/text%3E%3C/svg%3E';
+                      target.onerror = null; // Prevent infinite loop
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* University Images Carousel */}
+          {hasImages && (
+            <div>
+              <h4 className="text-base font-semibold text-foreground mb-4">
+                University Photos {imageUrls.length > 1 && `(${imageUrls.length} photos)`}
+              </h4>
+              {imageUrls.length === 1 ? (
+                // Single image - no carousel needed
+                <div className="flex justify-center">
+                  <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm max-w-4xl w-full">
+                                <img
+                                  src={imageUrls[0]}
+                                  alt={`${program?.university?.name || 'University'} Photo 1`}
+                                  className="w-full h-auto rounded-md object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    console.error('Failed to load image:', imageUrls[0]);
+                                    // Show placeholder instead of hiding
+                                    target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="450"%3E%3Crect width="800" height="450" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="Arial" font-size="18"%3EImage not available%3C/text%3E%3C/svg%3E';
+                                    target.onerror = null; // Prevent infinite loop
+                                  }}
+                                />
+                  </div>
+                </div>
+              ) : (
+                // Multiple images - carousel
+                <ImageCarousel images={imageUrls} universityName={program?.university?.name || 'University'} />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 interface Program {
   id: number;
@@ -61,6 +310,8 @@ interface Program {
     email: string | null;
     phone_number: string | null;
     website_url: string | null;
+    logo_url: string | null;
+    image_urls: string[] | null;
   } | null;
 }
 
@@ -70,6 +321,7 @@ export default function ProgramDetail() {
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [referrer, setReferrer] = useState<string | null>(null);
   const { isItemSaved, toggleSave } = useSavedItems();
   
   const saved = program ? isItemSaved('program', program.id) : false;
@@ -95,6 +347,9 @@ export default function ProgramDetail() {
         
         if (result.success && result.data) {
           console.log('✅ Program data fetched:', result.data);
+          console.log('🔍 University data:', result.data.university);
+          console.log('🔍 Logo URL:', result.data.university?.logo_url);
+          console.log('🔍 Image URLs:', result.data.university?.image_urls);
           setProgram(result.data);
         } else {
           throw new Error('Invalid response format');
@@ -111,6 +366,14 @@ export default function ProgramDetail() {
       fetchProgram();
     }
   }, [programId]);
+
+  // Get referrer from sessionStorage to determine back button destination
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedReferrer = sessionStorage.getItem("program_detail_referrer");
+      setReferrer(storedReferrer);
+    }
+  }, []);
 
   // Helper functions
   const getLevelDisplay = (level: string | null): string => {
@@ -542,19 +805,40 @@ export default function ProgramDetail() {
     }
   };
 
+  const getBackButtonLink = () => {
+    if (referrer === "/student/recommendations") {
+      return "/student/recommendations";
+    }
+    if (referrer === "/student/compare") {
+      return "/student/compare";
+    }
+    // Default to search
+    return "/student/search";
+  };
+
+  const getBackButtonText = () => {
+    if (referrer === "/student/recommendations") {
+      return "Back to Recommendations";
+    }
+    if (referrer === "/student/compare") {
+      return "Back to Compare";
+    }
+    return "Back to Search Programs";
+  };
+
   return (
     <StudentLayout>
       <div className="space-y-6">
-        {/* Back to Search Button */}
+        {/* Back Button */}
         <div className="flex items-center">
           <Button
             asChild
             variant="ghost"
             className="text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-800/50"
           >
-            <Link href="/student/search">
+            <Link href={getBackButtonLink()}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Search Programs
+              {getBackButtonText()}
             </Link>
           </Button>
         </div>
@@ -562,27 +846,29 @@ export default function ProgramDetail() {
         {/* Program Header */}
         <Card className="backdrop-blur-xl bg-white/40 border-white/20 shadow-lg overflow-hidden">
           <div className="p-8">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-3 mb-4">
                   <h1 className="text-3xl font-bold text-foreground">{programData.title}</h1>
-                  <Badge className="bg-green-500/20 text-green-700 border-green-200/30">
-                    {programData.matchPercentage}% Match
-                  </Badge>
-                  <Badge variant="outline">{programData.type}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-500/20 text-green-700 border-green-200/30">
+                      {programData.matchPercentage}% Match
+                    </Badge>
+                    <Badge variant="outline">{programData.type}</Badge>
+                  </div>
                 </div>
                 
-                <div className="flex items-center gap-6 text-muted-foreground mb-4">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="w-5 h-5" />
-                    <span className="font-medium">{programData.university}</span>
+                <div className="flex flex-wrap items-center gap-4 md:gap-6 text-muted-foreground mb-4">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <GraduationCap className="w-5 h-5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                    <span className="font-medium truncate">{programData.university}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    <span>{programData.location}</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="w-5 h-5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                    <span className="truncate">{programData.location}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Clock className="w-5 h-5 flex-shrink-0 text-gray-600 dark:text-gray-400" />
                     <span>{programData.duration}</span>
                   </div>
                 </div>
@@ -622,7 +908,7 @@ export default function ProgramDetail() {
 
             {/* Key Information Grid */}
             <div className="grid md:grid-cols-4 gap-4 mb-6">
-              <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
+              <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
                 <p className="text-2xl font-bold text-foreground">
                   {program.tuition_fee_amount 
                     ? `${program.currency === 'MYR' ? 'RM' : program.currency} ${program.tuition_fee_amount.toLocaleString()}`
@@ -630,15 +916,31 @@ export default function ProgramDetail() {
                 </p>
                 <p className="text-sm text-muted-foreground">per {program.tuition_fee_period || 'semester'}</p>
               </div>
-              <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
+              <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
                 <p className="text-2xl font-bold text-foreground">{programData.duration}</p>
                 <p className="text-sm text-muted-foreground">duration</p>
               </div>
-              <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{program.start_month || 'N/A'}</p>
-                <p className="text-sm text-muted-foreground">start date</p>
+              <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
+                <div className="min-h-[3rem] flex items-center justify-center">
+                  {program.start_month ? (
+                    <div className="flex flex-wrap gap-1 justify-center items-center">
+                      {program.start_month.split(',').map((month, idx) => (
+                        <Badge 
+                          key={idx} 
+                          variant="secondary" 
+                          className="text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700"
+                        >
+                          {month.trim()}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-2xl font-bold text-foreground">N/A</p>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">start date</p>
               </div>
-              <div className="backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg p-4 text-center">
+              <div className="backdrop-blur-sm bg-white/30 dark:bg-slate-800/30 border-2 border-gray-300 dark:border-white/20 rounded-lg p-4 text-center shadow-sm">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Calendar className="w-4 h-4 text-orange-600" />
                   <p className="text-sm font-medium text-foreground">
@@ -685,6 +987,12 @@ export default function ProgramDetail() {
               className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
             >
               Facilities
+            </TabsTrigger>
+            <TabsTrigger 
+              value="gallery"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+            >
+              Gallery
             </TabsTrigger>
           </TabsList>
 
@@ -840,6 +1148,11 @@ export default function ProgramDetail() {
                 })()}
               </div>
             </Card>
+          </TabsContent>
+
+          {/* Gallery Tab */}
+          <TabsContent value="gallery" className="space-y-6">
+            <GalleryContent program={program} />
           </TabsContent>
         </Tabs>
 

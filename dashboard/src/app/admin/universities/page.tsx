@@ -179,17 +179,73 @@ export default function UniversityManagement() {
           </Button>
         </div>
 
+        {/* Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-blue-300/60 dark:border-blue-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-blue-400 dark:hover:border-blue-400">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {universities.length}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Total Universities</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-green-300/60 dark:border-green-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-green-400 dark:hover:border-green-400">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {universities.filter((u) => u.university_type === "public").length}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Public</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-purple-300/60 dark:border-purple-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-purple-400 dark:hover:border-purple-400">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {universities.filter((u) => u.university_type === "private").length}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Private</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-orange-300/60 dark:border-orange-500/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-orange-400 dark:hover:border-orange-400">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {universities.filter((u) => u.city).length}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">With Location</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
         {/* Search Bar */}
-        <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-white/20">
+        <Card className="p-4 backdrop-blur-xl bg-white/60 dark:bg-slate-900/60 border-2 border-gray-300/60 dark:border-gray-600/60 shadow-md hover:shadow-lg transition-all duration-200 hover:border-blue-400 dark:hover:border-blue-500">
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground z-10" />
               <Input
                 type="text"
                 placeholder="Search universities by name, city, or state..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-full"
+                className="pl-9 w-full border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200"
               />
             </div>
             {searchTerm && (
@@ -369,54 +425,6 @@ export default function UniversityManagement() {
             Showing {startIndex + 1} - {Math.min(endIndex, filteredUniversities.length)} of {filteredUniversities.length} universities
           </div>
         )}
-
-        {/* Statistics */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {universities.length}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Universities</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {universities.filter((u) => u.university_type === "public").length}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Public</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {universities.filter((u) => u.university_type === "private").length}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Private</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-white/20">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 dark:text-orange-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {universities.filter((u) => u.city).length}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">With Location</p>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
 
       {/* Form Modal */}

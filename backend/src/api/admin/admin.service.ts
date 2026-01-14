@@ -207,23 +207,70 @@ export class AdminService {
         throw new Error(`Failed to fetch recent users: ${error.message}`);
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      return (profiles || []).map((profile: any) => {
+      const usersWithEmails = await Promise.all(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const userId = profile.user_id;
-        return {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          id: userId,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-          email: userId
-            ? // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-              `${String(userId).substring(0, 8)}...@user.com`
-            : 'N/A',
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          joined: profile.created_at,
-          status: 'Active',
-        };
-      });
+        (profiles || []).map(async (profile: any) => {
+          try {
+            const {
+              data: { user },
+              error: userError,
+            } = await db.auth.admin.getUserById(
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+              profile.user_id as string,
+            );
+
+            if (userError || !user) {
+              this.logger.warn(
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                `Could not fetch user ${profile.user_id}:`,
+                userError,
+              );
+              return null;
+            }
+
+            let fullName = 'Unknown';
+            if (user.user_metadata) {
+              fullName =
+                (user.user_metadata.full_name as string) ||
+                (user.user_metadata.name as string) ||
+                (user.user_metadata.fullName as string) ||
+                'Unknown';
+            }
+
+            if (fullName === 'Unknown' && user.email) {
+              const emailParts = user.email.split('@')[0];
+              if (emailParts.includes('.')) {
+                fullName = emailParts
+                  .split('.')
+                  .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                  .join(' ');
+              } else {
+                fullName =
+                  emailParts.charAt(0).toUpperCase() + emailParts.slice(1);
+              }
+            }
+
+            return {
+              id: user.id,
+              email: user.email || 'N/A',
+              fullName: fullName,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              joined: profile.created_at || user.created_at,
+              status: 'Active',
+            };
+          } catch (error) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            this.logger.error(`Error fetching user ${profile.user_id}:`, error);
+            return null;
+          }
+        }),
+      );
+
+      const filteredUsers = usersWithEmails.filter(
+        (user): user is NonNullable<typeof user> => user !== null,
+      );
+
+      return filteredUsers;
     } catch (error) {
       this.logger.error('Exception in getRecentUsers:', error);
       throw error;

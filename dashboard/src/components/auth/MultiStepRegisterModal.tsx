@@ -597,27 +597,18 @@ export default function MultiStepRegisterModal() {
     >
       <DialogContent className="h-[92vh] w-[70vw] sm:max-w-[70vw] gap-0 overflow-hidden border-none bg-white p-0 shadow-2xl">
         <DialogHeader className="space-y-4 border-b border-gray-200 px-8 py-6 bg-gradient-to-r from-blue-50 to-purple-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
-                <GraduationCap className="size-7 text-white" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-bold text-gray-900">
-                  Create Your Account
-                </DialogTitle>
-                <p className="text-sm text-gray-500 font-normal">
-                  Step {currentStep} of 4
-                </p>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="flex size-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
+              <GraduationCap className="size-7 text-white" />
             </div>
-            <Button
-              variant="ghost"
-              onClick={closeRegister}
-              className="text-gray-400 hover:text-gray-600 hover:bg-white/50"
-            >
-              ✕
-            </Button>
+            <div>
+              <DialogTitle className="text-2xl font-bold text-gray-900">
+                Create Your Account
+              </DialogTitle>
+              <p className="text-sm text-gray-500 font-normal">
+                Step {currentStep} of 4
+              </p>
+            </div>
           </div>
           <div className="space-y-2">
             <Progress value={progressPercentage} className="h-2 bg-gray-200" />
@@ -1006,7 +997,6 @@ function Step1Form({
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
                   onClick={handleAutoDetect}
                   className="whitespace-nowrap"
                 >
@@ -1164,7 +1154,7 @@ function Step2Form({
             open={activeDropdown === "study-level"}
             onOpenChange={(isOpen) => setActiveDropdown(isOpen ? "study-level" : null)}
           >
-            <SelectTrigger className="mt-2">
+            <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400 focus-visible:border-blue-500 focus-visible:ring-blue-500 focus-visible:ring-2 transition-colors duration-200">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1186,7 +1176,7 @@ function Step2Form({
             open={activeDropdown === "extracurricular"}
             onOpenChange={(isOpen) => setActiveDropdown(isOpen ? "extracurricular" : null)}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32 border-gray-300 bg-white text-gray-900 hover:border-gray-400 focus-visible:border-blue-500 focus-visible:ring-blue-500 focus-visible:ring-2 transition-colors duration-200">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1215,7 +1205,7 @@ function Step2Form({
                 open={activeDropdown === `grade-${subject.key}`}
                 onOpenChange={(isOpen) => setActiveDropdown(isOpen ? `grade-${subject.key}` : null)}
               >
-                <SelectTrigger className="mt-2">
+                <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400 focus-visible:border-blue-500 focus-visible:ring-blue-500 focus-visible:ring-2 transition-colors duration-200">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1271,7 +1261,7 @@ function Step3Form({
                 open={activeDropdown === `interest-${field.key}`}
                 onOpenChange={(isOpen) => setActiveDropdown(isOpen ? `interest-${field.key}` : null)}
               >
-                <SelectTrigger className="mt-2">
+                <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400 focus-visible:border-blue-500 focus-visible:ring-blue-500 focus-visible:ring-2 transition-colors duration-200">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1302,7 +1292,7 @@ function Step3Form({
                 open={activeDropdown === `skill-${field.key}`}
                 onOpenChange={(isOpen) => setActiveDropdown(isOpen ? `skill-${field.key}` : null)}
               >
-                <SelectTrigger className="mt-2">
+                <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400 focus-visible:border-blue-500 focus-visible:ring-blue-500 focus-visible:ring-2 transition-colors duration-200">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1396,7 +1386,7 @@ function Step4Form({
         </div>
 
         <div>
-          <Label htmlFor="studyMode" className="text-sm font-medium text-foreground">
+          <Label htmlFor="studyMode" className="text-gray-900 font-medium">
             Study Mode (Optional)
           </Label>
           <Select
@@ -1405,7 +1395,7 @@ function Step4Form({
             open={activeDropdown === "study-mode"}
             onOpenChange={(isOpen) => setActiveDropdown(isOpen ? "study-mode" : null)}
           >
-            <SelectTrigger className="mt-2">
+            <SelectTrigger className="mt-2 border-gray-300 bg-white text-gray-900 hover:border-gray-400 focus-visible:border-blue-500 focus-visible:ring-blue-500 focus-visible:ring-2 transition-colors duration-200">
               <SelectValue placeholder="Select study mode" />
             </SelectTrigger>
             <SelectContent>

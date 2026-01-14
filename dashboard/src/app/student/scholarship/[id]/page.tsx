@@ -49,8 +49,8 @@ interface Scholarship {
   rating: number | null;
   review_count: number | null;
   success_rate: number | null;
-  eligibility_requirements: string[] | null;
-  benefits_json: string[] | null;
+  eligibility_requirements: string[] | Record<string, any> | null;
+  benefits_json: string[] | Record<string, any> | null;
   selection_process: Array<{
     step: number;
     title: string;
@@ -97,6 +97,9 @@ export default function ScholarshipDetail() {
         
         if (result.success && result.data) {
           console.log('✅ Scholarship data fetched:', result.data);
+          console.log('📋 Eligibility Requirements:', result.data.eligibility_requirements);
+          console.log('💰 Benefits JSON:', result.data.benefits_json);
+          console.log('🔄 Selection Process:', result.data.selection_process);
           setScholarship(result.data);
         } else {
           throw new Error('Invalid response format');
@@ -464,42 +467,90 @@ export default function ScholarshipDetail() {
 
             <TabsContent value="requirements" className="p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Eligibility Requirements</h3>
-              {scholarship.eligibility_requirements && scholarship.eligibility_requirements.length > 0 ? (
-                <>
-                  <div className="space-y-3">
-                    {scholarship.eligibility_requirements.map((requirement, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
-                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground">{requirement}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-6 p-4 backdrop-blur-sm bg-blue-50/40 border border-blue-200/30 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      <strong>Note:</strong> All requirements must be met to be eligible for this scholarship. 
-                      Ensure you have all necessary documents before starting your application.
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <p className="text-muted-foreground">No eligibility requirements specified.</p>
-              )}
+              {(() => {
+                // Handle both array and object formats
+                let requirements: Array<{ key: string; value: string }> = [];
+                
+                if (scholarship.eligibility_requirements) {
+                  if (Array.isArray(scholarship.eligibility_requirements)) {
+                    // Array format: convert to key-value pairs
+                    requirements = scholarship.eligibility_requirements.map((req, idx) => ({
+                      key: `Requirement ${idx + 1}`,
+                      value: String(req)
+                    }));
+                  } else if (typeof scholarship.eligibility_requirements === 'object') {
+                    // Object format: convert to key-value pairs
+                    requirements = Object.entries(scholarship.eligibility_requirements).map(([key, value]) => ({
+                      key: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                      value: String(value)
+                    }));
+                  }
+                }
+                
+                return requirements.length > 0 ? (
+                  <>
+                    <div className="space-y-3">
+                      {requirements.map((req, index) => (
+                        <div key={index} className="flex items-start gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
+                          <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <span className="font-medium text-foreground">{req.key}:</span>
+                            <span className="text-muted-foreground ml-2">{req.value}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-6 p-4 backdrop-blur-sm bg-blue-50/40 border border-blue-200/30 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Note:</strong> All requirements must be met to be eligible for this scholarship. 
+                        Ensure you have all necessary documents before starting your application.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground">No eligibility requirements specified.</p>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="benefits" className="p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">Scholarship Benefits</h3>
-              {scholarship.benefits_json && scholarship.benefits_json.length > 0 ? (
-                <div className="space-y-3">
-                  {scholarship.benefits_json.map((benefit, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
-                      <Award className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No benefits specified.</p>
-              )}
+              {(() => {
+                // Handle both array and object formats
+                let benefits: Array<{ key: string; value: string }> = [];
+                
+                if (scholarship.benefits_json) {
+                  if (Array.isArray(scholarship.benefits_json)) {
+                    // Array format: convert to key-value pairs
+                    benefits = scholarship.benefits_json.map((benefit, idx) => ({
+                      key: `Benefit ${idx + 1}`,
+                      value: String(benefit)
+                    }));
+                  } else if (typeof scholarship.benefits_json === 'object') {
+                    // Object format: convert to key-value pairs
+                    benefits = Object.entries(scholarship.benefits_json).map(([key, value]) => ({
+                      key: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                      value: String(value)
+                    }));
+                  }
+                }
+                
+                return benefits.length > 0 ? (
+                  <div className="space-y-3">
+                    {benefits.map((benefit, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 backdrop-blur-sm bg-white/30 border border-white/20 rounded-lg">
+                        <Award className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <span className="font-medium text-foreground">{benefit.key}:</span>
+                          <span className="text-muted-foreground ml-2">{benefit.value}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No benefits specified.</p>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="process" className="p-6">

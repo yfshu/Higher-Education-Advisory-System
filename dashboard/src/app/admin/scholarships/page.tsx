@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Plus,
@@ -20,6 +20,9 @@ import {
   Calendar,
   Award,
   Loader2,
+  X,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
 import {
   Pagination,
@@ -44,15 +47,33 @@ interface Scholarship {
   deadline: string | null;
     status: 'active' | 'expired' | 'draft' | null;
   description: string | null;
-  study_levels: string[] | null;
-  eligibility_requirements: any;
-  benefits: any;
+  level: string | null;
+  field_id: number | null;
+  success_rate: number | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  processing_time_weeks: number | null;
   applicant_count: number | null;
+  rating: number | null;
+  review_count: number | null;
+  eligibility_requirements: any;
+  benefits_json: any;
+  benefits: any; // Legacy field
+  selection_process: any;
+  partner_universities: any;
   application_url: string | null;
+}
+
+interface FieldOfInterest {
+  id: number;
+  name: string;
+  description?: string | null;
 }
 
 export default function ScholarshipManagement() {
   const { userData } = useUser();
+  const [fields, setFields] = useState<FieldOfInterest[]>([]);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,10 +97,44 @@ export default function ScholarshipManagement() {
     deadline: '',
     description: '',
     status: 'active' as 'active' | 'expired' | 'draft',
-    eligibility_requirements: '',
-    benefits: '',
+    level: '',
+    field_id: '',
+    success_rate: '',
+    contact_email: '',
+    contact_phone: '',
+    processing_time_weeks: '',
+    applicant_count: '',
+    rating: '',
+    review_count: '',
     application_url: '',
   });
+
+  // Structured form builders for eligibility + json fields
+  const [eligibilityPairs, setEligibilityPairs] = useState<Array<{key: string, value: string}>>([]);
+  const [benefitsPairs, setBenefitsPairs] = useState<Array<{key: string, value: string}>>([]);
+  const [selectionSteps, setSelectionSteps] = useState<Array<{ title: string; description: string; duration: string }>>([]);
+  const [partnerUniversities, setPartnerUniversities] = useState<Array<{ name: string; country: string }>>([]);
+
+  // Fetch fields of interest for dropdown
+  useEffect(() => {
+    const fetchFields = async () => {
+      if (!isAddDialogOpen) return;
+      try {
+        setFieldsLoading(true);
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
+        const res = await fetch(`${backendUrl}/api/fields`, { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load fields");
+        const data = await res.json();
+        setFields(Array.isArray(data?.data) ? data.data : []);
+      } catch (e) {
+        console.error(e);
+        toast.error("Failed to load Field of Interest list");
+      } finally {
+        setFieldsLoading(false);
+      }
+    };
+    fetchFields();
+  }, [isAddDialogOpen]);
 
   const handleRefresh = useCallback(async () => {
     if (!userData?.accessToken) {
@@ -159,6 +214,69 @@ export default function ScholarshipManagement() {
       setSubmitting(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:5001";
 
+      // Basic validation
+      if (!formData.name.trim()) {
+        toast.error("Scholarship Name is required.");
+        return;
+      }
+      if (!formData.level.trim()) {
+        toast.error("Level is required.");
+        return;
+      }
+      if (!formData.field_id || isNaN(Number(formData.field_id))) {
+        toast.error("Field of Interest is required.");
+        return;
+      }
+      if (!formData.contact_email.trim()) {
+        toast.error("Contact Email is required.");
+        return;
+      }
+      if (!formData.contact_phone.trim()) {
+        toast.error("Contact Phone is required.");
+        return;
+      }
+      const successRateNum = Number(formData.success_rate);
+      if (formData.success_rate === '' || isNaN(successRateNum) || successRateNum < 0 || successRateNum > 100) {
+        toast.error("Success Rate must be between 0 and 100.");
+        return;
+      }
+      const ratingNum = Number(formData.rating);
+      if (formData.rating === '' || isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5) {
+        toast.error("Rating must be between 0.0 and 5.0.");
+        return;
+      }
+      const reviewCountNum = Number(formData.review_count);
+      if (formData.review_count === '' || isNaN(reviewCountNum) || reviewCountNum < 0) {
+        toast.error("Review Count is required (0 or more).");
+        return;
+      }
+      const applicantCountNum = Number(formData.applicant_count);
+      if (formData.applicant_count === '' || isNaN(applicantCountNum) || applicantCountNum < 0) {
+        toast.error("Applicant Count is required (0 or more).");
+        return;
+      }
+      const processingWeeksNum = Number(formData.processing_time_weeks);
+      if (formData.processing_time_weeks === '' || isNaN(processingWeeksNum) || processingWeeksNum < 0) {
+        toast.error("Processing Time (weeks) is required (0 or more).");
+        return;
+      }
+      if (eligibilityPairs.length === 0 || !eligibilityPairs.some(p => p.key.trim() && p.value.trim())) {
+        toast.error("Please add at least 1 Eligibility Requirement.");
+        return;
+      }
+      if (benefitsPairs.length === 0 || !benefitsPairs.some(p => p.key.trim() && p.value.trim())) {
+        toast.error("Please add at least 1 Benefit.");
+        return;
+      }
+      if (selectionSteps.length === 0 || !selectionSteps.some(s => s.title.trim())) {
+        toast.error("Please add at least 1 Selection Process step.");
+        return;
+      }
+      if (partnerUniversities.length === 0 || !partnerUniversities.some(p => p.name.trim())) {
+        toast.error("Please add at least 1 Partner University.");
+        return;
+      }
+
       // Prepare payload
       const payload: any = {
         name: formData.name,
@@ -170,31 +288,55 @@ export default function ScholarshipManagement() {
         description: formData.description || null,
         status: formData.status || 'active',
         application_url: formData.application_url || null,
+        level: formData.level || null,
+        field_id: Number(formData.field_id),
+        success_rate: successRateNum,
+        contact_email: formData.contact_email.trim(),
+        contact_phone: formData.contact_phone.trim(),
+        processing_time_weeks: processingWeeksNum,
+        applicant_count: applicantCountNum,
+        rating: ratingNum,
+        review_count: reviewCountNum,
       };
 
-      // Parse eligibility_requirements and benefits if provided
-      // Backend expects objects, so ensure we always send an object or null
-      if (formData.eligibility_requirements && formData.eligibility_requirements.trim()) {
-        try {
-          const parsed = JSON.parse(formData.eligibility_requirements);
-          // Ensure it's an object, not an array or primitive
-          if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-            payload.eligibility_requirements = parsed;
-          } else {
-            // If parsed value is not an object, wrap it
-            payload.eligibility_requirements = { requirements: Array.isArray(parsed) ? parsed : [parsed] };
+      // Convert structured eligibility pairs to JSON object
+      if (eligibilityPairs.length > 0) {
+        const eligibilityObj: any = {};
+        eligibilityPairs.forEach(pair => {
+          if (pair.key.trim() && pair.value.trim()) {
+            eligibilityObj[pair.key.trim()] = pair.value.trim();
           }
-        } catch {
-          // If not valid JSON, create a simple object from text lines
-          const lines = formData.eligibility_requirements.split('\n').filter(r => r.trim());
-          payload.eligibility_requirements = lines.length > 0 ? { requirements: lines } : null;
-        }
+        });
+        payload.eligibility_requirements = Object.keys(eligibilityObj).length > 0 ? eligibilityObj : null;
       } else {
         payload.eligibility_requirements = null;
       }
 
-      // Benefits is a string field in the database, not JSONB
-      payload.benefits = formData.benefits && formData.benefits.trim() ? formData.benefits.trim() : null;
+      // Convert structured benefits pairs to JSON object
+      if (benefitsPairs.length > 0) {
+        const benefitsObj: any = {};
+        benefitsPairs.forEach(pair => {
+          if (pair.key.trim() && pair.value.trim()) {
+            benefitsObj[pair.key.trim()] = pair.value.trim();
+          }
+        });
+        payload.benefits_json = Object.keys(benefitsObj).length > 0 ? benefitsObj : null;
+      } else {
+        payload.benefits_json = null;
+      }
+
+      payload.selection_process = selectionSteps
+        .filter(s => s.title.trim())
+        .map((s, idx) => ({
+          step: idx + 1,
+          title: s.title.trim(),
+          description: s.description?.trim() || "",
+          duration: s.duration?.trim() || "",
+        }));
+
+      payload.partner_universities = partnerUniversities
+        .filter(p => p.name.trim())
+        .map(p => ({ name: p.name.trim(), country: p.country?.trim() || "" }));
 
       let response;
       if (editingScholarship) {
@@ -247,34 +389,191 @@ export default function ScholarshipManagement() {
       deadline: '',
       description: '',
       status: 'active',
-      eligibility_requirements: '',
-      benefits: '',
+      level: '',
+      field_id: '',
+      success_rate: '',
+      contact_email: '',
+      contact_phone: '',
+      processing_time_weeks: '',
+      applicant_count: '',
+      rating: '',
+      review_count: '',
       application_url: '',
     });
+    setEligibilityPairs([]);
+    setBenefitsPairs([]);
+    setSelectionSteps([]);
+    setPartnerUniversities([]);
   };
 
   const handleEdit = (scholarship: Scholarship) => {
+    console.log('🔍 Editing scholarship:', scholarship);
+    
     setFormData({
-      name: scholarship.name,
+      name: scholarship.name || '',
       provider: scholarship.provider || '',
       amount: scholarship.amount?.toString() || '',
       type: scholarship.type || 'Merit-based',
       location: scholarship.location || '',
-      deadline: scholarship.deadline || '',
+      deadline: scholarship.deadline ? scholarship.deadline.split('T')[0] : '', // Format date for input
       description: scholarship.description || '',
       status: scholarship.status || 'active',
-      eligibility_requirements: scholarship.eligibility_requirements 
-        ? (typeof scholarship.eligibility_requirements === 'string' 
-          ? scholarship.eligibility_requirements 
-          : JSON.stringify(scholarship.eligibility_requirements, null, 2))
-        : '',
-      benefits: scholarship.benefits
-        ? (typeof scholarship.benefits === 'string'
-          ? scholarship.benefits
-          : JSON.stringify(scholarship.benefits, null, 2))
-        : '',
+      level: scholarship.level || '',
+      field_id: scholarship.field_id?.toString() || '',
+      success_rate: scholarship.success_rate?.toString() || '',
+      contact_email: scholarship.contact_email || '',
+      contact_phone: scholarship.contact_phone || '',
+      processing_time_weeks: scholarship.processing_time_weeks?.toString() || '',
+      applicant_count: scholarship.applicant_count?.toString() || '',
+      rating: scholarship.rating?.toString() || '',
+      review_count: scholarship.review_count?.toString() || '',
       application_url: scholarship.application_url || '',
     });
+
+    // Parse eligibility_requirements into structured pairs
+    try {
+      let eligibilityData = scholarship.eligibility_requirements;
+      console.log('🔍 Raw eligibility_requirements:', eligibilityData);
+      
+      if (typeof eligibilityData === 'string') {
+        try {
+          eligibilityData = JSON.parse(eligibilityData);
+        } catch {
+          // If it's a plain string, wrap it
+          eligibilityData = { requirements: eligibilityData };
+        }
+      }
+      
+      if (eligibilityData && typeof eligibilityData === 'object' && !Array.isArray(eligibilityData)) {
+        const pairs = Object.entries(eligibilityData).map(([key, value]) => ({
+          key,
+          value: String(value)
+        }));
+        console.log('🔍 Parsed eligibility pairs:', pairs);
+        setEligibilityPairs(pairs.length > 0 ? pairs : []);
+      } else if (Array.isArray(eligibilityData)) {
+        // Handle array format
+        const pairs = eligibilityData.map((item, idx) => ({
+          key: `requirement_${idx + 1}`,
+          value: String(item)
+        }));
+        setEligibilityPairs(pairs.length > 0 ? pairs : []);
+      } else {
+        setEligibilityPairs([]);
+      }
+    } catch (err) {
+      console.error('Error parsing eligibility_requirements:', err);
+      setEligibilityPairs([]);
+    }
+
+    // Parse benefits_json into structured pairs
+    try {
+      let benefitsData = scholarship.benefits_json || scholarship.benefits;
+      console.log('🔍 Raw benefits_json:', benefitsData);
+      
+      if (typeof benefitsData === 'string') {
+        try {
+          benefitsData = JSON.parse(benefitsData);
+        } catch {
+          // If it's a plain string, wrap it
+          benefitsData = { benefits: benefitsData };
+        }
+      }
+      
+      if (benefitsData && typeof benefitsData === 'object' && !Array.isArray(benefitsData)) {
+        const pairs = Object.entries(benefitsData).map(([key, value]) => ({
+          key,
+          value: String(value)
+        }));
+        console.log('🔍 Parsed benefits pairs:', pairs);
+        setBenefitsPairs(pairs.length > 0 ? pairs : []);
+      } else if (Array.isArray(benefitsData)) {
+        // Handle array format
+        const pairs = benefitsData.map((item, idx) => ({
+          key: `benefit_${idx + 1}`,
+          value: String(item)
+        }));
+        setBenefitsPairs(pairs.length > 0 ? pairs : []);
+      } else {
+        setBenefitsPairs([]);
+      }
+    } catch (err) {
+      console.error('Error parsing benefits_json:', err);
+      setBenefitsPairs([]);
+    }
+
+    // Parse selection_process
+    try {
+      const raw = scholarship.selection_process;
+      console.log('🔍 Raw selection_process:', raw);
+      
+      if (Array.isArray(raw)) {
+        const steps = raw.map((s: any, idx: number) => ({
+          title: String(s?.title || s?.name || `Step ${idx + 1}` || ""),
+          description: String(s?.description || s?.desc || ""),
+          duration: String(s?.duration || ""),
+        }));
+        console.log('🔍 Parsed selection steps:', steps);
+        setSelectionSteps(steps.length > 0 ? steps : []);
+      } else if (raw && typeof raw === 'object') {
+        // Handle object format
+        try {
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (Array.isArray(parsed)) {
+            setSelectionSteps(parsed.map((s: any, idx: number) => ({
+              title: String(s?.title || s?.name || `Step ${idx + 1}` || ""),
+              description: String(s?.description || s?.desc || ""),
+              duration: String(s?.duration || ""),
+            })));
+          } else {
+            setSelectionSteps([]);
+          }
+        } catch {
+          setSelectionSteps([]);
+        }
+      } else {
+        setSelectionSteps([]);
+      }
+    } catch (err) {
+      console.error('Error parsing selection_process:', err);
+      setSelectionSteps([]);
+    }
+
+    // Parse partner_universities
+    try {
+      const raw = scholarship.partner_universities;
+      console.log('🔍 Raw partner_universities:', raw);
+      
+      if (Array.isArray(raw)) {
+        const partners = raw.map((p: any) => ({
+          name: String(p?.name || ""),
+          country: String(p?.country || ""),
+        }));
+        console.log('🔍 Parsed partner universities:', partners);
+        setPartnerUniversities(partners.length > 0 ? partners : []);
+      } else if (raw && typeof raw === 'object') {
+        // Handle object format
+        try {
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (Array.isArray(parsed)) {
+            setPartnerUniversities(parsed.map((p: any) => ({
+              name: String(p?.name || ""),
+              country: String(p?.country || ""),
+            })));
+          } else {
+            setPartnerUniversities([]);
+          }
+        } catch {
+          setPartnerUniversities([]);
+        }
+      } else {
+        setPartnerUniversities([]);
+      }
+    } catch (err) {
+      console.error('Error parsing partner_universities:', err);
+      setPartnerUniversities([]);
+    }
+
     setEditingScholarship(scholarship);
     setIsAddDialogOpen(true);
   };
@@ -356,174 +655,581 @@ export default function ScholarshipManagement() {
                 Add New Scholarship
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingScholarship ? 'Edit Scholarship' : 'Add New Scholarship'}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingScholarship ? 'Update scholarship information' : 'Create a new scholarship opportunity'}
-                </DialogDescription>
+            <DialogContent className="!max-w-[1400px] w-[95vw] sm:!max-w-[1400px] sm:w-[90vw] md:!max-w-[1400px] lg:!max-w-[1400px] lg:w-[1400px] max-h-[95vh] flex flex-col overflow-hidden backdrop-blur-xl bg-white/95 dark:bg-slate-900/95 border-2 border-gray-200 dark:border-gray-700 shadow-2xl">
+              <DialogHeader className="pb-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <Award className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                      {editingScholarship ? 'Edit Scholarship' : 'Add New Scholarship'}
+                    </DialogTitle>
+                    <DialogDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1.5">
+                      {editingScholarship ? 'Update scholarship information' : 'Create a new scholarship opportunity'}
+                    </DialogDescription>
+                  </div>
+                </div>
               </DialogHeader>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Scholarship Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Malaysia Excellence Scholarship"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="provider">Provider</Label>
-                    <Input
-                      id="provider"
-                      value={formData.provider}
-                      onChange={(e) => setFormData(prev => ({ ...prev, provider: e.target.value }))}
-                      placeholder="e.g., Ministry of Education Malaysia"
-                    />
+              <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto py-4 px-1">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Column 1: Basic Information */}
+                    <div className="space-y-5">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2.5 mb-3 pb-2 border-b-2 border-blue-200 dark:border-blue-800">
+                          <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Basic Information</h3>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Scholarship Name <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="name"
+                              value={formData.name}
+                              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="e.g., Malaysia Excellence Scholarship"
+                              required
+                              className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="provider" className="text-sm font-medium text-gray-700 dark:text-gray-300">Provider</Label>
+                            <Input
+                              id="provider"
+                              value={formData.provider}
+                              onChange={(e) => setFormData(prev => ({ ...prev, provider: e.target.value }))}
+                              placeholder="e.g., Ministry of Education Malaysia"
+                              className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="amount" className="text-sm font-medium text-gray-700 dark:text-gray-300">Award Amount (RM)</Label>
+                            <Input
+                              id="amount"
+                              type="number"
+                              value={formData.amount}
+                              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                              placeholder="e.g., 50000"
+                              className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="type" className="text-sm font-medium text-gray-700 dark:text-gray-300">Scholarship Type</Label>
+                              <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as any }))}>
+                                <SelectTrigger className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Merit-based">Merit-based</SelectItem>
+                                  <SelectItem value="Need-based">Need-based</SelectItem>
+                                  <SelectItem value="Academic">Academic</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="status" className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</Label>
+                              <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}>
+                                <SelectTrigger className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="active">Active</SelectItem>
+                                  <SelectItem value="draft">Draft</SelectItem>
+                                  <SelectItem value="expired">Expired</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Level <span className="text-red-500">*</span></Label>
+                              <Select value={formData.level || "none"} onValueChange={(value) => setFormData(prev => ({ ...prev, level: value === "none" ? "" : value }))}>
+                                <SelectTrigger className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md">
+                                  <SelectValue placeholder="Select level" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Select</SelectItem>
+                                  <SelectItem value="foundation">Foundation</SelectItem>
+                                  <SelectItem value="diploma">Diploma</SelectItem>
+                                  <SelectItem value="degree">Degree</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Field of Interest <span className="text-red-500">*</span></Label>
+                              <Select
+                                value={formData.field_id || "none"}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, field_id: value === "none" ? "" : value }))}
+                              >
+                                <SelectTrigger className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md">
+                                  <SelectValue placeholder={fieldsLoading ? "Loading..." : "Select field"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Select</SelectItem>
+                                  {fields.map((f) => (
+                                    <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Success Rate (%) <span className="text-red-500">*</span></Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={formData.success_rate}
+                                onChange={(e) => setFormData(prev => ({ ...prev, success_rate: e.target.value }))}
+                                placeholder="0 - 100"
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Rating (0.0 - 5.0) <span className="text-red-500">*</span></Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                min={0}
+                                max={5}
+                                value={formData.rating}
+                                onChange={(e) => setFormData(prev => ({ ...prev, rating: e.target.value })) }
+                                placeholder="e.g., 4.5"
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Processing Time (weeks) <span className="text-red-500">*</span></Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={formData.processing_time_weeks}
+                                onChange={(e) => setFormData(prev => ({ ...prev, processing_time_weeks: e.target.value }))}
+                                placeholder="e.g., 4"
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Applicant Count <span className="text-red-500">*</span></Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={formData.applicant_count}
+                                onChange={(e) => setFormData(prev => ({ ...prev, applicant_count: e.target.value }))}
+                                placeholder="e.g., 120"
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Review Count <span className="text-red-500">*</span></Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={formData.review_count}
+                              onChange={(e) => setFormData(prev => ({ ...prev, review_count: e.target.value }))}
+                              placeholder="e.g., 35"
+                              className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Column 2: Application Details, Eligibility Requirements & Benefits */}
+                    <div className="space-y-5">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2.5 mb-3 pb-2 border-b-2 border-green-200 dark:border-green-800">
+                          <Calendar className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Application Details</h3>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact Email <span className="text-red-500">*</span></Label>
+                              <Input
+                                type="email"
+                                value={formData.contact_email}
+                                onChange={(e) => setFormData(prev => ({ ...prev, contact_email: e.target.value }))}
+                                placeholder="e.g., contact@provider.com"
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Contact Phone <span className="text-red-500">*</span></Label>
+                              <Input
+                                value={formData.contact_phone}
+                                onChange={(e) => setFormData(prev => ({ ...prev, contact_phone: e.target.value }))}
+                                placeholder="e.g., +60 12-345 6789"
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="location" className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</Label>
+                            <Input
+                              id="location"
+                              value={formData.location}
+                              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                              placeholder="e.g., Malaysia, Overseas, Both"
+                              className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="deadline" className="text-sm font-medium text-gray-700 dark:text-gray-300">Application Deadline</Label>
+                            <Input
+                              id="deadline"
+                              type="date"
+                              value={formData.deadline}
+                              onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                              className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="application_url" className="text-sm font-medium text-gray-700 dark:text-gray-300">Application URL</Label>
+                            <Input
+                              id="application_url"
+                              type="url"
+                              value={formData.application_url}
+                              onChange={(e) => setFormData(prev => ({ ...prev, application_url: e.target.value }))}
+                              placeholder="https://example.com/apply"
+                              className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-purple-200 dark:border-purple-800">
+                          <div className="flex items-center gap-2.5">
+                            <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Eligibility Requirements</h3>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEligibilityPairs([...eligibilityPairs, { key: '', value: '' }])}
+                            className="h-8 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Field
+                          </Button>
+                        </div>
+                        <div className="space-y-3">
+                          {eligibilityPairs.length === 0 && (
+                            <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md">
+                              <p>No eligibility requirements added yet.</p>
+                              <p className="text-xs mt-1">Click "Add Field" to add requirements.</p>
+                            </div>
+                          )}
+                          {eligibilityPairs.length > 0 && (
+                            eligibilityPairs.map((pair, idx) => (
+                              <div key={idx} className="flex gap-2 items-start">
+                                <Input
+                                  placeholder="Key (e.g., academic, income)"
+                                  value={pair.key}
+                                  onChange={(e) => {
+                                    const updated = [...eligibilityPairs];
+                                    updated[idx].key = e.target.value;
+                                    setEligibilityPairs(updated);
+                                  }}
+                                  className="flex-1 h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                                />
+                                <Input
+                                  placeholder="Value (e.g., SPM: 5 credits)"
+                                  value={pair.value}
+                                  onChange={(e) => {
+                                    const updated = [...eligibilityPairs];
+                                    updated[idx].value = e.target.value;
+                                    setEligibilityPairs(updated);
+                                  }}
+                                  className="flex-1 h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updated = eligibilityPairs.filter((_, i) => i !== idx);
+                                    setEligibilityPairs(updated.length > 0 ? updated : []);
+                                  }}
+                                  className="h-10 w-10 p-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-amber-200 dark:border-amber-800">
+                          <div className="flex items-center gap-2.5">
+                            <DollarSign className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Benefits</h3>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setBenefitsPairs([...benefitsPairs, { key: '', value: '' }])}
+                            className="h-8 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Field
+                          </Button>
+                        </div>
+                        <div className="space-y-3">
+                          {benefitsPairs.length === 0 && (
+                            <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md">
+                              <p>No benefits added yet.</p>
+                              <p className="text-xs mt-1">Click "Add Field" to add benefits.</p>
+                            </div>
+                          )}
+                          {benefitsPairs.length > 0 && (
+                            benefitsPairs.map((pair, idx) => (
+                              <div key={idx} className="flex gap-2 items-start">
+                                <Input
+                                  placeholder="Key (e.g., tuition, living)"
+                                  value={pair.key}
+                                  onChange={(e) => {
+                                    const updated = [...benefitsPairs];
+                                    updated[idx].key = e.target.value;
+                                    setBenefitsPairs(updated);
+                                  }}
+                                  className="flex-1 h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                                />
+                                <Input
+                                  placeholder="Value (e.g., Full coverage)"
+                                  value={pair.value}
+                                  onChange={(e) => {
+                                    const updated = [...benefitsPairs];
+                                    updated[idx].value = e.target.value;
+                                    setBenefitsPairs(updated);
+                                  }}
+                                  className="flex-1 h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updated = benefitsPairs.filter((_, i) => i !== idx);
+                                    setBenefitsPairs(updated.length > 0 ? updated : []);
+                                  }}
+                                  className="h-10 w-10 p-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Column 3: Selection Process, Partner Universities & Description */}
+                    <div className="space-y-5">
+
+                      <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-teal-200 dark:border-teal-800">
+                          <div className="flex items-center gap-2.5">
+                            <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Selection Process</h3>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectionSteps([...selectionSteps, { title: "", description: "", duration: "" }])}
+                            className="h-8 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Step
+                          </Button>
+                        </div>
+                        <div className="space-y-3">
+                          {selectionSteps.length === 0 && (
+                            <div className="text-center py-6 text-sm text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md">
+                              No steps added yet.
+                            </div>
+                          )}
+                          {selectionSteps.length > 0 && selectionSteps.map((s, idx) => (
+                            <div key={idx} className="border border-gray-200 dark:border-gray-700 rounded-md p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">Step {idx + 1}</div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectionSteps(selectionSteps.filter((_, i) => i !== idx))}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <Input
+                                placeholder="Title (e.g., Online application)"
+                                value={s.title}
+                                onChange={(e) => {
+                                  const updated = [...selectionSteps];
+                                  updated[idx].title = e.target.value;
+                                  setSelectionSteps(updated);
+                                }}
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                              <Input
+                                placeholder="Duration (e.g., 1-2 weeks)"
+                                value={s.duration}
+                                onChange={(e) => {
+                                  const updated = [...selectionSteps];
+                                  updated[idx].duration = e.target.value;
+                                  setSelectionSteps(updated);
+                                }}
+                                className="h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                              <Textarea
+                                placeholder="Description"
+                                value={s.description}
+                                onChange={(e) => {
+                                  const updated = [...selectionSteps];
+                                  updated[idx].description = e.target.value;
+                                  setSelectionSteps(updated);
+                                }}
+                                rows={3}
+                                className="w-full text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md resize-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b-2 border-cyan-200 dark:border-cyan-800">
+                          <div className="flex items-center gap-2.5">
+                            <GraduationCap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Partner Universities</h3>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPartnerUniversities([...partnerUniversities, { name: "", country: "" }])}
+                            className="h-8 text-xs"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                        <div className="space-y-3">
+                          {partnerUniversities.length === 0 && (
+                            <div className="text-center py-6 text-sm text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-md">
+                              No partner universities added yet.
+                            </div>
+                          )}
+                          {partnerUniversities.length > 0 && partnerUniversities.map((p, idx) => (
+                            <div key={idx} className="flex gap-2 items-start">
+                              <Input
+                                placeholder="University name"
+                                value={p.name}
+                                onChange={(e) => {
+                                  const updated = [...partnerUniversities];
+                                  updated[idx].name = e.target.value;
+                                  setPartnerUniversities(updated);
+                                }}
+                                className="flex-1 h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                              <Input
+                                placeholder="Country"
+                                value={p.country}
+                                onChange={(e) => {
+                                  const updated = [...partnerUniversities];
+                                  updated[idx].country = e.target.value;
+                                  setPartnerUniversities(updated);
+                                }}
+                                className="w-40 h-10 text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setPartnerUniversities(partnerUniversities.filter((_, i) => i !== idx))}
+                                className="h-10 w-10 p-0"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-2.5 mb-3 pb-2 border-b-2 border-indigo-200 dark:border-indigo-800">
+                          <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Description</h3>
+                        </div>
+                        <div className="space-y-2">
+                          <Textarea
+                            id="description"
+                            value={formData.description}
+                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="Detailed scholarship description"
+                            rows={10}
+                            className="w-full text-sm border-2 border-gray-200 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-200 rounded-md resize-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Award Amount (RM)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      value={formData.amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                      placeholder="e.g., 50000"
-                    />
+                <DialogFooter className="pt-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                  <div className="flex justify-end gap-3 w-full">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => {
+                        setIsAddDialogOpen(false);
+                        setEditingScholarship(null);
+                        resetForm();
+                      }}
+                      disabled={submitting}
+                      className="h-10 px-6"
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700 h-10 px-6" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        editingScholarship ? 'Update Scholarship' : 'Add Scholarship'
+                      )}
+                    </Button>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Scholarship Type</Label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as any }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Merit-based">Merit-based</SelectItem>
-                        <SelectItem value="Need-based">Need-based</SelectItem>
-                        <SelectItem value="Academic">Academic</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="expired">Expired</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                      placeholder="e.g., Malaysia, Overseas, Both"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="deadline">Application Deadline</Label>
-                    <Input
-                      id="deadline"
-                      type="date"
-                      value={formData.deadline}
-                      onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="application_url">Application URL</Label>
-                  <Input
-                    id="application_url"
-                    type="url"
-                    value={formData.application_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, application_url: e.target.value }))}
-                    placeholder="https://example.com/apply"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Detailed scholarship description"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="eligibility_requirements">Eligibility Requirements (JSON or text)</Label>
-                    <Textarea
-                      id="eligibility_requirements"
-                      value={formData.eligibility_requirements}
-                      onChange={(e) => setFormData(prev => ({ ...prev, eligibility_requirements: e.target.value }))}
-                      placeholder='{"academic": "SPM: 5 credits", "income": "Below RM 5,000"}'
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="benefits">Benefits (JSON or text)</Label>
-                    <Textarea
-                      id="benefits"
-                      value={formData.benefits}
-                      onChange={(e) => setFormData(prev => ({ ...prev, benefits: e.target.value }))}
-                      placeholder='{"tuition": "Full coverage", "living": "RM 1,000/month"}'
-                      rows={4}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddDialogOpen(false);
-                      setEditingScholarship(null);
-                      resetForm();
-                    }}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={submitting}>
-                    {submitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      editingScholarship ? 'Update Scholarship' : 'Add Scholarship'
-                    )}
-                  </Button>
-                </div>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>

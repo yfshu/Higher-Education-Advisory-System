@@ -817,6 +817,90 @@
         ]
       }
     },
+    "/api/universities/upload-logo": {
+      "post": {
+        "operationId": "UniversitiesController_uploadLogo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logo uploaded successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Upload university logo",
+        "tags": [
+          "Universities"
+        ]
+      }
+    },
+    "/api/universities/upload-image": {
+      "post": {
+        "operationId": "UniversitiesController_uploadUniversityImage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image uploaded successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "supabase-auth": []
+          }
+        ],
+        "summary": "Upload university image",
+        "tags": [
+          "Universities"
+        ]
+      }
+    },
     "/api/scholarships": {
       "get": {
         "operationId": "ScholarshipsController_getScholarships",
@@ -3264,12 +3348,57 @@
         "type": "object",
         "properties": {}
       },
+      "SelectionProcessStepDto": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "number",
+            "description": "Step number"
+          },
+          "title": {
+            "type": "string",
+            "description": "Step title"
+          },
+          "description": {
+            "type": "object",
+            "description": "Step description"
+          },
+          "duration": {
+            "type": "object",
+            "description": "Step duration (e.g. 1-2 weeks)"
+          }
+        },
+        "required": [
+          "step",
+          "title"
+        ]
+      },
+      "PartnerUniversityDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "University name"
+          },
+          "country": {
+            "type": "object",
+            "description": "Country"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "CreateScholarshipRequestDto": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
             "description": "Scholarship name"
+          },
+          "provider": {
+            "type": "object",
+            "description": "Provider (alias for organization_name)"
           },
           "organization_name": {
             "type": "object",
@@ -3309,6 +3438,10 @@
             "type": "number",
             "description": "Field ID"
           },
+          "application_url": {
+            "type": "object",
+            "description": "Application URL (alias for website_url)"
+          },
           "website_url": {
             "type": "object",
             "description": "Website URL"
@@ -3321,13 +3454,51 @@
             "type": "object",
             "description": "Contact phone"
           },
+          "processing_time_weeks": {
+            "type": "number",
+            "description": "Processing time (weeks)"
+          },
+          "applicant_count": {
+            "type": "number",
+            "description": "Applicant count"
+          },
+          "rating": {
+            "type": "number",
+            "description": "Rating (0.0 - 5.0)"
+          },
+          "review_count": {
+            "type": "number",
+            "description": "Review count"
+          },
           "requirements": {
             "type": "object",
             "description": "Requirements (text)"
           },
+          "eligibility_requirements": {
+            "type": "object",
+            "description": "Eligibility requirements (JSON object; stored into requirements column)"
+          },
           "benefits": {
             "type": "object",
             "description": "Benefits (text)"
+          },
+          "benefits_json": {
+            "type": "object",
+            "description": "Benefits JSON (object/array, stored to benefits_json column if present)"
+          },
+          "selection_process": {
+            "description": "Selection process steps (JSON array)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectionProcessStepDto"
+            }
+          },
+          "partner_universities": {
+            "description": "Partner universities (JSON array)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerUniversityDto"
+            }
           },
           "success_rate": {
             "type": "number",

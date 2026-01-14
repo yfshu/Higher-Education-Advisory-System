@@ -58,7 +58,6 @@ interface ProgramWizardData {
   deadline: string | null;
   
   // Step 4: Fees
-  tuition_fee: number | null;
   tuition_fee_amount: number | null;
   tuition_fee_period: "semester" | "year" | "total" | null;
   currency: string | null;
@@ -99,6 +98,8 @@ export function ProgramWizardModal({
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [tagInput, setTagInput] = useState("");
+  const [stepErrors, setStepErrors] = useState<{ [key: number]: boolean }>({});
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   
   // User-friendly JSON form states
   const [entryReqAcademic, setEntryReqAcademic] = useState("");
@@ -106,7 +107,7 @@ export function ProgramWizardModal({
   const [entryReqOther, setEntryReqOther] = useState("");
   const [careerOutcomes, setCareerOutcomes] = useState<Array<{role: string, percentage: string}>>([]);
   const [facilities, setFacilities] = useState<string[]>([]);
-  const [curriculumYears, setCurriculumYears] = useState<Array<{year: string, semesters: Array<{semester: string, subjects: string[]}>}>>([]);
+  const [curriculumYears, setCurriculumYears] = useState<Array<{year: string, subjects: string[]}>>([]);
 
   const {
     register,
@@ -129,7 +130,6 @@ export function ProgramWizardModal({
       duration_months: null,
       start_month: null,
       deadline: null,
-      tuition_fee: null,
       tuition_fee_amount: null,
       tuition_fee_period: null,
       currency: "MYR",
@@ -163,7 +163,20 @@ export function ProgramWizardModal({
           university_id: program.university_id || null,
           createNewUniversity: false,
           name: program.name || "",
-          level: program.level || null,
+          level: (() => {
+            const level = program.level;
+            if (!level) return null;
+            // Normalize level value to match Select options
+            const levelStr = String(level);
+            if (levelStr === "Foundation" || levelStr === "foundation") return "Foundation";
+            if (levelStr === "Diploma" || levelStr === "diploma") return "Diploma";
+            if (levelStr === "Bachelor" || levelStr === "bachelor" || levelStr === "Degree" || levelStr === "degree") return "Bachelor";
+            // Return as-is if it matches one of our options
+            if (["Foundation", "Diploma", "Bachelor"].includes(levelStr)) {
+              return levelStr as "Foundation" | "Diploma" | "Bachelor";
+            }
+            return null;
+          })(),
           field_id: program.field_id || null,
           status: program.status || "active",
           tags: Array.isArray(program.tags) ? program.tags : (typeof program.tags === 'string' ? JSON.parse(program.tags || '[]') : []),
@@ -172,8 +185,17 @@ export function ProgramWizardModal({
           duration_months: program.duration_months || null,
           start_month: program.start_month || null,
           deadline: program.deadline || null,
-          tuition_fee: program.tuition_fee || null,
           tuition_fee_amount: program.tuition_fee_amount || null,
+          // Parse start_month into selectedMonths array
+          ...(() => {
+            if (program.start_month) {
+              const months = program.start_month.split(',').map(m => m.trim()).filter(m => m);
+              setSelectedMonths(months);
+            } else {
+              setSelectedMonths([]);
+            }
+            return {};
+          })(),
           tuition_fee_period: program.tuition_fee_period || null,
           currency: program.currency || "MYR",
           entry_requirements: (() => {
@@ -188,7 +210,33 @@ export function ProgramWizardModal({
           })(),
           curriculum: (() => {
             const val = typeof program.curriculum === 'string' ? JSON.parse(program.curriculum || '{}') : program.curriculum;
-            return Array.isArray(val) ? { items: val } : (val || null);
+            const curriculumVal = Array.isArray(val) ? { items: val } : (val || null);
+            // Initialize curriculum years state for editing
+            if (curriculumVal && typeof curriculumVal === 'object' && !Array.isArray(curriculumVal)) {
+              // Convert JSON object to structured format: {year_1: [...], year_2: [...]}
+              const years: Array<{year: string, subjects: string[]}> = [];
+              Object.keys(curriculumVal).sort().forEach((yearKey) => {
+                const yearData = (curriculumVal as any)[yearKey];
+                if (Array.isArray(yearData)) {
+                  // Direct array of subjects (new format)
+                  years.push({ year: yearKey, subjects: yearData });
+                } else if (typeof yearData === 'object' && yearData !== null) {
+                  // Old format with semesters - flatten all subjects into one array
+                  const allSubjects: string[] = [];
+                  Object.keys(yearData).forEach((semesterKey) => {
+                    const semesterSubjects = Array.isArray(yearData[semesterKey]) ? yearData[semesterKey] : [];
+                    allSubjects.push(...semesterSubjects);
+                  });
+                  if (allSubjects.length > 0) {
+                    years.push({ year: yearKey, subjects: allSubjects });
+                  }
+                }
+              });
+              setCurriculumYears(years);
+            } else {
+              setCurriculumYears([]);
+            }
+            return curriculumVal;
           })(),
           career_outcomes: (() => {
             const val = typeof program.career_outcomes === 'string' ? JSON.parse(program.career_outcomes || '[]') : program.career_outcomes;
@@ -228,6 +276,7 @@ export function ProgramWizardModal({
         // Add mode - reset to defaults
         reset();
         setCurrentStep(1);
+        setSelectedMonths([]);
       }
     }
   }, [open, program, reset]);
@@ -269,7 +318,142 @@ export function ProgramWizardModal({
     setValue("tags", watch("tags")?.filter((t) => t !== tagToRemove) || []);
   }, [watch, setValue]);
 
-  const nextStep = () => {
+  const validateCurrentStep = (): boolean => {
+    switch (currentStep) {
+      case 1:
+        // Step 1: University Selection - Required
+        if (!watch("university_id")) {
+          setStepErrors({ ...stepErrors, 1: true });
+          toast.error("Please select a university before proceeding.");
+          return false;
+        }
+        setStepErrors({ ...stepErrors, 1: false });
+        return true;
+      
+      case 2:
+        // Step 2: Basic Program Info - Name, Level, and Field are required
+        const programName = watch("name");
+        if (!programName || (typeof programName === "string" && programName.trim() === "")) {
+          setStepErrors({ ...stepErrors, 2: true, "2_name": true });
+          toast.error("Program name is required.");
+          return false;
+        }
+        if (!watch("level")) {
+          setStepErrors({ ...stepErrors, 2: true, "2_level": true });
+          toast.error("Program level is required.");
+          return false;
+        }
+        if (!watch("field_id")) {
+          setStepErrors({ ...stepErrors, 2: true, "2_field": true });
+          toast.error("Field of study is required.");
+          return false;
+        }
+        setStepErrors({ ...stepErrors, 2: false, "2_name": false, "2_level": false, "2_field": false });
+        return true;
+      
+      case 3:
+        // Step 3: Duration & Intake - All fields are required
+        if (!watch("duration") || watch("duration")?.trim() === "") {
+          setStepErrors({ ...stepErrors, 3: true, "3_duration": true });
+          toast.error("Duration (Text) is required.");
+          return false;
+        }
+        const durationMonths = watch("duration_months");
+        if (!durationMonths || durationMonths < 1) {
+          setStepErrors({ ...stepErrors, 3: true, "3_duration_months": true });
+          toast.error("Duration (Months) is required and must be at least 1.");
+          return false;
+        }
+        const startMonth = watch("start_month");
+        if (!startMonth || startMonth.trim() === "" || selectedMonths.length === 0) {
+          setStepErrors({ ...stepErrors, 3: true, "3_start_month": true });
+          toast.error("Start Month(s) is required. Please select at least one month.");
+          return false;
+        }
+        if (!watch("deadline")) {
+          setStepErrors({ ...stepErrors, 3: true, "3_deadline": true });
+          toast.error("Application Deadline is required.");
+          return false;
+        }
+        setStepErrors({ ...stepErrors, 3: false, "3_duration": false, "3_duration_months": false, "3_start_month": false, "3_deadline": false });
+        return true;
+      
+      case 4:
+        // Step 4: Fees - All fields are required
+        const tuitionFeeAmount = watch("tuition_fee_amount");
+        const tuitionFeePeriod = watch("tuition_fee_period");
+        
+        if (tuitionFeeAmount === null || tuitionFeeAmount === undefined || tuitionFeeAmount === "" || isNaN(tuitionFeeAmount) || tuitionFeeAmount < 0) {
+          setStepErrors({ ...stepErrors, 4: true, "4_tuition_fee_amount": true });
+          toast.error("Tuition Fee Amount is required and must be 0 or greater.");
+          return false;
+        }
+        
+        if (!tuitionFeePeriod || tuitionFeePeriod === "none" || tuitionFeePeriod === "") {
+          setStepErrors({ ...stepErrors, 4: true, "4_tuition_fee_period": true });
+          toast.error("Fee Period is required.");
+          return false;
+        }
+        
+        setStepErrors({ ...stepErrors, 4: false, "4_tuition_fee_amount": false, "4_tuition_fee_period": false });
+        return true;
+      
+      case 5:
+        // Step 5: No required validations, optional fields
+        return true;
+      
+      case 6:
+        // Step 6: Performance & Metrics - All fields are required
+        const employmentRate = watch("employment_rate");
+        if (employmentRate === null || employmentRate === undefined || employmentRate === "" || isNaN(employmentRate) || employmentRate < 0 || employmentRate > 100) {
+          setStepErrors({ ...stepErrors, 6: true, "6_employment_rate": true });
+          toast.error("Employment Rate is required and must be between 0 and 100.");
+          return false;
+        }
+        const averageSalary = watch("average_salary");
+        if (averageSalary === null || averageSalary === undefined || averageSalary === "" || isNaN(averageSalary) || averageSalary < 0) {
+          setStepErrors({ ...stepErrors, 6: true, "6_average_salary": true });
+          toast.error("Average Salary is required and must be 0 or greater.");
+          return false;
+        }
+        const satisfactionRate = watch("satisfaction_rate");
+        if (satisfactionRate === null || satisfactionRate === undefined || satisfactionRate === "" || isNaN(satisfactionRate) || satisfactionRate < 0 || satisfactionRate > 100) {
+          setStepErrors({ ...stepErrors, 6: true, "6_satisfaction_rate": true });
+          toast.error("Satisfaction Rate is required and must be between 0 and 100.");
+          return false;
+        }
+        const rating = watch("rating");
+        if (rating === null || rating === undefined || rating === "" || isNaN(rating) || rating < 0 || rating > 5) {
+          setStepErrors({ ...stepErrors, 6: true, "6_rating": true });
+          toast.error("Rating is required and must be between 0.0 and 5.0.");
+          return false;
+        }
+        const reviewCount = watch("review_count");
+        if (reviewCount === null || reviewCount === undefined || reviewCount === "" || isNaN(reviewCount) || reviewCount < 0) {
+          setStepErrors({ ...stepErrors, 6: true, "6_review_count": true });
+          toast.error("Review Count is required and must be 0 or greater.");
+          return false;
+        }
+        setStepErrors({ ...stepErrors, 6: false, "6_employment_rate": false, "6_average_salary": false, "6_satisfaction_rate": false, "6_rating": false, "6_review_count": false });
+        return true;
+      
+      case 7:
+        // Step 7: No required validations, optional fields
+        return true;
+      
+      default:
+        return true;
+    }
+  };
+
+  const nextStep = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!validateCurrentStep()) {
+      return;
+    }
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     }
@@ -277,13 +461,106 @@ export function ProgramWizardModal({
 
   const prevStep = () => {
     if (currentStep > 1) {
+      // Clear errors when going back
+      setStepErrors({ ...stepErrors, [currentStep]: false });
       setCurrentStep(currentStep - 1);
     }
   };
 
   const onSubmit = async (data: ProgramWizardData) => {
     if (!userData?.accessToken) {
-      alert("Please log in to perform this action.");
+      toast.error("Please log in to perform this action.");
+      return;
+    }
+
+    // Final validation before submission
+    if (!data.university_id) {
+      toast.error("Please select a university.");
+      setCurrentStep(1);
+      return;
+    }
+
+    if (!data.name || data.name.trim() === "") {
+      toast.error("Program name is required.");
+      setCurrentStep(2);
+      return;
+    }
+
+    if (!data.level) {
+      toast.error("Program level is required.");
+      setCurrentStep(2);
+      return;
+    }
+
+    if (!data.field_id) {
+      toast.error("Field of study is required.");
+      setCurrentStep(2);
+      return;
+    }
+
+    if (!data.duration || data.duration.trim() === "") {
+      toast.error("Duration (Text) is required.");
+      setCurrentStep(3);
+      return;
+    }
+
+    if (!data.duration_months || data.duration_months < 1) {
+      toast.error("Duration (Months) is required.");
+      setCurrentStep(3);
+      return;
+    }
+
+    if (!data.start_month || data.start_month.trim() === "" || selectedMonths.length === 0) {
+      toast.error("Start Month(s) is required. Please select at least one month.");
+      setCurrentStep(3);
+      return;
+    }
+
+    if (!data.deadline) {
+      toast.error("Application Deadline is required.");
+      setCurrentStep(3);
+      return;
+    }
+
+    if (data.tuition_fee_amount === null || data.tuition_fee_amount === undefined || data.tuition_fee_amount === "" || isNaN(data.tuition_fee_amount) || data.tuition_fee_amount < 0) {
+      toast.error("Tuition Fee Amount is required and must be 0 or greater.");
+      setCurrentStep(4);
+      return;
+    }
+
+    if (!data.tuition_fee_period || data.tuition_fee_period === "none" || data.tuition_fee_period === "") {
+      toast.error("Fee Period is required.");
+      setCurrentStep(4);
+      return;
+    }
+
+    if (data.employment_rate === null || data.employment_rate === undefined || data.employment_rate === "" || isNaN(data.employment_rate) || data.employment_rate < 0 || data.employment_rate > 100) {
+      toast.error("Employment Rate is required and must be between 0 and 100.");
+      setCurrentStep(6);
+      return;
+    }
+
+    if (data.average_salary === null || data.average_salary === undefined || data.average_salary === "" || isNaN(data.average_salary) || data.average_salary < 0) {
+      toast.error("Average Salary is required and must be 0 or greater.");
+      setCurrentStep(6);
+      return;
+    }
+
+    if (data.satisfaction_rate === null || data.satisfaction_rate === undefined || data.satisfaction_rate === "" || isNaN(data.satisfaction_rate) || data.satisfaction_rate < 0 || data.satisfaction_rate > 100) {
+      toast.error("Satisfaction Rate is required and must be between 0 and 100.");
+      setCurrentStep(6);
+      return;
+    }
+
+    if (data.rating === null || data.rating === undefined || data.rating === "" || isNaN(data.rating) || data.rating < 0 || data.rating > 5) {
+      toast.error("Rating is required and must be between 0.0 and 5.0.");
+      setCurrentStep(6);
+      return;
+    }
+
+    if (data.review_count === null || data.review_count === undefined || data.review_count === "" || isNaN(data.review_count) || data.review_count < 0) {
+      toast.error("Review Count is required and must be 0 or greater.");
+      setCurrentStep(6);
       return;
     }
 
@@ -323,11 +600,46 @@ export function ProgramWizardModal({
         return null;
       };
 
+      // Validate level before submission
+      const levelValue = data.level;
+      if (!levelValue || levelValue === "none" || levelValue === "") {
+        toast.error("Program level is required.");
+        setStepErrors({ ...stepErrors, 2: true, "2_level": true });
+        setCurrentStep(2);
+        setLoading(false);
+        return;
+      }
+
+      // Normalize level value to match backend enum
+      let normalizedLevel: "Foundation" | "Diploma" | "Bachelor" | null = null;
+      const levelStr = String(levelValue).trim();
+      if (levelStr === "Foundation") {
+        normalizedLevel = "Foundation";
+      } else if (levelStr === "Diploma") {
+        normalizedLevel = "Diploma";
+      } else if (levelStr === "Bachelor" || levelStr.toLowerCase() === "degree") {
+        normalizedLevel = "Bachelor";
+      } else {
+        // Try to normalize case variations
+        const normalized = levelStr.charAt(0).toUpperCase() + levelStr.slice(1).toLowerCase();
+        if (normalized === "Foundation" || normalized === "Diploma" || normalized === "Bachelor") {
+          normalizedLevel = normalized as "Foundation" | "Diploma" | "Bachelor";
+        }
+      }
+
+      if (!normalizedLevel) {
+        toast.error("Invalid program level. Please select a valid level.");
+        setStepErrors({ ...stepErrors, 2: true, "2_level": true });
+        setCurrentStep(2);
+        setLoading(false);
+        return;
+      }
+
       // Prepare payload - ensure all fields are included
       const payload: any = {
         name: data.name,
         university_id: data.university_id || null,
-        level: data.level || null,
+        level: normalizedLevel,
         field_id: data.field_id || null,
         status: data.status || "active",
         tags: data.tags && data.tags.length > 0 ? data.tags : null,
@@ -336,7 +648,6 @@ export function ProgramWizardModal({
         duration_months: data.duration_months ? Number(data.duration_months) : null,
         start_month: data.start_month || null,
         deadline: data.deadline || null,
-        tuition_fee: data.tuition_fee ? Number(data.tuition_fee) : null,
         tuition_fee_amount: data.tuition_fee_amount ? Number(data.tuition_fee_amount) : null,
         tuition_fee_period: data.tuition_fee_period || null,
         currency: data.currency || "MYR",
@@ -387,13 +698,53 @@ export function ProgramWizardModal({
       setEntryReqOther("");
       setCareerOutcomes([]);
       setFacilities([]);
+      setCurriculumYears([]);
     } catch (error) {
       console.error("Error saving program:", error);
-      alert(error instanceof Error ? error.message : "Failed to save program");
+      toast.error(error instanceof Error ? error.message : "Failed to save program");
     } finally {
       setLoading(false);
     }
   };
+
+  const updateCurriculumValue = useCallback((years: Array<{year: string, subjects: string[]}>) => {
+    if (years.length === 0) {
+      setValue("curriculum", null);
+      return;
+    }
+    
+    // Convert structured format to JSON object: {year_1: [...], year_2: [...]}
+    const curriculumObj: any = {};
+    years.forEach((yearData) => {
+      if (yearData.year && yearData.subjects.length > 0) {
+        // Normalize year key to year_1, year_2 format
+        let yearKey = yearData.year.trim();
+        // If it's already in year_1 format, keep it; otherwise convert
+        if (!/^year[_\s]*\d+$/i.test(yearKey)) {
+          // Extract number from year name (e.g., "Year 1" -> "1", "Year 2" -> "2")
+          const yearNum = yearKey.replace(/\D/g, '');
+          if (yearNum) {
+            yearKey = `year_${yearNum}`;
+          } else {
+            // If no number found, use index + 1
+            const index = years.indexOf(yearData);
+            yearKey = `year_${index + 1}`;
+          }
+        } else {
+          // Normalize to lowercase with underscore
+          yearKey = yearKey.toLowerCase().replace(/\s+/g, '_');
+        }
+        
+        // Filter out empty subjects
+        const validSubjects = yearData.subjects.filter(s => s && s.trim());
+        if (validSubjects.length > 0) {
+          curriculumObj[yearKey] = validSubjects;
+        }
+      }
+    });
+    
+    setValue("curriculum", Object.keys(curriculumObj).length > 0 ? curriculumObj : null);
+  }, [setValue]);
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
@@ -418,7 +769,26 @@ export function ProgramWizardModal({
           <Progress value={progress} className="h-2" />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form 
+          onSubmit={(e) => {
+            // Only allow submission on step 7 (final step)
+            if (currentStep !== TOTAL_STEPS) {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }
+            // On step 7, handle the submission
+            handleSubmit(onSubmit)(e);
+          }} 
+          className="space-y-6"
+          onKeyDown={(e) => {
+            // Prevent form submission on Enter key unless on final step
+            if (e.key === "Enter" && currentStep !== TOTAL_STEPS) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
           {/* Step 1: University Selection */}
           {currentStep === 1 && (
             <div className="space-y-4">
@@ -434,14 +804,20 @@ export function ProgramWizardModal({
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="university_id">Select University</Label>
+                    <Label htmlFor="university_id">
+                      Select University <span className="text-red-500">*</span>
+                    </Label>
                     <Select
                       value={watch("university_id") ? watch("university_id")!.toString() : "none"}
-                      onValueChange={(value) =>
-                        setValue("university_id", value && value !== "none" ? Number(value) : null)
-                      }
+                      onValueChange={(value) => {
+                        setValue("university_id", value && value !== "none" ? Number(value) : null);
+                        // Clear error when user selects a university
+                        if (value && value !== "none") {
+                          setStepErrors({ ...stepErrors, 1: false });
+                        }
+                      }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={stepErrors[1] && !watch("university_id") ? "border-red-300 focus:border-red-500" : ""}>
                         <SelectValue placeholder="Select a university" />
                       </SelectTrigger>
                       <SelectContent>
@@ -453,6 +829,9 @@ export function ProgramWizardModal({
                         ))}
                       </SelectContent>
                     </Select>
+                    {stepErrors[1] && !watch("university_id") && (
+                      <p className="text-sm text-red-600">Please select a university to continue</p>
+                    )}
                   </div>
                   
                   <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -479,24 +858,41 @@ export function ProgramWizardModal({
                 </Label>
                 <Input
                   id="name"
-                  {...register("name", { required: "Program name is required" })}
+                  {...register("name", { 
+                    required: "Program name is required",
+                    minLength: { value: 1, message: "Program name cannot be empty" }
+                  })}
                   placeholder="e.g., Bachelor of Computer Science"
+                  className={(stepErrors["2_name"] || errors.name) ? "border-red-300 focus:border-red-500" : ""}
+                  onChange={(e) => {
+                    register("name").onChange(e);
+                    // Clear error when user starts typing
+                    if (e.target.value.trim() !== "") {
+                      setStepErrors({ ...stepErrors, 2: false, "2_name": false });
+                    }
+                  }}
                 />
-                {errors.name && (
-                  <p className="text-sm text-red-600">{errors.name.message}</p>
+                {((stepErrors["2_name"] && (!watch("name") || watch("name")?.trim() === "")) || (errors.name && (!watch("name") || watch("name")?.trim() === ""))) && (
+                  <p className="text-sm text-red-600">{errors.name?.message || "Program name is required"}</p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="level">Program Level</Label>
+                  <Label htmlFor="level">
+                    Program Level <span className="text-red-500">*</span>
+                  </Label>
                   <Select
-                    value={watch("level") || "none"}
-                    onValueChange={(value) =>
-                      setValue("level", value && value !== "none" ? (value as "Foundation" | "Diploma" | "Bachelor") : null)
-                    }
+                    value={watch("level") ? String(watch("level")) : "none"}
+                    onValueChange={(value) => {
+                      setValue("level", value && value !== "none" ? (value as "Foundation" | "Diploma" | "Bachelor") : null);
+                      // Clear error when user selects a level
+                      if (value && value !== "none") {
+                        setStepErrors({ ...stepErrors, "2_level": false });
+                      }
+                    }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={stepErrors["2_level"] && !watch("level") ? "border-red-300 focus:border-red-500" : ""}>
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -506,17 +902,26 @@ export function ProgramWizardModal({
                       <SelectItem value="Bachelor">Degree</SelectItem>
                     </SelectContent>
                   </Select>
+                  {stepErrors["2_level"] && !watch("level") && (
+                    <p className="text-sm text-red-600">Program level is required</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="field_id">Field of Study</Label>
+                  <Label htmlFor="field_id">
+                    Field of Study <span className="text-red-500">*</span>
+                  </Label>
                   <Select
                     value={watch("field_id") ? watch("field_id")!.toString() : "none"}
-                    onValueChange={(value) =>
-                      setValue("field_id", value && value !== "none" ? Number(value) : null)
-                    }
+                    onValueChange={(value) => {
+                      setValue("field_id", value && value !== "none" ? Number(value) : null);
+                      // Clear error when user selects a field
+                      if (value && value !== "none") {
+                        setStepErrors({ ...stepErrors, "2_field": false });
+                      }
+                    }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={stepErrors["2_field"] && !watch("field_id") ? "border-red-300 focus:border-red-500" : ""}>
                       <SelectValue placeholder="Select field" />
                     </SelectTrigger>
                     <SelectContent>
@@ -528,6 +933,9 @@ export function ProgramWizardModal({
                       ))}
                     </SelectContent>
                   </Select>
+                  {stepErrors["2_field"] && !watch("field_id") && (
+                    <p className="text-sm text-red-600">Field of study is required</p>
+                  )}
                 </div>
               </div>
 
@@ -602,48 +1010,124 @@ export function ProgramWizardModal({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (Text)</Label>
+                  <Label htmlFor="duration">
+                    Duration (Text) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="duration"
-                    {...register("duration")}
+                    {...register("duration", { required: "Duration (Text) is required" })}
                     placeholder="e.g., 3 years"
+                    className={(stepErrors["3_duration"] || errors.duration) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      register("duration").onChange(e);
+                      if (e.target.value.trim() !== "") {
+                        setStepErrors({ ...stepErrors, "3_duration": false });
+                      }
+                    }}
                   />
+                  {(stepErrors["3_duration"] || errors.duration) && (
+                    <p className="text-sm text-red-600">{errors.duration?.message || "Duration (Text) is required"}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="duration_months">Duration (Months)</Label>
+                  <Label htmlFor="duration_months">
+                    Duration (Months) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="duration_months"
                     type="number"
                     {...register("duration_months", {
+                      required: "Duration (Months) is required",
                       valueAsNumber: true,
                       min: { value: 1, message: "Must be at least 1 month" },
                     })}
                     placeholder="e.g., 36"
+                    className={(stepErrors["3_duration_months"] || errors.duration_months) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      register("duration_months").onChange(e);
+                      const value = parseInt(e.target.value);
+                      if (value && value >= 1) {
+                        setStepErrors({ ...stepErrors, "3_duration_months": false });
+                      }
+                    }}
                   />
-                  {errors.duration_months && (
-                    <p className="text-sm text-red-600">{errors.duration_months.message}</p>
+                  {(stepErrors["3_duration_months"] || errors.duration_months) && (
+                    <p className="text-sm text-red-600">{errors.duration_months?.message || "Duration (Months) is required"}</p>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="start_month">Start Month(s)</Label>
-                  <Input
-                    id="start_month"
-                    {...register("start_month")}
-                    placeholder="e.g., January, July"
-                  />
+                  <Label htmlFor="start_month">
+                    Start Month(s) <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month) => {
+                      const isSelected = selectedMonths.includes(month);
+                      return (
+                        <Button
+                          key={month}
+                          type="button"
+                          variant={isSelected ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            let newMonths: string[];
+                            if (isSelected) {
+                              newMonths = selectedMonths.filter(m => m !== month);
+                            } else {
+                              newMonths = [...selectedMonths, month];
+                            }
+                            
+                            // Sort months in chronological order
+                            const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                            newMonths.sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+                            
+                            setSelectedMonths(newMonths);
+                            setValue("start_month", newMonths.length > 0 ? newMonths.join(",") : null);
+                            
+                            // Clear error when at least one month is selected
+                            if (newMonths.length > 0) {
+                              setStepErrors({ ...stepErrors, "3_start_month": false });
+                            }
+                          }}
+                          className={isSelected ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                        >
+                          {month}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  {selectedMonths.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Selected: {selectedMonths.join(", ")}
+                    </p>
+                  )}
+                  {(stepErrors["3_start_month"] || (errors.start_month && selectedMonths.length === 0)) && (
+                    <p className="text-sm text-red-600">Please select at least one start month</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="deadline">Application Deadline</Label>
+                  <Label htmlFor="deadline">
+                    Application Deadline <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="deadline"
                     type="date"
-                    {...register("deadline")}
+                    {...register("deadline", { required: "Application Deadline is required" })}
+                    className={(stepErrors["3_deadline"] || errors.deadline) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      register("deadline").onChange(e);
+                      if (e.target.value) {
+                        setStepErrors({ ...stepErrors, "3_deadline": false });
+                      }
+                    }}
                   />
+                  {(stepErrors["3_deadline"] || errors.deadline) && (
+                    <p className="text-sm text-red-600">{errors.deadline?.message || "Application Deadline is required"}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -655,51 +1139,52 @@ export function ProgramWizardModal({
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-semibold">Step 4: Tuition Fees</h3>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tuition_fee">Tuition Fee (Legacy)</Label>
-                  <Input
-                    id="tuition_fee"
-                    type="number"
-                    step="0.01"
-                    {...register("tuition_fee", {
-                      valueAsNumber: true,
-                      min: { value: 0, message: "Must be 0 or greater" },
-                    })}
-                    placeholder="e.g., 50000"
-                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tuition_fee_amount">Tuition Fee Amount (RM)</Label>
+                  <Label htmlFor="tuition_fee_amount">
+                    Tuition Fee Amount (RM) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="tuition_fee_amount"
                     type="number"
                     step="0.01"
                     {...register("tuition_fee_amount", {
+                      required: "Tuition Fee Amount is required",
                       valueAsNumber: true,
                       min: { value: 0, message: "Must be 0 or greater" },
                     })}
                     placeholder="e.g., 50000"
+                    className={(stepErrors["4_tuition_fee_amount"] || errors.tuition_fee_amount) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      register("tuition_fee_amount").onChange(e);
+                      const value = parseFloat(e.target.value);
+                      if (value && !isNaN(value) && value >= 0) {
+                        setStepErrors({ ...stepErrors, "4_tuition_fee_amount": false });
+                      }
+                    }}
                   />
-                  {errors.tuition_fee_amount && (
-                    <p className="text-sm text-red-600">{errors.tuition_fee_amount.message}</p>
+                  {(stepErrors["4_tuition_fee_amount"] || errors.tuition_fee_amount) && (
+                    <p className="text-sm text-red-600">{errors.tuition_fee_amount?.message || "Tuition Fee Amount is required"}</p>
                   )}
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tuition_fee_period">Fee Period</Label>
+                  <Label htmlFor="tuition_fee_period">
+                    Fee Period <span className="text-red-500">*</span>
+                  </Label>
                   <Select
                     value={watch("tuition_fee_period") || "none"}
-                    onValueChange={(value) =>
-                      setValue("tuition_fee_period", value && value !== "none" ? (value as "semester" | "year" | "total") : null)
-                    }
+                    onValueChange={(value) => {
+                      setValue("tuition_fee_period", value && value !== "none" ? (value as "semester" | "year" | "total") : null);
+                      // Clear error when user selects a period
+                      if (value && value !== "none") {
+                        setStepErrors({ ...stepErrors, "4_tuition_fee_period": false });
+                      }
+                    }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={stepErrors["4_tuition_fee_period"] && !watch("tuition_fee_period") ? "border-red-300 focus:border-red-500" : ""}>
                       <SelectValue placeholder="Select period" />
                     </SelectTrigger>
                     <SelectContent>
@@ -709,6 +1194,9 @@ export function ProgramWizardModal({
                       <SelectItem value="total">Total</SelectItem>
                     </SelectContent>
                   </Select>
+                  {stepErrors["4_tuition_fee_period"] && !watch("tuition_fee_period") && (
+                    <p className="text-sm text-red-600">Fee Period is required</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -741,9 +1229,9 @@ export function ProgramWizardModal({
               {/* Entry Requirements */}
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Entry Requirements</Label>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="entry_req_academic" className="text-sm">Academic Requirements</Label>
+                    <Label htmlFor="entry_req_academic" className="text-sm font-medium">Academic Requirements</Label>
                     <Input
                       id="entry_req_academic"
                       value={entryReqAcademic}
@@ -756,10 +1244,11 @@ export function ProgramWizardModal({
                         setValue("entry_requirements", Object.keys(req).length > 0 ? req : null);
                       }}
                       placeholder="e.g., SPM: 5 credits including Mathematics"
+                      className="w-full"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="entry_req_english" className="text-sm">English Requirements</Label>
+                    <Label htmlFor="entry_req_english" className="text-sm font-medium">English Requirements</Label>
                     <Input
                       id="entry_req_english"
                       value={entryReqEnglish}
@@ -772,10 +1261,11 @@ export function ProgramWizardModal({
                         setValue("entry_requirements", Object.keys(req).length > 0 ? req : null);
                       }}
                       placeholder="e.g., MUET Band 3 or IELTS 5.5"
+                      className="w-full"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="entry_req_other" className="text-sm">Other Requirements (Optional)</Label>
+                    <Label htmlFor="entry_req_other" className="text-sm font-medium">Other Requirements (Optional)</Label>
                     <Input
                       id="entry_req_other"
                       value={entryReqOther}
@@ -788,6 +1278,7 @@ export function ProgramWizardModal({
                         setValue("entry_requirements", Object.keys(req).length > 0 ? req : null);
                       }}
                       placeholder="e.g., Interview required"
+                      className="w-full"
                     />
                   </div>
                 </div>
@@ -810,7 +1301,7 @@ export function ProgramWizardModal({
                     Add Career
                   </Button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {careerOutcomes.map((outcome, idx) => (
                     <div key={idx} className="flex gap-2 items-start">
                       <Input
@@ -876,9 +1367,9 @@ export function ProgramWizardModal({
                     Add Facility
                   </Button>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {facilities.map((facility, idx) => (
-                    <div key={idx} className="flex gap-2">
+                    <div key={idx} className="flex gap-2 items-start">
                       <Input
                         placeholder="Facility name (e.g., Computer Lab, Library)"
                         value={facility}
@@ -889,6 +1380,7 @@ export function ProgramWizardModal({
                           const validFacilities = updated.filter(f => f.trim());
                           setValue("facilities", validFacilities.length > 0 ? { items: validFacilities } : null);
                         }}
+                        className="flex-1"
                       />
                       <Button
                         type="button"
@@ -911,30 +1403,114 @@ export function ProgramWizardModal({
                 </div>
               </div>
 
-              {/* Curriculum - Keep as JSON for now but with better instructions */}
-              <div className="space-y-2">
-                <Label htmlFor="curriculum">Curriculum (Optional - Advanced)</Label>
-                <Textarea
-                  id="curriculum"
-                  value={
-                    watch("curriculum")
-                      ? JSON.stringify(watch("curriculum"), null, 2)
-                      : ""
-                  }
-                  onChange={(e) => {
-                    try {
-                      const parsed = e.target.value ? JSON.parse(e.target.value) : null;
-                      setValue("curriculum", parsed);
-                    } catch {
-                      setValue("curriculum", null);
-                    }
-                  }}
-                  placeholder='{"year1": {"semester1": ["Subject 1", "Subject 2"]}}'
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Optional: Enter curriculum structure as JSON. Leave empty if not needed.
-                </p>
+              {/* Curriculum */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Curriculum (Optional)</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newYears = [...curriculumYears, { year: `Year ${curriculumYears.length + 1}`, subjects: [] }];
+                      setCurriculumYears(newYears);
+                      updateCurriculumValue(newYears);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Year
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  {curriculumYears.map((yearData, yearIdx) => (
+                    <Card key={yearIdx} className="p-4 border-2">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={yearData.year}
+                            onChange={(e) => {
+                              const updated = [...curriculumYears];
+                              updated[yearIdx].year = e.target.value;
+                              setCurriculumYears(updated);
+                              updateCurriculumValue(updated);
+                            }}
+                            placeholder="Year name (e.g., Year 1)"
+                            className="flex-1 font-semibold"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const updated = curriculumYears.filter((_, i) => i !== yearIdx);
+                              setCurriculumYears(updated);
+                              updateCurriculumValue(updated);
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        <div className="ml-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Subjects</Label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updated = [...curriculumYears];
+                                updated[yearIdx].subjects.push("");
+                                setCurriculumYears(updated);
+                                updateCurriculumValue(updated);
+                              }}
+                            >
+                              <Plus className="w-3 h-3 mr-1" />
+                              Add Subject
+                            </Button>
+                          </div>
+                          
+                          {yearData.subjects.map((subject, subjIdx) => (
+                            <div key={subjIdx} className="flex gap-2">
+                              <Input
+                                value={subject}
+                                onChange={(e) => {
+                                  const updated = [...curriculumYears];
+                                  updated[yearIdx].subjects[subjIdx] = e.target.value;
+                                  setCurriculumYears(updated);
+                                  updateCurriculumValue(updated);
+                                }}
+                                placeholder="Subject name (e.g., Introduction to Computer Science)"
+                                className="flex-1 text-sm"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const updated = [...curriculumYears];
+                                  updated[yearIdx].subjects = updated[yearIdx].subjects.filter((_, i) => i !== subjIdx);
+                                  setCurriculumYears(updated);
+                                  updateCurriculumValue(updated);
+                                }}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          
+                          {yearData.subjects.length === 0 && (
+                            <p className="text-sm text-muted-foreground">Click "Add Subject" to add subjects</p>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  
+                  {curriculumYears.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Click "Add Year" to add curriculum structure</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -949,79 +1525,281 @@ export function ProgramWizardModal({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="employment_rate">Employment Rate (%)</Label>
+                  <Label htmlFor="employment_rate">
+                    Employment Rate (%) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="employment_rate"
                     type="number"
                     step="0.1"
+                    min="0"
+                    max="100"
                     {...register("employment_rate", {
+                      required: "Employment Rate is required",
                       valueAsNumber: true,
-                      min: { value: 0, message: "Must be 0 or greater" },
-                      max: { value: 100, message: "Must be 100 or less" },
+                      min: { value: 0, message: "Must be between 0 and 100" },
+                      max: { value: 100, message: "Must be between 0 and 100" },
                     })}
                     placeholder="e.g., 85.5"
+                    className={(stepErrors["6_employment_rate"] || errors.employment_rate) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      // Allow empty input for clearing
+                      if (inputValue === "") {
+                        register("employment_rate").onChange(e);
+                        return;
+                      }
+                      
+                      const value = parseFloat(inputValue);
+                      
+                      // Prevent invalid values in real-time
+                      if (isNaN(value)) {
+                        return; // Don't update if not a number
+                      }
+                      
+                      // Clamp value between 0 and 100
+                      if (value < 0) {
+                        e.target.value = "0";
+                        setValue("employment_rate", 0);
+                        setStepErrors({ ...stepErrors, "6_employment_rate": false });
+                        return;
+                      }
+                      
+                      if (value > 100) {
+                        e.target.value = "100";
+                        setValue("employment_rate", 100);
+                        setStepErrors({ ...stepErrors, "6_employment_rate": false });
+                        return;
+                      }
+                      
+                      // Valid value
+                      register("employment_rate").onChange(e);
+                      setStepErrors({ ...stepErrors, "6_employment_rate": false });
+                    }}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (isNaN(value) || value < 0 || value > 100) {
+                        setStepErrors({ ...stepErrors, "6_employment_rate": true });
+                      }
+                    }}
                   />
+                  {(stepErrors["6_employment_rate"] || errors.employment_rate) && (
+                    <p className="text-sm text-red-600">{errors.employment_rate?.message || "Employment Rate is required (0-100)"}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="average_salary">Average Salary (RM)</Label>
+                  <Label htmlFor="average_salary">
+                    Average Salary (RM) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="average_salary"
                     type="number"
                     step="0.01"
+                    min="0"
                     {...register("average_salary", {
+                      required: "Average Salary is required",
                       valueAsNumber: true,
                       min: { value: 0, message: "Must be 0 or greater" },
+                      validate: (value) => {
+                        if (value === null || value === undefined || value === "" || isNaN(value)) {
+                          return "Average Salary is required";
+                        }
+                        if (value < 0) {
+                          return "Must be 0 or greater";
+                        }
+                        return true;
+                      },
                     })}
                     placeholder="e.g., 4500"
+                    className={(stepErrors["6_average_salary"] || errors.average_salary) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      // Allow empty input for clearing, but don't clear error yet
+                      if (inputValue === "") {
+                        register("average_salary").onChange(e);
+                        return;
+                      }
+                      
+                      const value = parseFloat(inputValue);
+                      
+                      // Only clear error if we have a valid number >= 0
+                      if (!isNaN(value) && value >= 0) {
+                        register("average_salary").onChange(e);
+                        setStepErrors({ ...stepErrors, "6_average_salary": false });
+                      } else {
+                        // Invalid value, don't update
+                        return;
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (e.target.value === "" || isNaN(value) || value < 0) {
+                        setStepErrors({ ...stepErrors, "6_average_salary": true });
+                      }
+                    }}
                   />
+                  {(stepErrors["6_average_salary"] || errors.average_salary) && (
+                    <p className="text-sm text-red-600">{errors.average_salary?.message || "Average Salary is required"}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="satisfaction_rate">Satisfaction Rate (%)</Label>
+                  <Label htmlFor="satisfaction_rate">
+                    Satisfaction Rate (%) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="satisfaction_rate"
                     type="number"
                     step="0.1"
+                    min="0"
+                    max="100"
                     {...register("satisfaction_rate", {
+                      required: "Satisfaction Rate is required",
                       valueAsNumber: true,
-                      min: { value: 0, message: "Must be 0 or greater" },
-                      max: { value: 100, message: "Must be 100 or less" },
+                      min: { value: 0, message: "Must be between 0 and 100" },
+                      max: { value: 100, message: "Must be between 0 and 100" },
                     })}
                     placeholder="e.g., 92.3"
+                    className={(stepErrors["6_satisfaction_rate"] || errors.satisfaction_rate) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      // Allow empty input for clearing
+                      if (inputValue === "") {
+                        register("satisfaction_rate").onChange(e);
+                        return;
+                      }
+                      
+                      const value = parseFloat(inputValue);
+                      
+                      // Prevent invalid values in real-time
+                      if (isNaN(value)) {
+                        return; // Don't update if not a number
+                      }
+                      
+                      // Clamp value between 0 and 100
+                      if (value < 0) {
+                        e.target.value = "0";
+                        setValue("satisfaction_rate", 0);
+                        setStepErrors({ ...stepErrors, "6_satisfaction_rate": false });
+                        return;
+                      }
+                      
+                      if (value > 100) {
+                        e.target.value = "100";
+                        setValue("satisfaction_rate", 100);
+                        setStepErrors({ ...stepErrors, "6_satisfaction_rate": false });
+                        return;
+                      }
+                      
+                      // Valid value
+                      register("satisfaction_rate").onChange(e);
+                      setStepErrors({ ...stepErrors, "6_satisfaction_rate": false });
+                    }}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (isNaN(value) || value < 0 || value > 100) {
+                        setStepErrors({ ...stepErrors, "6_satisfaction_rate": true });
+                      }
+                    }}
                   />
+                  {(stepErrors["6_satisfaction_rate"] || errors.satisfaction_rate) && (
+                    <p className="text-sm text-red-600">{errors.satisfaction_rate?.message || "Satisfaction Rate is required (0-100)"}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rating">Rating (1-5)</Label>
+                  <Label htmlFor="rating">
+                    Rating (0.0-5.0) <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="rating"
                     type="number"
                     step="0.1"
+                    min="0"
+                    max="5"
                     {...register("rating", {
+                      required: "Rating is required",
                       valueAsNumber: true,
-                      min: { value: 0, message: "Must be 0 or greater" },
-                      max: { value: 5, message: "Must be 5 or less" },
+                      min: { value: 0, message: "Must be between 0.0 and 5.0" },
+                      max: { value: 5, message: "Must be between 0.0 and 5.0" },
                     })}
                     placeholder="e.g., 4.5"
+                    className={(stepErrors["6_rating"] || errors.rating) ? "border-red-300 focus:border-red-500" : ""}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      // Allow empty input for clearing
+                      if (inputValue === "") {
+                        register("rating").onChange(e);
+                        return;
+                      }
+                      
+                      const value = parseFloat(inputValue);
+                      
+                      // Prevent invalid values in real-time
+                      if (isNaN(value)) {
+                        return; // Don't update if not a number
+                      }
+                      
+                      // Clamp value between 0 and 5
+                      if (value < 0) {
+                        e.target.value = "0";
+                        setValue("rating", 0);
+                        setStepErrors({ ...stepErrors, "6_rating": false });
+                        return;
+                      }
+                      
+                      if (value > 5) {
+                        e.target.value = "5";
+                        setValue("rating", 5);
+                        setStepErrors({ ...stepErrors, "6_rating": false });
+                        return;
+                      }
+                      
+                      // Valid value
+                      register("rating").onChange(e);
+                      setStepErrors({ ...stepErrors, "6_rating": false });
+                    }}
+                    onBlur={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (isNaN(value) || value < 0 || value > 5) {
+                        setStepErrors({ ...stepErrors, "6_rating": true });
+                      }
+                    }}
                   />
+                  {(stepErrors["6_rating"] || errors.rating) && (
+                    <p className="text-sm text-red-600">{errors.rating?.message || "Rating is required (0.0-5.0)"}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="review_count">Review Count (Read-only)</Label>
+                <Label htmlFor="review_count">
+                  Review Count <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="review_count"
                   type="number"
                   {...register("review_count", {
+                    required: "Review Count is required",
                     valueAsNumber: true,
                     min: { value: 0, message: "Must be 0 or greater" },
                   })}
-                  placeholder="Auto-calculated"
-                  disabled
+                  placeholder="e.g., 150"
+                  className={(stepErrors["6_review_count"] || errors.review_count) ? "border-red-300 focus:border-red-500" : ""}
+                  onChange={(e) => {
+                    register("review_count").onChange(e);
+                    const value = parseInt(e.target.value);
+                    if (value !== null && !isNaN(value) && value >= 0) {
+                      setStepErrors({ ...stepErrors, "6_review_count": false });
+                    }
+                  }}
                 />
+                {(stepErrors["6_review_count"] || errors.review_count) && (
+                  <p className="text-sm text-red-600">{errors.review_count?.message || "Review Count is required"}</p>
+                )}
               </div>
             </div>
           )}
@@ -1034,28 +1812,73 @@ export function ProgramWizardModal({
                 <h3 className="text-lg font-semibold">Step 7: Review & Submit</h3>
               </div>
 
-              <Card className="p-6 space-y-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Program Information</h4>
-                  <p><strong>Name:</strong> {watch("name") || "N/A"}</p>
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>Review:</strong> Please review all the information below. Click the "{program ? "Update" : "Add"} Program" button to save the program to the database.
+                </p>
+              </div>
+
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                <Card className="p-4">
+                  <h4 className="font-semibold mb-3 text-lg">Basic Information</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Program Name:</strong> {watch("name") || "N/A"}</p>
                   <p><strong>Level:</strong> {watch("level") || "N/A"}</p>
-                  <p><strong>University ID:</strong> {watch("university_id") || "N/A"}</p>
+                    <p><strong>University:</strong> {universities.find(u => u.id === watch("university_id"))?.name || watch("university_id") || "N/A"}</p>
+                    <p><strong>Field of Study:</strong> {fields.find(f => f.id === watch("field_id"))?.name || watch("field_id") || "N/A"}</p>
                   <p><strong>Status:</strong> {watch("status") || "N/A"}</p>
+                    {watch("tags") && watch("tags")!.length > 0 && (
+                      <p><strong>Tags:</strong> {watch("tags")!.join(", ")}</p>
+                    )}
+                    {watch("description") && (
+                      <div>
+                        <strong>Description:</strong>
+                        <p className="text-muted-foreground mt-1">{watch("description")}</p>
                 </div>
+                    )}
+                  </div>
+                </Card>
 
-                <div>
-                  <h4 className="font-semibold mb-2">Duration & Fees</h4>
+                <Card className="p-4">
+                  <h4 className="font-semibold mb-3 text-lg">Duration & Intake</h4>
+                  <div className="space-y-2 text-sm">
                   <p><strong>Duration:</strong> {watch("duration") || "N/A"} ({watch("duration_months") || "N/A"} months)</p>
-                  <p><strong>Tuition Fee:</strong> {watch("tuition_fee_amount") ? `RM ${watch("tuition_fee_amount")}` : "N/A"}</p>
+                    <p><strong>Start Month(s):</strong> {watch("start_month") || selectedMonths.join(", ") || "N/A"}</p>
+                    <p><strong>Application Deadline:</strong> {watch("deadline") ? new Date(watch("deadline")!).toLocaleDateString() : "N/A"}</p>
                 </div>
+                </Card>
 
-                <div>
-                  <h4 className="font-semibold mb-2">Performance Metrics</h4>
+                <Card className="p-4">
+                  <h4 className="font-semibold mb-3 text-lg">Tuition Fees</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Tuition Fee Amount:</strong> {watch("tuition_fee_amount") ? `RM ${watch("tuition_fee_amount")}` : "N/A"}</p>
+                    <p><strong>Fee Period:</strong> {watch("tuition_fee_period") || "N/A"}</p>
+                    <p><strong>Currency:</strong> {watch("currency") || "N/A"}</p>
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <h4 className="font-semibold mb-3 text-lg">Performance Metrics</h4>
+                  <div className="space-y-2 text-sm">
                   <p><strong>Employment Rate:</strong> {watch("employment_rate") ? `${watch("employment_rate")}%` : "N/A"}</p>
                   <p><strong>Average Salary:</strong> {watch("average_salary") ? `RM ${watch("average_salary")}` : "N/A"}</p>
+                    <p><strong>Satisfaction Rate:</strong> {watch("satisfaction_rate") ? `${watch("satisfaction_rate")}%` : "N/A"}</p>
                   <p><strong>Rating:</strong> {watch("rating") || "N/A"}</p>
+                    <p><strong>Review Count:</strong> {watch("review_count") || "N/A"}</p>
                 </div>
               </Card>
+
+                {(watch("entry_requirements") || entryReqAcademic || entryReqEnglish) && (
+                  <Card className="p-4">
+                    <h4 className="font-semibold mb-3 text-lg">Entry Requirements</h4>
+                    <div className="space-y-2 text-sm">
+                      {entryReqAcademic && <p><strong>Academic:</strong> {entryReqAcademic}</p>}
+                      {entryReqEnglish && <p><strong>English:</strong> {entryReqEnglish}</p>}
+                      {entryReqOther && <p><strong>Other:</strong> {entryReqOther}</p>}
+                    </div>
+                  </Card>
+                )}
+              </div>
             </div>
           )}
 
@@ -1071,12 +1894,27 @@ export function ProgramWizardModal({
             </div>
             <div className="flex gap-2">
               {currentStep < TOTAL_STEPS ? (
-                <Button type="button" onClick={nextStep}>
+                <Button 
+                  type="button" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    nextStep(e);
+                  }}
+                >
                   Next
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  onClick={(e) => {
+                    // Only submit when explicitly clicking the Add/Update button
+                    e.preventDefault();
+                    handleSubmit(onSubmit)(e);
+                  }}
+                >
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1085,7 +1923,7 @@ export function ProgramWizardModal({
                   ) : (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      {program ? "Update Program" : "Create Program"}
+                      {program ? "Update Program" : "Add Program"}
                     </>
                   )}
                 </Button>

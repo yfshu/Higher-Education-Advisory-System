@@ -141,11 +141,12 @@ export default function UserManagement() {
       setSaving(true);
       // Ensure isActive is explicitly set as boolean
       const isActiveValue = editFormData.isActive;
+      const { email, ...updateDataWithoutEmail } = editFormData;
       const updateData = {
-        ...editFormData,
+        ...updateDataWithoutEmail,
         isActive: isActiveValue === true || (typeof isActiveValue === 'string' && (isActiveValue === 'active' || isActiveValue === 'true')),
       };
-      console.log('Saving user with data:', updateData); // Debug log
+      console.log('Saving user with data:', updateData);
       await updateUser(userData.accessToken, editingUser.id, updateData);
       toast.success("User updated successfully!");
       setEditingUser(null);
@@ -213,6 +214,58 @@ export default function UserManagement() {
             <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Registered Users</h2>
             <p className="text-sm sm:text-base text-muted-foreground">Manage student accounts and monitor activity.</p>
           </div>
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-blue-500/60 dark:border-blue-400/60 shadow-md hover:shadow-lg transition-all">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">{users.length}</p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Users</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-green-500/60 dark:border-green-400/60 shadow-md hover:shadow-lg transition-all">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <UserCheck className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {users.filter(u => u.status === 'Active').length}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Active Users</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-purple-500/60 dark:border-purple-400/60 shadow-md hover:shadow-lg transition-all">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {users.filter(u => {
+                    if (!u.joined) return false;
+                    const joinDate = new Date(u.joined);
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return joinDate > weekAgo;
+                  }).length}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">New This Week</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-orange-500/60 dark:border-orange-400/60 shadow-md hover:shadow-lg transition-all">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <UserX className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 dark:text-orange-400" />
+              <div>
+                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {users.filter(u => u.status === 'Inactive').length}
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Inactive Users</p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
@@ -440,57 +493,6 @@ export default function UserManagement() {
             </Pagination>
           </div>
         )}
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-blue-500/60 dark:border-blue-400/60 shadow-md hover:shadow-lg transition-all">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">{users.length}</p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Total Users</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-green-500/60 dark:border-green-400/60 shadow-md hover:shadow-lg transition-all">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <UserCheck className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {users.filter(u => u.status === 'Active').length}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Active Users</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-purple-500/60 dark:border-purple-400/60 shadow-md hover:shadow-lg transition-all">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600 dark:text-purple-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {users.filter(u => {
-                    if (!u.joined) return false;
-                    const joinDate = new Date(u.joined);
-                    const weekAgo = new Date();
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-                    return joinDate > weekAgo;
-                  }).length}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">New This Week</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3 sm:p-4 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border-2 border-orange-500/60 dark:border-orange-400/60 shadow-md hover:shadow-lg transition-all">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <UserX className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 dark:text-orange-400" />
-              <div>
-                <p className="text-lg sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {users.filter(u => u.status === 'Inactive').length}
-                </p>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Inactive Users</p>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
 
       {/* View User Dialog */}
@@ -597,10 +599,11 @@ export default function UserManagement() {
                 <Input
                   id="edit-email"
                   type="email"
-                  value={editFormData.email || ''}
-                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                  className="mt-1"
+                  value={editingUser.email || ''}
+                  disabled
+                  className="mt-1 bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-60"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Email address cannot be changed</p>
               </div>
               <div>
                 <Label htmlFor="edit-fullName">Full Name</Label>

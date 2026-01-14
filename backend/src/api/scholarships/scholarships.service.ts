@@ -5,7 +5,6 @@ import { Database } from '../../supabase/types/supabase.types';
 type ScholarshipRow = Database['public']['Tables']['scholarships']['Row'];
 
 export interface ScholarshipWithDetails extends ScholarshipRow {
-  // Extended interface for structured JSON fields
   eligibility_requirements?: string[] | null;
   benefits_json?: string[] | null;
   selection_process?: Array<{
@@ -26,9 +25,6 @@ export class ScholarshipsService {
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
-  /**
-   * Get all active scholarships with structured data
-   */
   async getScholarships(filters?: {
     studyLevel?: string;
     type?: string;
@@ -44,25 +40,29 @@ export class ScholarshipsService {
         .eq('status', 'active')
         .order('deadline', { ascending: true });
 
-      // Apply filters
       if (filters?.studyLevel) {
-        // Filter by level field (lowercase: foundation, diploma, degree)
-        query = query.eq('level', filters.studyLevel.toLowerCase());
+        const levelLower = filters.studyLevel.toLowerCase();
+        this.logger.log(`🔍 Filtering scholarships by level: "${levelLower}"`);
+        query = query.eq('level', levelLower);
+        this.logger.log(`✅ Applied level filter: level = '${levelLower}'`);
       }
 
       if (filters?.type) {
-        // Type assertion needed for enum type
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         query = query.eq('type', filters.type as any);
       }
 
       if (filters?.location) {
-        // Location filter: check if location contains the filter value
         if (filters.location === 'local') {
-          query = query.ilike('location', '%Malaysia%').not('location', 'ilike', '%Overseas%');
+          query = query
+            .ilike('location', '%Malaysia%')
+            .not('location', 'ilike', '%Overseas%');
         } else if (filters.location === 'overseas') {
           query = query.ilike('location', '%Overseas%');
         } else if (filters.location === 'both') {
-          query = query.ilike('location', '%Malaysia%').ilike('location', '%Overseas%');
+          query = query
+            .ilike('location', '%Malaysia%')
+            .ilike('location', '%Overseas%');
         } else {
           query = query.ilike('location', `%${filters.location}%`);
         }
@@ -75,16 +75,43 @@ export class ScholarshipsService {
       const { data, error } = await query;
 
       if (error) {
-        this.logger.error('Error fetching scholarships:', error);
+        this.logger.error('❌ Error fetching scholarships:', error);
         throw new Error(`Failed to fetch scholarships: ${error.message}`);
       }
 
-      // Parse JSONB fields
-      const scholarships = (data || []).map((scholarship) => {
+      this.logger.log(
+        `📊 Raw query returned ${data?.length || 0} scholarships`,
+      );
+
+      let scholarships = (data || []).map((scholarship) => {
         return this.parseScholarshipData(scholarship);
       });
+      if (filters?.studyLevel) {
+        const levelLower = filters.studyLevel.toLowerCase();
+        const beforeCount = scholarships.length;
+        scholarships = scholarships.filter((scholarship) => {
+          if (!scholarship.level) {
+            this.logger.debug(
+              `⚠️ Scholarship ${scholarship.id} has no level, filtering out`,
+            );
+            return false;
+          }
+          const matches = scholarship.level.toLowerCase() === levelLower;
+          if (!matches) {
+            this.logger.debug(
+              `⚠️ Scholarship ${scholarship.id} level mismatch: "${scholarship.level}" !== "${levelLower}"`,
+            );
+          }
+          return matches;
+        });
+        this.logger.log(
+          `🎯 Level filter applied: ${beforeCount} -> ${scholarships.length} scholarships (filter: "${levelLower}")`,
+        );
+      }
 
-      this.logger.log(`Successfully fetched ${scholarships.length} scholarships`);
+      this.logger.log(
+        `✅ Successfully fetched ${scholarships.length} scholarships`,
+      );
       return scholarships;
     } catch (error) {
       this.logger.error('Exception in getScholarships:', error);
@@ -92,9 +119,6 @@ export class ScholarshipsService {
     }
   }
 
-  /**
-   * Get scholarship by ID with structured data
-   */
   async getScholarshipById(id: number): Promise<ScholarshipWithDetails | null> {
     try {
       const db = this.supabaseService.getClient();
@@ -107,7 +131,6 @@ export class ScholarshipsService {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No rows returned
           this.logger.warn(`Scholarship with id ${id} not found`);
           return null;
         }
@@ -124,10 +147,9 @@ export class ScholarshipsService {
     }
   }
 
-  /**
-   * Get scholarships by study level
-   */
-  async getScholarshipsByLevel(level: 'foundation' | 'diploma' | 'degree'): Promise<ScholarshipWithDetails[]> {
+  async getScholarshipsByLevel(
+    level: 'foundation' | 'diploma' | 'degree',
+  ): Promise<ScholarshipWithDetails[]> {
     try {
       const db = this.supabaseService.getClient();
 
@@ -147,7 +169,9 @@ export class ScholarshipsService {
         return this.parseScholarshipData(scholarship);
       });
 
-      this.logger.log(`Successfully fetched ${scholarships.length} scholarships for level ${level}`);
+      this.logger.log(
+        `Successfully fetched ${scholarships.length} scholarships for level ${level}`,
+      );
       return scholarships;
     } catch (error) {
       this.logger.error('Exception in getScholarshipsByLevel:', error);
@@ -155,30 +179,31 @@ export class ScholarshipsService {
     }
   }
 
-  /**
-   * Parse scholarship data and convert database fields to frontend-friendly format
-   */
   private parseScholarshipData(scholarship: any): ScholarshipWithDetails {
-    // Map database column names to frontend field names
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
     const parsed: any = {
       ...scholarship,
-      // Map organization_name to provider for frontend compatibility
+
       provider: scholarship.organization_name || null,
-      // Keep website_url for contact information display
+
       website_url: scholarship.website_url || null,
-      // Map website_url to application_url for frontend compatibility (legacy support)
+
       application_url: scholarship.website_url || null,
-      // Map requirements to eligibility_requirements for frontend compatibility
-      eligibility_requirements: scholarship.requirements || null,
-      // Keep contact fields for contact information display
+
+      eligibility_requirements: scholarship.eligibility_requirements || scholarship.requirements || null,
+
       contact_email: scholarship.contact_email || null,
+
       contact_phone: scholarship.contact_phone || null,
     };
 
-    // Parse eligibility_requirements (can be JSONB object or string)
     let eligibilityRequirements: string[] | null = null;
-    const eligibilityData = scholarship.eligibility_requirements || parsed.eligibility_requirements || scholarship.requirements;
-    
+
+    const eligibilityData =
+      scholarship.eligibility_requirements ||
+      parsed.eligibility_requirements ||
+      scholarship.requirements;
+
     if (eligibilityData) {
       try {
         if (Array.isArray(eligibilityData)) {
@@ -188,43 +213,51 @@ export class ScholarshipsService {
           if (Array.isArray(parsedJson)) {
             eligibilityRequirements = parsedJson;
           } else if (typeof parsedJson === 'object' && parsedJson !== null) {
-            // Convert object to array of formatted strings
             const reqs: string[] = [];
+
             if (parsedJson.cgpa) reqs.push(`CGPA: ${parsedJson.cgpa}`);
+
             if (parsedJson.age_min || parsedJson.age_max) {
-              const ageRange = parsedJson.age_min && parsedJson.age_max 
-                ? `${parsedJson.age_min}-${parsedJson.age_max} years`
-                : parsedJson.age_min 
-                ? `Minimum age: ${parsedJson.age_min} years`
-                : `Maximum age: ${parsedJson.age_max} years`;
+              const ageRange =
+                parsedJson.age_min && parsedJson.age_max
+                  ? `${parsedJson.age_min}-${parsedJson.age_max} years`
+                  : parsedJson.age_min
+                    ? `Minimum age: ${parsedJson.age_min} years`
+                    : `Maximum age: ${parsedJson.age_max} years`;
               reqs.push(`Age: ${ageRange}`);
             }
-            eligibilityRequirements = reqs.length > 0 ? reqs : [JSON.stringify(parsedJson)];
+            eligibilityRequirements =
+              reqs.length > 0 ? reqs : [JSON.stringify(parsedJson)];
           } else {
             eligibilityRequirements = [eligibilityData];
           }
-        } else if (typeof eligibilityData === 'object' && eligibilityData !== null) {
-          // Already an object (JSONB)
+        } else if (
+          typeof eligibilityData === 'object' &&
+          eligibilityData !== null
+        ) {
           const reqs: string[] = [];
+
           if (eligibilityData.cgpa) reqs.push(`CGPA: ${eligibilityData.cgpa}`);
+
           if (eligibilityData.age_min || eligibilityData.age_max) {
-            const ageRange = eligibilityData.age_min && eligibilityData.age_max 
-              ? `${eligibilityData.age_min}-${eligibilityData.age_max} years`
-              : eligibilityData.age_min 
-              ? `Minimum age: ${eligibilityData.age_min} years`
-              : `Maximum age: ${eligibilityData.age_max} years`;
+            const ageRange =
+              eligibilityData.age_min && eligibilityData.age_max
+                ? `${eligibilityData.age_min}-${eligibilityData.age_max} years`
+                : eligibilityData.age_min
+                  ? `Minimum age: ${eligibilityData.age_min} years`
+                  : `Maximum age: ${eligibilityData.age_max} years`;
             reqs.push(`Age: ${ageRange}`);
           }
-          eligibilityRequirements = reqs.length > 0 ? reqs : [JSON.stringify(eligibilityData)];
+          eligibilityRequirements =
+            reqs.length > 0 ? reqs : [JSON.stringify(eligibilityData)];
         }
-      } catch (e) {
-        // If parsing fails, treat as plain text
+      } catch {
         eligibilityRequirements = [String(eligibilityData)];
       }
     }
 
-    // Parse benefits_json (JSONB field)
     let benefitsJson: string[] | null = null;
+
     const benefitsData = scholarship.benefits_json || parsed.benefits_json;
     if (benefitsData) {
       try {
@@ -235,35 +268,52 @@ export class ScholarshipsService {
           if (Array.isArray(parsedJson)) {
             benefitsJson = parsedJson;
           } else if (typeof parsedJson === 'object' && parsedJson !== null) {
-            // Convert object to array of formatted strings
             const benefits: string[] = [];
+
             if (parsedJson.amount !== null && parsedJson.amount !== undefined) {
               benefits.push(`Amount: RM ${parsedJson.amount.toLocaleString()}`);
             }
+
             if (parsedJson.accommodation !== undefined) {
-              benefits.push(`Accommodation: ${parsedJson.accommodation ? 'Included' : 'Not included'}`);
+              benefits.push(
+                `Accommodation: ${parsedJson.accommodation ? 'Included' : 'Not included'}`,
+              );
             }
-            benefitsJson = benefits.length > 0 ? benefits : [JSON.stringify(parsedJson)];
+            benefitsJson =
+              benefits.length > 0 ? benefits : [JSON.stringify(parsedJson)];
           }
         } else if (typeof benefitsData === 'object' && benefitsData !== null) {
-          // Already an object (JSONB)
           const benefits: string[] = [];
-          if (benefitsData.amount !== null && benefitsData.amount !== undefined) {
+
+          if (
+            benefitsData.amount !== null &&
+            benefitsData.amount !== undefined
+          ) {
             benefits.push(`Amount: RM ${benefitsData.amount.toLocaleString()}`);
           }
+
           if (benefitsData.accommodation !== undefined) {
-            benefits.push(`Accommodation: ${benefitsData.accommodation ? 'Included' : 'Not included'}`);
+            benefits.push(
+              `Accommodation: ${benefitsData.accommodation ? 'Included' : 'Not included'}`,
+            );
           }
-          benefitsJson = benefits.length > 0 ? benefits : [JSON.stringify(benefitsData)];
+          benefitsJson =
+            benefits.length > 0 ? benefits : [JSON.stringify(benefitsData)];
         }
-      } catch (e) {
+      } catch {
         benefitsJson = null;
       }
     }
 
-    // Parse selection_process (JSONB field)
-    let selectionProcess: Array<{ step: number; title: string; description: string; duration: string }> | null = null;
-    const selectionData = scholarship.selection_process || parsed.selection_process;
+    let selectionProcess: Array<{
+      step: number;
+      title: string;
+      description: string;
+      duration: string;
+    }> | null = null;
+
+    const selectionData =
+      scholarship.selection_process || parsed.selection_process;
     if (selectionData) {
       try {
         if (Array.isArray(selectionData)) {
@@ -272,36 +322,80 @@ export class ScholarshipsService {
           const parsedJson = JSON.parse(selectionData);
           if (Array.isArray(parsedJson)) {
             selectionProcess = parsedJson;
-          } else if (typeof parsedJson === 'object' && parsedJson !== null && parsedJson.stages) {
-            // Convert stages array to step format
-            selectionProcess = parsedJson.stages.map((stage: string, index: number) => ({
-              step: index + 1,
-              title: stage.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-              description: `Complete ${stage.replace(/_/g, ' ')}`,
-              duration: parsedJson.duration || 'Not specified',
-            }));
+          } else if (
+            typeof parsedJson === 'object' &&
+            parsedJson !== null &&
+            parsedJson.stages
+          ) {
+            // Handle old format with stages array (from string JSON)
+            selectionProcess = parsedJson.stages.map(
+              (stage: string, index: number) => {
+                const stageTitle = stage
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, (l: string) => l.toUpperCase());
+                
+                let description = `Complete ${stageTitle}`;
+                // Add interview requirement info if this is the interview stage
+                if (stage === 'interview' && parsedJson.interview_required !== undefined) {
+                  description += parsedJson.interview_required 
+                    ? ' (Interview required)' 
+                    : ' (Interview may be required)';
+                }
+                
+                return {
+                  step: index + 1,
+                  title: stageTitle,
+                  description: description,
+                  duration: parsedJson.duration_weeks ? `${parsedJson.duration_weeks} weeks` : (parsedJson.duration || 'Not specified'),
+                };
+              },
+            );
           }
-        } else if (typeof selectionData === 'object' && selectionData !== null) {
-          // Already an object (JSONB)
+        } else if (
+          typeof selectionData === 'object' &&
+          selectionData !== null
+        ) {
           if (Array.isArray(selectionData)) {
             selectionProcess = selectionData;
-          } else if (selectionData.stages && Array.isArray(selectionData.stages)) {
-            selectionProcess = selectionData.stages.map((stage: string, index: number) => ({
-              step: index + 1,
-              title: stage.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-              description: `Complete ${stage.replace(/_/g, ' ')}`,
-              duration: selectionData.duration || 'Not specified',
-            }));
+          } else if (
+            selectionData.stages &&
+            Array.isArray(selectionData.stages)
+          ) {
+            // Handle old format with stages array
+            selectionProcess = selectionData.stages.map(
+              (stage: string, index: number) => {
+                const stageTitle = stage
+                  .replace(/_/g, ' ')
+                  .replace(/\b\w/g, (l: string) => l.toUpperCase());
+                
+                let description = `Complete ${stageTitle}`;
+                // Add interview requirement info if this is the interview stage
+                if (stage === 'interview' && selectionData.interview_required !== undefined) {
+                  description += selectionData.interview_required 
+                    ? ' (Interview required)' 
+                    : ' (Interview may be required)';
+                }
+                
+                return {
+                  step: index + 1,
+                  title: stageTitle,
+                  description: description,
+                  duration: selectionData.duration_weeks ? `${selectionData.duration_weeks} weeks` : (selectionData.duration || 'Not specified'),
+                };
+              },
+            );
           }
         }
-      } catch (e) {
+      } catch {
         selectionProcess = null;
       }
     }
 
-    // Parse partner_universities (JSONB field)
-    let partnerUniversities: Array<{ name: string; country: string }> | null = null;
-    const partnerData = scholarship.partner_universities || parsed.partner_universities;
+    let partnerUniversities: Array<{ name: string; country: string }> | null =
+      null;
+
+    const partnerData =
+      scholarship.partner_universities || parsed.partner_universities;
     if (partnerData) {
       try {
         if (Array.isArray(partnerData)) {
@@ -312,52 +406,59 @@ export class ScholarshipsService {
             partnerUniversities = parsedJson;
           }
         }
-      } catch (e) {
+      } catch {
         partnerUniversities = null;
       }
     }
 
-    // Benefits is already a string in the database, keep it as is
     const benefits = parsed.benefits || null;
 
     return {
       ...parsed,
-      // Remove database-specific fields that don't exist in frontend interface
       requirements: undefined,
-      // Keep organization_name from database
-      organization_name: scholarship.organization_name || parsed.organization_name || null,
-      // Keep website_url, contact_email, contact_phone for contact information display
+
+      organization_name:
+        scholarship.organization_name || parsed.organization_name || null,
+
       website_url: parsed.website_url,
+
       contact_email: parsed.contact_email,
+
       contact_phone: parsed.contact_phone,
-      // Keep level field from database
+
       level: scholarship.level || parsed.level || null,
-      // Map to frontend-friendly fields
+
       provider: parsed.provider,
+
       application_url: parsed.application_url,
-      eligibility_requirements: eligibilityRequirements || null,
+      // Return raw JSONB data for frontend use
+      eligibility_requirements: scholarship.eligibility_requirements || null,
       benefits: benefits,
-      // Keep JSONB fields for tabs
-      benefits_json: benefitsJson || null,
+      benefits_json: scholarship.benefits_json || null,
+      // Return parsed selection_process (handles both old format with stages and new format with step array)
       selection_process: selectionProcess || null,
-      partner_universities: partnerUniversities || null,
-      // Keep processing_time_weeks from database
-      processing_time_weeks: scholarship.processing_time_weeks || parsed.processing_time_weeks || null,
-      // Keep applicant_count, rating, review_count from database
-      applicant_count: scholarship.applicant_count || parsed.applicant_count || null,
+      partner_universities: scholarship.partner_universities || partnerUniversities || null,
+
+      processing_time_weeks:
+        scholarship.processing_time_weeks ||
+        parsed.processing_time_weeks ||
+        null,
+
+      applicant_count:
+        scholarship.applicant_count || parsed.applicant_count || null,
+
       rating: scholarship.rating || parsed.rating || null,
+
       review_count: scholarship.review_count || parsed.review_count || null,
-      // Remove fields that don't exist in database
       study_levels: undefined,
       fields_supported: undefined,
       eligible_programs: undefined,
     };
   }
 
-  /**
-   * Get all scholarships (including inactive) for admin
-   */
-  async getAllScholarships(includeAllStatuses: boolean = false): Promise<ScholarshipWithDetails[]> {
+  async getAllScholarships(
+    includeAllStatuses: boolean = false,
+  ): Promise<ScholarshipWithDetails[]> {
     try {
       const db = this.supabaseService.getClient();
       const allScholarships: ScholarshipWithDetails[] = [];
@@ -368,7 +469,9 @@ export class ScholarshipsService {
       let iteration = 0;
       const maxIterations = 10;
 
-      this.logger.log(`Starting to fetch scholarships${includeAllStatuses ? ' (all statuses)' : ' (active only)'}`);
+      this.logger.log(
+        `Starting to fetch scholarships${includeAllStatuses ? ' (all statuses)' : ' (active only)'}`,
+      );
 
       while (hasMore && iteration < maxIterations) {
         iteration++;
@@ -385,12 +488,17 @@ export class ScholarshipsService {
         const { data, error } = await query;
 
         if (error) {
-          this.logger.error(`Error fetching scholarships batch ${iteration}:`, error);
+          this.logger.error(
+            `Error fetching scholarships batch ${iteration}:`,
+            error,
+          );
           throw new Error(`Failed to fetch scholarships: ${error.message}`);
         }
 
         if (data && data.length > 0) {
-          const parsed = (data || []).map((scholarship) => this.parseScholarshipData(scholarship));
+          const parsed = (data || []).map((scholarship) =>
+            this.parseScholarshipData(scholarship),
+          );
           allScholarships.push(...parsed);
           from = to + 1;
           to = from + batchSize - 1;
@@ -400,14 +508,15 @@ export class ScholarshipsService {
         }
       }
 
-      // Sort by deadline ascending
       allScholarships.sort((a, b) => {
         const aDate = a.deadline ? new Date(a.deadline).getTime() : 0;
         const bDate = b.deadline ? new Date(b.deadline).getTime() : 0;
         return aDate - bDate;
       });
 
-      this.logger.log(`Successfully fetched ${allScholarships.length} scholarships${includeAllStatuses ? ' (all statuses)' : ' (active only)'}`);
+      this.logger.log(
+        `Successfully fetched ${allScholarships.length} scholarships${includeAllStatuses ? ' (all statuses)' : ' (active only)'}`,
+      );
       return allScholarships;
     } catch (error) {
       this.logger.error('Exception in getAllScholarships:', error);
@@ -415,56 +524,91 @@ export class ScholarshipsService {
     }
   }
 
-  /**
-   * Create a new scholarship
-   */
-  async createScholarship(scholarshipData: any): Promise<ScholarshipWithDetails> {
+  async createScholarship(
+    scholarshipData: any,
+  ): Promise<ScholarshipWithDetails> {
     try {
       const db = this.supabaseService.getClient();
 
-      // Ensure status defaults to 'active' if not provided
       if (!scholarshipData.status) {
         scholarshipData.status = 'active';
       }
 
-      // Map frontend field names to database column names
       if (scholarshipData.provider !== undefined) {
         scholarshipData.organization_name = scholarshipData.provider;
+
         delete scholarshipData.provider;
       }
+
       if (scholarshipData.application_url !== undefined) {
         scholarshipData.website_url = scholarshipData.application_url;
+
         delete scholarshipData.application_url;
       }
+
+      // Store eligibility_requirements directly in JSONB column
       if (scholarshipData.eligibility_requirements !== undefined) {
-        // Convert object to string for requirements field
-        if (typeof scholarshipData.eligibility_requirements === 'object' && scholarshipData.eligibility_requirements !== null) {
-          scholarshipData.requirements = JSON.stringify(scholarshipData.eligibility_requirements);
-        } else if (typeof scholarshipData.eligibility_requirements === 'string') {
-          scholarshipData.requirements = scholarshipData.eligibility_requirements;
-        }
-        delete scholarshipData.eligibility_requirements;
-      }
-      // Ensure benefits is always a string (not an object)
-      if (scholarshipData.benefits !== undefined) {
-        if (typeof scholarshipData.benefits !== 'string') {
-          if (typeof scholarshipData.benefits === 'object' && scholarshipData.benefits !== null) {
-            scholarshipData.benefits = JSON.stringify(scholarshipData.benefits);
-          } else {
-            scholarshipData.benefits = scholarshipData.benefits ? String(scholarshipData.benefits) : null;
+        if (
+          typeof scholarshipData.eligibility_requirements === 'object' &&
+          scholarshipData.eligibility_requirements !== null
+        ) {
+          // Keep as object for JSONB storage
+          // Don't convert to requirements text field
+        } else if (
+          typeof scholarshipData.eligibility_requirements === 'string'
+        ) {
+          // Try to parse string to object
+          try {
+            scholarshipData.eligibility_requirements = JSON.parse(scholarshipData.eligibility_requirements);
+          } catch {
+            // If not valid JSON, convert to object
+            scholarshipData.eligibility_requirements = { requirements: scholarshipData.eligibility_requirements };
           }
         }
       }
-      // Remove fields that don't exist in the database
+      // Always explicitly set requirements to null to prevent storing in old text field
+      // IMPORTANT: Never store in requirements - only use eligibility_requirements JSONB column
+      scholarshipData.requirements = null;
+
+      // Store benefits_json directly in JSONB column
+      if (scholarshipData.benefits_json !== undefined) {
+        if (
+          typeof scholarshipData.benefits_json === 'object' &&
+          scholarshipData.benefits_json !== null
+        ) {
+          // Keep as object for JSONB storage
+        } else if (typeof scholarshipData.benefits_json === 'string') {
+          // Try to parse string to object
+          try {
+            scholarshipData.benefits_json = JSON.parse(scholarshipData.benefits_json);
+          } catch {
+            // If not valid JSON, convert to object
+            scholarshipData.benefits_json = { benefits: scholarshipData.benefits_json };
+          }
+        }
+        // Remove old benefits text field if it exists
+        delete scholarshipData.benefits;
+      }
+
+      // Handle legacy benefits field for backward compatibility (convert to benefits_json)
+      if (scholarshipData.benefits !== undefined && scholarshipData.benefits_json === undefined) {
+        if (typeof scholarshipData.benefits === 'string') {
+          try {
+            scholarshipData.benefits_json = JSON.parse(scholarshipData.benefits);
+          } catch {
+            scholarshipData.benefits_json = { benefits: scholarshipData.benefits };
+          }
+        } else if (typeof scholarshipData.benefits === 'object' && scholarshipData.benefits !== null) {
+          scholarshipData.benefits_json = scholarshipData.benefits;
+        }
+        delete scholarshipData.benefits;
+      }
+
       delete scholarshipData.study_levels;
+
       delete scholarshipData.fields_supported;
+
       delete scholarshipData.eligible_programs;
-      delete scholarshipData.processing_time_weeks;
-      delete scholarshipData.applicant_count;
-      delete scholarshipData.rating;
-      delete scholarshipData.review_count;
-      delete scholarshipData.selection_process;
-      delete scholarshipData.partner_universities;
 
       const { data, error } = await db
         .from('scholarships')
@@ -486,53 +630,89 @@ export class ScholarshipsService {
     }
   }
 
-  /**
-   * Update an existing scholarship
-   */
-  async updateScholarship(id: number, scholarshipData: any): Promise<ScholarshipWithDetails> {
+  async updateScholarship(
+    id: number,
+    scholarshipData: any,
+  ): Promise<ScholarshipWithDetails> {
     try {
       const db = this.supabaseService.getClient();
 
-      // Map frontend field names to database column names
       if (scholarshipData.provider !== undefined) {
         scholarshipData.organization_name = scholarshipData.provider;
+
         delete scholarshipData.provider;
       }
+
       if (scholarshipData.application_url !== undefined) {
         scholarshipData.website_url = scholarshipData.application_url;
+
         delete scholarshipData.application_url;
       }
+
+      // Store eligibility_requirements directly in JSONB column
       if (scholarshipData.eligibility_requirements !== undefined) {
-        // Convert object to string for requirements field
-        if (typeof scholarshipData.eligibility_requirements === 'object' && scholarshipData.eligibility_requirements !== null) {
-          scholarshipData.requirements = JSON.stringify(scholarshipData.eligibility_requirements);
-        } else if (typeof scholarshipData.eligibility_requirements === 'string') {
-          scholarshipData.requirements = scholarshipData.eligibility_requirements;
-        }
-        delete scholarshipData.eligibility_requirements;
-      }
-      // Ensure benefits is always a string (not an object)
-      if (scholarshipData.benefits !== undefined) {
-        if (typeof scholarshipData.benefits !== 'string') {
-          if (typeof scholarshipData.benefits === 'object' && scholarshipData.benefits !== null) {
-            scholarshipData.benefits = JSON.stringify(scholarshipData.benefits);
-          } else {
-            scholarshipData.benefits = scholarshipData.benefits ? String(scholarshipData.benefits) : null;
+        if (
+          typeof scholarshipData.eligibility_requirements === 'object' &&
+          scholarshipData.eligibility_requirements !== null
+        ) {
+          // Keep as object for JSONB storage
+          // Don't convert to requirements text field
+        } else if (
+          typeof scholarshipData.eligibility_requirements === 'string'
+        ) {
+          // Try to parse string to object
+          try {
+            scholarshipData.eligibility_requirements = JSON.parse(scholarshipData.eligibility_requirements);
+          } catch {
+            // If not valid JSON, convert to object
+            scholarshipData.eligibility_requirements = { requirements: scholarshipData.eligibility_requirements };
           }
         }
       }
-      // Remove fields that don't exist in the database
-      delete scholarshipData.study_levels;
-      delete scholarshipData.fields_supported;
-      delete scholarshipData.eligible_programs;
-      delete scholarshipData.processing_time_weeks;
-      delete scholarshipData.applicant_count;
-      delete scholarshipData.rating;
-      delete scholarshipData.review_count;
-      delete scholarshipData.selection_process;
-      delete scholarshipData.partner_universities;
+      // Always explicitly set requirements to null to prevent storing in old text field
+      // IMPORTANT: Never store in requirements - only use eligibility_requirements JSONB column
+      scholarshipData.requirements = null;
 
-      // Add updated_at timestamp
+      // Store benefits_json directly in JSONB column
+      if (scholarshipData.benefits_json !== undefined) {
+        if (
+          typeof scholarshipData.benefits_json === 'object' &&
+          scholarshipData.benefits_json !== null
+        ) {
+          // Keep as object for JSONB storage
+        } else if (typeof scholarshipData.benefits_json === 'string') {
+          // Try to parse string to object
+          try {
+            scholarshipData.benefits_json = JSON.parse(scholarshipData.benefits_json);
+          } catch {
+            // If not valid JSON, convert to object
+            scholarshipData.benefits_json = { benefits: scholarshipData.benefits_json };
+          }
+        }
+        // Remove old benefits text field if it exists
+        delete scholarshipData.benefits;
+      }
+
+      // Handle legacy benefits field for backward compatibility (convert to benefits_json)
+      if (scholarshipData.benefits !== undefined && scholarshipData.benefits_json === undefined) {
+        if (typeof scholarshipData.benefits === 'string') {
+          try {
+            scholarshipData.benefits_json = JSON.parse(scholarshipData.benefits);
+          } catch {
+            scholarshipData.benefits_json = { benefits: scholarshipData.benefits };
+          }
+        } else if (typeof scholarshipData.benefits === 'object' && scholarshipData.benefits !== null) {
+          scholarshipData.benefits_json = scholarshipData.benefits;
+        }
+        delete scholarshipData.benefits;
+      }
+
+      delete scholarshipData.study_levels;
+
+      delete scholarshipData.fields_supported;
+
+      delete scholarshipData.eligible_programs;
+
       scholarshipData.updated_at = new Date().toISOString();
 
       const { data, error } = await db
@@ -560,17 +740,11 @@ export class ScholarshipsService {
     }
   }
 
-  /**
-   * Delete a scholarship (hard delete)
-   */
   async deleteScholarship(id: number): Promise<void> {
     try {
       const db = this.supabaseService.getClient();
 
-      const { error } = await db
-        .from('scholarships')
-        .delete()
-        .eq('id', id);
+      const { error } = await db.from('scholarships').delete().eq('id', id);
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -588,4 +762,3 @@ export class ScholarshipsService {
     }
   }
 }
-
