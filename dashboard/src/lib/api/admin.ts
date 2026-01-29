@@ -64,7 +64,6 @@ export interface RecentProgram {
   title: string;
   university: string;
   added: string;
-  applications: number;
 }
 
 /**

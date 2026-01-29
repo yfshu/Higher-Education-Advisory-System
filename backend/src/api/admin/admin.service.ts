@@ -84,16 +84,37 @@ export class AdminService {
 
       let recommendationCount = 0;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-        const { count: recCount } = await (db as any)
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          .from('recommendation_logs')
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          .select('*', { count: 'exact', head: true });
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        // Count how many times program recommendations have been generated.
+        // We store recommendations in `ai_recommendations` and each "run" creates many rows
+        // (one per recommended program), so we count only the top-ranked row per session.
+        const { count: recCount, error: recError } = await db
+          .from('ai_recommendations')
+          .select('*', { count: 'exact', head: true })
+          .eq('recommendation_type', 'program')
+          .eq('final_rank', 1);
+
+        if (recError) {
+          this.logger.error(
+            'Error fetching recommendations count from ai_recommendations:',
+            recError,
+          );
+        }
+
         recommendationCount = recCount || 0;
       } catch {
-        recommendationCount = 0;
+        // Backward compatibility: if `ai_recommendations` is missing, fall back to legacy table.
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+          const { count: recCount } = await (db as any)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            .from('recommendation_logs')
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            .select('*', { count: 'exact', head: true });
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          recommendationCount = recCount || 0;
+        } catch {
+          recommendationCount = 0;
+        }
       }
 
       const sevenDaysAgo = new Date();
@@ -316,7 +337,6 @@ export class AdminService {
         university: program.university?.name || 'Unknown University',
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         added: program.created_at,
-        applications: 0,
       }));
     } catch (error) {
       this.logger.error('Exception in getRecentPrograms:', error);

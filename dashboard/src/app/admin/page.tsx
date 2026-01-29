@@ -396,14 +396,6 @@ export default function AdminDashboard() {
                             : "Recently"}
                         </p>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-medium text-foreground text-sm sm:text-base">
-                          {program?.applications ?? 0}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          applications
-                        </p>
-                      </div>
                     </div>
                   ))}
                 </div>
